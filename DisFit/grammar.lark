@@ -1,0 +1,33 @@
+?start: seq
+seq: monomer+
+?monomer: alphabet_monomer | inline_monomer
+alphabet_monomer: CHAR | DELIMITED_CHARS
+inline_monomer: "[" WS* inline_monomer_attr (ATTR_SEP inline_monomer_attr)* WS* "]"
+?inline_monomer_attr: id | name | synonym | identifier | structure | delta_mass | delta_charge | position | base_monomer | comments
+?id: "id" FIELD_SEP ESCAPED_STRING
+?name: "name" FIELD_SEP ESCAPED_STRING
+?synonym: "synonym" FIELD_SEP ESCAPED_STRING
+?identifier: "identifier" FIELD_SEP identifier_ns IDENTIFIER_SEP identifier_id
+?identifier_ns: ESCAPED_STRING
+?identifier_id: ESCAPED_STRING
+?structure: "structure" FIELD_SEP INCHI
+?delta_mass: "delta-mass" FIELD_SEP DALTON
+?delta_charge: "delta-charge" FIELD_SEP CHARGE
+?position: "position" FIELD_SEP START_POSITION? "-" END_POSITION?
+?base_monomer: "base-monomer" FIELD_SEP ESCAPED_CHARS
+?comments: "comments" FIELD_SEP ESCAPED_STRING
+ATTR_SEP: WS* "|" WS*
+FIELD_SEP: WS* ":" WS*
+IDENTIFIER_SEP: WS* "/" WS*
+CHAR: /[^\[\]\{\}"]/
+CHARS: CHAR+
+ESCAPED_CHARS: "\"" CHARS "\""
+DELIMITED_CHARS: "{" CHARS "}"
+INCHI: /InChI=[A-Za-z0-9\(\)\-\+,\/ \t\f\r\n]+/
+DALTON: /[\-\+]?[0-9]+(\.[0-9]*)?/
+CHARGE: /[\-\+]?[0-9]+/
+START_POSITION: INT
+END_POSITION: INT
+%import common.WS
+%import common.ESCAPED_STRING
+%import common.INT

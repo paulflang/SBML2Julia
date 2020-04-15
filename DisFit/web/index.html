@@ -1,0 +1,248 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BpForms: unambiguous representation of modified DNA, RNA, and proteins</title>
+    <link rel="stylesheet" href="css/foundation-icons.css">
+    <link rel="stylesheet" href="css/foundation.css">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+  </head>
+  <body>
+    <div class="grid-container">
+      <div class="grid-x grid-padding-x">
+        <div class="large-12 cell">
+          <h1>BpForms: tools for modified DNA, RNA, and proteins</h1>
+        </div>
+      </div>
+
+      <div class="grid-x grid-padding-x blue">
+        <div class="large-12 cell">
+          <p><i>BpForms</i> is a toolkit for unambiguously representing the primary sequence of forms of biopolymers. By concretely representing the primary sequence of biopolymers, <i>BpForms</i> aims to facilitate concrete discussion about DNA modification, post-transcriptional processing, and post-translational processing; facilitate the determination of the structures of biopolymer forms; facilitate the integration of data about DNA modification, post-transcriptional processing, and post-translational processing; and enable whole-cell models <a href="https://www.wholecell.org"><i class="fi-link"></i></a> that represent DNA modification, post-transcriptional processing, and post-translational processing and the functions of modified DNA, RNA, and proteins.</p>
+          <p><i>BpForms</i> includes a notation for describing biopolymer forms, as well as this website, a JSON REST API, a command line interface, and a Python API for calculating properties of biopolymer forms. These tools are available open-source under the MIT license.</p>
+        </div>
+     </div>
+
+      <div class="grid-x grid-padding-x blue">
+        <div class="large-12 cell">
+            <h2><i>BpForms</i> calculator</h2>
+        </div>
+        <div class="large-6 cell">
+            <h3>Enter a biopolymer form</h3>
+            <form>
+            <label>Select alphabet
+                <select id="alphabet">
+                </select>
+            </label>
+
+            <label>Enter monomer sequence
+                <textarea
+                    id="monomer_seq_in"
+                    placeholder="AC{m2A}CC[id: m6A | structure: InChI=1S/C10H12N4O4/...]G"></textarea>
+            </label>
+
+            <label>Optionally, enter a pH to correct the protonation
+                <input type="number" id="ph" placeholder="7.4"/>
+            </label>
+
+            <label>Optionally, calculate the major tautomer when correcting the protonation
+                <select id="major_tautomer">
+                  <option value=1>Yes</option>
+                  <option value=0 selected>No</option>
+                </select>
+            </label>
+            
+            <div id="errors" style="color: red;">
+            </div>
+
+            <input id="submit" type="button" class="button" value="Calculate"/>
+            </form>
+        </div>
+        <div class="large-6 cell">
+            <h3>Computed properties of the biopolymer form</h3>
+            <form class="out">
+                <label>Monomer sequence (optionally, with major protonation and tautomerization states)
+                    <textarea id="monomer_seq_out"></textarea>
+                </label>
+                <label>Length
+                    <input type="number" id="length"/>
+                </label>
+                <label>Chemical formula
+                    <input type="text" id="formula"/>
+                </label>
+                <label>Molecular weight
+                    <input type="number" id="mol_wt"/>
+                </label>
+                <label>Charge
+                    <input type="number" id="charge"/>
+                </label>
+            </form>
+        </div>
+      </div>
+
+      <div class="grid-x grid-padding-x orange">
+        <div class="large-12 cell">
+            <h2><i>BpForms</i> notation</h2>
+        </div>
+
+        <div class="large-6 cell">
+          <h3>Overview</h3>
+          <p>The <i>BpForms</i> notation represents biopolymers as FASTA sequences augmented with (a) multiple-letter alphabet-defined monomers delimited by curly brackets and (b) user-defined monomers described in square brackets by one or more attributes separated by "|". The <tt>structure</tt> attribute is required to calculate the chemical formula, molecular weight, and charge. All other attributes are optional.</p>
+          <p style="margin-bottom: 0px;"><i>BpForms</i> has several pre-built alphabets.</p>
+          <ul id="alphabet_descriptions">          
+          </ul>
+        </div>
+        <div class="large-6 cell">
+          <h3>Examples</h3>
+          <ul>
+          <li><tt>[id: "dI" | name: "deoxyinosine"]ACGC</tt>: represents deoxyinosine at the first position</li>
+          <li><tt>AC[id: "dI" | name: "deoxyinosine"]GC</tt>: represents deoxyinosine at the third position</li>
+          <li><tt>AC{2mG}C[id: "dI" | name: "deoxyinosine"]</tt>: represents guanosine methylation at the second position and deoxyinosine at the last position</li>
+          </ul>
+        </div>
+
+        <div class="large-6 cell">
+          <h3>The structures of monomers</h3>
+          The <tt>structure</tt> attribute describes the chemical structure of the inline monomer. This attribute is an InChI-encoded string. Each monomer can only have one structure.
+        </div>
+        <div class="large-6 cell">
+          <h3>Examples</h3>
+          <tt>[id: "dI" | structure: InChI=1S<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/C10H12N4O4<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/c15-2-6-5(16)1-7(18-6)14-4-13-8-9(14)11-3-12-10(8)17<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/h3-7,15-16H,1-2H2,(H,11,12,17)<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/t5-,6+,7+<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/m0<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/s1<br/>
+        ]</tt>
+        </div>
+
+        <div class="large-6 cell">
+          <h3>Uncertainty about the primary sequence</h3>
+          <i>BpForms</i> can represent two types of uncertainty in the primary sequences of biopolymer forms.
+          <ul>
+          <li>The <tt>delta-mass</tt> <tt>delta-charge</tt> attributes describe uncertainty in the chemical identity of the monomer.</li>
+          <li>The <tt>position</tt> attribute describes uncertainty in the position of the monomer within the sequence.</i>
+          </ul>
+        </div>
+        <div class="large-6 cell">
+          <h3>Examples</h3>
+          <ul>
+          <li><tt>[id: "dAMP" | delta-mass: 1 | delta-charge: 1]</tt>: indicates the presence of an additional proton whose exact location is not known.</li>
+          <li><tt>[id: "dI" | position: 2-3]</tt>: indicates that deoxyinosine may occur anywhere between the second and third position.</li>
+          </ul>
+        </div>
+
+
+        <div class="large-6 cell">
+          <h3>Metadata about monomers</h3>
+          <i>BpForms</i> can represent several types of metadata about monomers.
+          <ul>
+            <li>The <tt>id</tt> and <tt>name</tt> attributes are human-readable labels for monomers. Only one id and one name is allowed per monomer.</li>
+            <li>The <tt>synonym</tt> attribute is an additional human-readable label. Monomers can have multiple synonyms.</li>
+            <li>The <tt>identifier</tt> attribute indicates entries in databases and ontologies which are equivalent to the monomer. Monomers can have multiple identifiers. The namespace and id of each identifer must be separated by a "/".</li>
+            <li>The <tt>comments</tt> attribute describes additional information about the monomer. Monomers can only have one comment.</li>
+          </ul>
+        </div>
+        <div class="large-6 cell">
+          <h3>Examples</h3>
+          <ul>
+          <li><tt>[id: "dI" | name: "deoxyinosine"]</tt></li>
+          <li><tt>[id: "dI" | synonym: "deoxyinosine" | synonym: "2'-deoxyinosine"]</tt></li>
+          <li><tt>[id: "dI" | identifier: "chebi" / "CHEBI:28997" | identifier: "pubchem.compound" / "65058"]</tt></li>
+          <li><tt>[id: "dI" | comments: "A purine 2'-deoxyribonucleoside that is inosine ..."]</tt></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid-x grid-padding-x red">
+        <div class="large-12 cell">
+          <h2>Resources for reconstructing biopolymer forms</h2>
+        </div>
+        <div class="large-4 cell">
+          <h3>Resources for DNA forms</h3>
+          <ul>
+          <li><i>DNAMod</i> <a href="https://dnamod.hoffmanlab.org/"><i class="fi-link"></i></a>: Database of non-canonical DNA nucleobases</li>
+          <li><i>MethDB</i> <a href="http://www.methdb.net/"><i class="fi-link"></i></a>: Database of non-canonical DNA</li>
+          <li><i>MethSMRT</i> <a href="http://sysbio.gzzoc.com/methsmrt/"><i class="fi-link"></i></a>: Database of non-canonical DNA</li>
+          </ul>
+        </div>
+        <div class="large-4 cell">
+          <h3>Resources for RNA forms</h3>
+          <ul>
+          <li><i>MODOMICS</i> <a href="http://modomics.genesilico.pl/modifications/"><i class="fi-link"></i></a>: Database of non-canonical RNA nucleosides</li>
+          <li><i>RMBase</i> <a href="http://rna.sysu.edu.cn/rmbase/"><i class="fi-link"></i></a>: Database of modified RNA</li>
+          <li><i>RNA Modification Database</i> <a href="https://mods.rna.albany.edu/"><i class="fi-link"></i></a>: Database of modified RNA</li>
+          </ul>
+        </div>
+        <div class="large-4 cell">
+          <h3>Resources for protein forms</h3>
+          <ul>
+          <li><i>dbPTM</i> <a href="http://dbptm.mbc.nctu.edu.tw/"><i class="fi-link"></i></a>: Database of non-canonical amino acids</li>
+          <li><i>Delta Mass</i> <a href="https://abrf.org/delta-mass"><i class="fi-link"></i></a>: Database of modified amino acids</li>
+          <li><i>FindMod</i> <a href="https://web.expasy.org/findmod/findmod_masses.html"><i class="fi-link"></i></a>: Database of post-translational modifications</li>
+          <li><i>ProForma</i> <a href="https://www.topdownproteomics.org/resources/proforma/"><i class="fi-link"></i></a>: Notation for protein forms.  Note, this notation is not unambiguous. This limits its abiltiy to facilitate data integration and the calculation of properties of protein forms.</li>
+          <li><i>Protein Ontology</i> <a href="https://pir.georgetown.edu/pro/"><i class="fi-link"></i></a>: Database of modified proteins</li>
+          <li><i>PSIMOD</i> <a href="https://bioportal.bioontology.org/ontologies/PSIMOD"><i class="fi-link"></i></a>: Ontology of non-canonical amino acids</li>
+          <li><i>RESID</i> <a href="https://pir.georgetown.edu/resid/"><i class="fi-link"></i></a>: Database of non-canonical protein residues</li>
+          <li><i>UniMod</i> <a href="http://www.unimod.org/"><i class="fi-link"></i></a>: Database of non-canonical amino acids</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid-x grid-padding-x green">
+        <div class="large-12 cell">
+          <h2><i>BpForm</i> interfaces</h2>
+        </div>
+        <div class="large-3 cell">
+          <h3>Python package</h3>
+          The <i>BpForms</i> Python package is available from PyPI <a href="https://pypi.python.org/pypi/bpforms"><i class="fi-link"></i></a>.
+        </div>
+        <div class="large-3 cell">
+          <h3>Command line interface</h3>
+          The <i>BpForms</i> command line interface is available from PyPI <a href="https://pypi.python.org/pypi/bpforms"><i class="fi-link"></i></a>.
+        </div>
+        <div class="large-3 cell">
+          <h3>JSON REST API</h3>
+          The <i>BpForms</i> JSON REST API is available at <a href="https://bpforms.org/api">https://bpforms.org/api</a>.
+        </div>
+        <div class="large-3 cell">
+          <h3>Source code</h3>
+          <i>BpForms</i> is available open-source from GitHub <a href="https://github.com/KarrLab/bpforms"><i class="fi-social-github"></i></a>.
+        </div>
+        <div class="large-3 cell">
+          <h3>Documentation</h3>
+          Please see <i>BpForms</i> documentation <a href="https://docs.karrlab.org/bpforms"><i class="fi-link"></i></a>.
+        </div>
+        <div class="large-3 cell">
+          <h3>License</h3>
+          <i>BpForms</i> is released under the MIT license <a href="https://github.com/KarrLab/bpforms/blob/master/LICENSE"><i class="fi-link"></i></a>.
+        </div>
+      </div>
+
+      <div class="grid-x grid-padding-x purple">
+        <div class="large-12 cell">
+          <h2>About <i>BpForms</i></h2>
+        </div>
+        <div class="large-4 cell">
+          <h3>Team</h3>
+          <i>BpForms</i> was developed by Jonathan Karr <a href="https://www.karrlab.org/"><i class="fi-link"></i></a> <a href="https://www.linkedin.com/in/jonrkarr/"><i class="fi-social-linkedin"></i></a>, Yassmine Chebaro <a href="https://www.linkedin.com/in/yassmine-chebaro-6bb8a05/"><i class="fi-social-linkedin"></i></a>, and Paul Lang <a href="http://www.dtc.ox.ac.uk/people/17/langp/"><i class="fi-link"></i></a> in the Karr Lab <a href="https://www.karrlab.org"><i class="fi-link"></i></a> at the Icahn School of Medicine at Mount Sinai <a href="https://www.mssm.edu/"><i class="fi-link"></i></a> in New York, USA.
+        </div>
+        <div class="large-4 cell">
+          <h3>Acknowledgements</h3>
+          <i>BpForms</i> was supported by a National Institute of Health P41 award <a href="https://projectreporter.nih.gov/project_info_details.cfm?aid=9460251"><i class="fi-link"></i></a>, a National Institute of Health MIRA R35 award <a href="https://projectreporter.nih.gov/project_info_details.cfm?aid=9509480"><i class="fi-link"></i></a>, and a National Science Foundation INSPIRE award <a href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1649014"><i class="fi-link"></i></a>.
+        </div>
+        <div class="large-4 cell">
+          <h3>Questions/comments</h3>
+          Please contact Jonathan Karr <a href="mailto:karr@mssm.edu"><i class="fi-mail"></i></a> with any questions or comments.
+        </div>
+      </div>
+
+    <script src="js/vendor/jquery.js"></script>
+    <script src="js/vendor/what-input.js"></script>
+    <script src="js/vendor/foundation.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

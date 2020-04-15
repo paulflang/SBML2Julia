@@ -1,0 +1,1 @@
+git+https://github.com/KarrLab/sphinxcontrib-googleanalytics.git#egg=sphinxcontrib_googleanalytics-0.1.1

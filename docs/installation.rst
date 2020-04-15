@@ -1,0 +1,25 @@
+Installation
+============
+
+Prerequisites
+--------------------------
+
+
+* `Python <https://www.python.org>`_ >= 3.6
+
+
+Latest release From PyPI
+---------------------------
+There is no release from PyPI
+
+Latest revision from GitHub
+---------------------------
+Run the following command to install the latest version from GitHub. For most environments, the ``--process-dependency-links`` option is needed to install some of the dependencies from GitHub.::
+
+    pip install --process-dependency-links git+git://github.com/paulflang/calc.git#egg=calc[all]
+
+Setup
+-----
+From the calc directory run.::
+
+	python setup.py install

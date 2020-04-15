@@ -1,0 +1,11 @@
+.. _contributing:
+
+Contributing to `calc`
+-------------------------
+
+The following would help
+
+#. I
+#. have
+#. no
+#. idea.

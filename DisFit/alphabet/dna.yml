@@ -1,0 +1,605 @@
+id: dna
+name: DNAmod DNA nucleobases
+description: The four canonical DNA nucleobases, plus the non-canonical DNA nucleobases
+  in <a href="https://dnamod.hoffmanlab.org/modifications">DNAmod</a>
+monomers:
+  A:
+    id: adenine
+    name: adenine
+    synonyms:
+    - 6-aminopurine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:16708
+    - ns: metacyc.compound
+      id: ADENINE
+    - ns: pubchem.compound
+      id: '190'
+    structure: InChI=1S/C5H5N5/c6-4-3-5(9-1-7-3)10-2-8-4/h1-2H,(H3,6,7,8,9,10)
+  C:
+    id: cytosine
+    name: cytosine
+    synonyms:
+    - 4-amino-2-oxo-1,2-dihydropyrimidine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:16040
+    - ns: metacyc.compound
+      id: CYTOSINE
+    - ns: pubchem.compound
+      id: '597'
+    structure: InChI=1S/C4H5N3O/c5-3-1-2-6-4(8)7-3/h1-2H,(H3,5,6,7,8)
+  G:
+    id: guanine
+    name: guanine
+    identifiers:
+    - ns: metacyc.compound
+      id: GUANINE
+    - ns: chebi
+      id: CHEBI:16235
+    - ns: pubchem.compound
+      id: '764'
+    structure: InChI=1S/C5H5N5O/c6-5-9-3-2(4(11)10-5)7-1-8-3/h1H,(H4,6,7,8,9,10,11)
+  T:
+    id: thymine
+    name: thymine
+    synonyms:
+    - 5-methyl-2,4(1H,3H)-pyrimidinedione
+    - 5-methyluracil
+    identifiers:
+    - ns: metacyc.compound
+      id: THYMINE
+    - ns: pubchem.compound
+      id: '1135'
+    - ns: chebi
+      id: CHEBI:17821
+    structure: InChI=1S/C5H6N2O2/c1-3-2-6-5(9)7-4(3)8/h2H,1H3,(H2,6,7,8,9)
+  U:
+    id: uracil
+    name: uracil
+    identifiers:
+    - ns: chebi
+      id: CHEBI:17568
+    - ns: metacyc.compound
+      id: URACIL
+    - ns: pubchem.compound
+      id: '1174'
+    structure: InChI=1S/C4H4N2O2/c7-3-1-2-5-4(8)6-3/h1-2H,(H2,5,6,7,8)
+  dI:
+    id: hypoxanthine
+    name: hypoxanthine
+    synonyms:
+    - deoxyinosine
+    identifiers:
+    - ns: pubchem.compound
+      id: '790'
+    - ns: chebi
+      id: CHEBI:17368
+    - ns: metacyc.compound
+      id: HYPOXANTHINE
+    structure: InChI=1S/C5H4N4O/c10-5-3-4(7-1-6-3)8-2-9-5/h1-2H,(H2,6,7,8,9,10)
+  m2C:
+    id: 2-O-methylcytosine
+    name: 2-methoxypyrimidin-4-amine
+    comments: Pyrimidine substituted with a methoxy group at position C-2 and an amine
+      group at C-4.
+    synonyms:
+    - o-2-methylcytosine
+    - 4-amino-2-methoxypyrimidine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:70854
+    structure: InChI=1S/C5H7N3O/c1-9-5-7-3-2-4(6)8-5/h2-3H,1H3,(H2,6,7,8)
+    base_monomers:
+    - C
+  f:
+    id: 5-formylcytosine
+    name: 4-amino-2-oxo-1,2-dihydropyrimidine-5-carbaldehyde
+    comments: A nucleobase analogue that is cytosine in which the hydrogen at position
+      5 is replaced by a formyl group.
+    synonyms:
+    - cytosine-5-carbaldehyde
+    - 4-amino-2-oxopyrimidine-5-carbaldehyde
+    identifiers:
+    - ns: chebi
+      id: CHEBI:76794
+    structure: InChI=1S/C5H5N3O2/c6-4-3(2-9)1-7-5(10)8-4/h1-2H,(H3,6,7,8,10)
+    base_monomers:
+    - C
+  h:
+    id: 5-(hydroxymethyl)cytosine
+    name: 4-amino-5-(hydroxymethyl)pyrimidin-2(1H)-one
+    comments: A nucleobase analogue that is cytosine in which the hydrogen at position
+      5 is replaced by a hydroxymethyl group.
+    synonyms:
+    - 5-hydroxymethylcytosine
+    - 4-amino-5-(hydroxymethyl)-2(1h)-pyrimidinone
+    identifiers:
+    - ns: chebi
+      id: CHEBI:76792
+    structure: InChI=1S/C5H7N3O2/c6-4-3(2-9)1-7-5(10)8-4/h1,9H,2H2,(H3,6,7,8,10)
+    base_monomers:
+    - C
+  e3C:
+    id: 3-ethylcytosine
+    name: 6-amino-1-ethylpyrimidin-2(1H)-one
+    comments: A pyrimidone that is cytosine substituted by an ethyl group at position
+      3.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:74029
+    structure: InChI=1S/C6H9N3O/c1-2-9-5(7)3-4-8-6(9)10/h3-4H,2,7H2,1H3
+    base_monomers:
+    - C
+  3mC:
+    id: 3-methylcytosine
+    name: 6-amino-1-methylpyrimidin-2(1H)-one
+    comments: A pyrimidone that is cytosine in which the hydrogen attached to the
+      nitrogen at position 3 is substituted by a methyl group.
+    synonyms:
+    - n3-methylcytosine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:39992
+    structure: InChI=1S/C5H7N3O/c1-8-4(6)2-3-7-5(8)9/h2-3H,6H2,1H3
+    base_monomers:
+    - C
+  c:
+    id: 5-carboxycytosine
+    name: 4-amino-2-oxo-1,2-dihydropyrimidine-5-carboxylic acid
+    comments: A nucleobase analogue that is cytosine in which the hydrogen at position
+      5 is replaced by a carboxy group.
+    synonyms:
+    - 4-amino-2-oxopyrimidine-5-carboxylic acid
+    - 5-carboxylcytosine
+    - cytosine-5-carboxylic acid
+    identifiers:
+    - ns: chebi
+      id: CHEBI:76793
+    structure: InChI=1S/C5H5N3O3/c6-3-2(4(9)10)1-7-5(11)8-3/h1H,(H,9,10)(H3,6,7,8,11)/p-1
+    base_monomers:
+    - C
+  ɛC:
+    id: 3,N(4)-ethenocytosine
+    name: imidazo[1,2-c]pyrimidin-5(6H)-one
+    synonyms:
+    - ethenocytosine
+    - 3,n(4)-ethanocytosine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:29147
+    structure: InChI=1S/C6H5N3O/c10-6-8-2-1-5-7-3-4-9(5)6/h1-4H,(H,8,10)
+    base_monomers:
+    - C
+  m:
+    id: 5-methylcytosine
+    name: 4-amino-5-methylpyrimidin-2(1H)-one
+    comments: A pyrimidine that is a derivative of cytosine, having a methyl group
+      at the 5-position.
+    synonyms:
+    - 4-amino-5-methyl-2(1h)-pyrimidinone
+    - 4-amino-5-methyl-2-pyrimidinol
+    identifiers:
+    - ns: chebi
+      id: CHEBI:27551
+    structure: InChI=1S/C5H7N3O/c1-3-2-7-5(9)8-4(3)6/h2H,1H3,(H3,6,7,8,9)
+    base_monomers:
+    - C
+  4mC:
+    id: N(4)-methylcytosine
+    name: 4-(methylamino)pyrimidin-2(1H)-one
+    comments: A pyrimidone that is cytosine bearing an N(4)-methyl substituent.
+    synonyms:
+    - n(4)-methylcytosine
+    - 4-methylamino-1h-pyrimidin-2-one
+    identifiers:
+    - ns: chebi
+      id: CHEBI:21839
+    structure: InChI=1S/C5H7N3O/c1-6-4-2-3-7-5(9)8-4/h2-3H,1H3,(H2,6,7,8,9)
+    base_monomers:
+    - C
+  1mC:
+    id: 1-methylcytosine
+    name: 4-amino-1-methylpyrimidin-2(1H)-one
+    comments: A pyrimidone that is cytosine in which the hydrogen attached to the
+      nitrogen at position 1 is substituted by a methyl group.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:39624
+    structure: InChI=1S/C5H7N3O/c1-8-3-2-4(6)7-5(8)9/h2-3H,1H3,(H2,6,7,9)
+    base_monomers:
+    - C
+  putThy:
+    id: alpha-putrescinylthymine
+    name: 5-{[(4-aminobutyl)amino]methyl}pyrimidine-2,4(1H,3H)-dione
+    comments: An N-substituted putrescine that is thymine in which a hydrogen of the
+      methyl group has been replaced by one of the amino groups of putrescine. It
+      replaces about half of the thymine residues in the DNA of bacetriophage phiW-14.
+    synonyms:
+    - n-thyminylputrescine
+    - putthy
+    - 5-(4-aminobutylaminomethyl)uracil
+    identifiers:
+    - ns: chebi
+      id: CHEBI:132931
+    structure: InChI=1S/C9H16N4O2/c10-3-1-2-4-11-5-7-6-12-9(15)13-8(7)14/h6,11H,1-5,10H2,(H2,12,13,14,15)/p+2
+    base_monomers:
+    - T
+  diHT:
+    id: 5,6-dihydrothymine
+    name: 5,6-dihydrothymine, 5-methyldihydropyrimidine-2,4(1H,3H)-dione
+    comments: A pyrimidone obtained by formal addition of hydrogen across the 5,6-position
+      of thymine.
+    synonyms:
+    - dihydrothymine
+    - 5,6-dihydro-5-methyluracil
+    - 5-methyl-5,6-dihydrouracil
+    identifiers:
+    - ns: chebi
+      id: CHEBI:27468
+    structure: InChI=1S/C5H8N2O2/c1-3-2-6-5(9)7-4(3)8/h3H,2H2,1H3,(H2,6,7,8,9)
+    base_monomers:
+    - T
+  e:
+    id: 5-formyluracil
+    name: 2,4-dioxo-1,2,3,4-tetrahydropyrimidine-5-carbaldehyde
+    comments: A pyrimidone resulting from the formal oxidation of the alcoholic hydroxy
+      group of 5-hydroxymethyluracil to the corresponding aldehyde. It is a major
+      one-electron photooxidation product of thymine in oligodeoxynucleotides.
+    synonyms:
+    - 5fu
+    - uracil 5-carbaldehyde
+    - fou
+    identifiers:
+    - ns: chebi
+      id: CHEBI:80961
+    structure: InChI=1S/C5H4N2O3/c8-2-3-1-6-5(10)7-4(3)9/h1-2H,(H2,6,7,9,10)
+    base_monomers:
+    - T
+    - g
+  O4-meT:
+    id: O(4)-methylthymine
+    name: 4-methoxy-5-methylpyrimidin-2(1H)-one
+    comments: A methylthymine in which the methyl group is located at the O4-position.
+    synonyms:
+    - 4-methoxy-5-methylpyrimidin-2-one
+    - o-4-methylthymine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:134100
+    structure: InChI=1S/C6H8N2O2/c1-4-3-7-6(9)8-5(4)10-2/h3H,1-2H3,(H,7,8,9)
+    base_monomers:
+    - T
+  3mT:
+    id: 3,5-dimethyluracil
+    name: 3,5-dimethylpyrimidine-2,4(1H,3H)-dione
+    comments: A pyrimidone that is uracil with methyl group substituents at positions
+      3 and 5.
+    synonyms:
+    - 3-methylthymine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:74766
+    structure: InChI=1S/C6H8N2O2/c1-4-3-7-6(10)8(2)5(4)9/h3H,1-2H3,(H,7,10)
+    base_monomers:
+    - T
+  1mT:
+    id: 1,5-dimethyluracil
+    name: 1,5-dimethylpyrimidine-2,4(1H,3H)-dione
+    comments: A pyrimidone that is uracil with methyl group substituents at positions
+      1 and 5.
+    synonyms:
+    - 1-methylthymine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:74765
+    structure: InChI=1S/C6H8N2O2/c1-4-3-8(2)6(10)7-5(4)9/h3H,1-2H3,(H,7,9,10)
+    base_monomers:
+    - T
+  6hmA:
+    id: 6-hydroxymethyladenine
+    name: (9H-purin-6-ylamino)methanol
+    comments: A 6-alkylaminopurine that is adenine where one of the hydrogens of the
+      amino group is replaced by a hydroxymethyl group.
+    synonyms:
+    - n(6)-hydroxymethyladenine
+    - n(6)-hydroxymethyl-adenine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:142766
+    structure: InChI=1S/C6H7N5O/c12-3-11-6-4-5(8-1-7-4)9-2-10-6/h1-2,12H,3H2,(H2,7,8,9,10,11)
+    base_monomers:
+    - A
+  ncm6A:
+    id: N(6)-carbamoylmethyladenine
+    name: N(2)-1H-purin-6-ylglycinamide
+    comments: A nucleobase analogue that is adenine in which one of the exocyclic
+      amino hydrogens is replaced by a carbamoylmethyl group.
+    synonyms:
+    - 2-(9h-purin-6-ylamino)acetamide
+    identifiers:
+    - ns: chebi
+      id: CHEBI:102525
+    structure: InChI=1S/C7H8N6O/c8-4(14)1-9-6-5-7(11-2-10-5)13-3-12-6/h2-3H,1H2,(H2,8,14)(H2,9,10,11,12,13)
+    base_monomers:
+    - A
+  6-DMA:
+    id: N(6),N(6)-dimethyladenine
+    name: N,N-dimethyl-9H-purin-6-amine
+    comments: A tertiary amine that is adenine substituted at N-6 by geminal methyl
+      groups.
+    synonyms:
+    - 6-(dimethylamino)purine
+    - n(6),n(6)-dimethyladenine
+    - n,n-dimethyl-1h-purin-6-amine
+    - n(6)-dimethyladenine
+    - n,n-dimethyl-6-aminopurine
+    - 6-dimethyladenine
+    - 6-dimethylaminopurine
+    - n,n-dimethyladenine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:60281
+    structure: InChI=1S/C7H9N5/c1-12(2)7-5-6(9-3-8-5)10-4-11-7/h3-4H,1-2H3,(H,8,9,10,11)
+    base_monomers:
+    - A
+  m2A:
+    id: 9H-purine-2,6-diamine
+    name: ''
+    comments: A member of the class of 2,6-diaminopurines that is 9H-purine in which
+      the hydrogens at positions 2 and 6 are replaced by amino groups.
+    synonyms:
+    - 2-aminoadenine
+    - 9h-purine-2,6-diamine
+    - 2,6-diaminopurine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:40235
+    structure: InChI=1S/C5H6N6/c6-3-2-4(9-1-8-2)11-5(7)10-3/h1H,(H5,6,7,8,9,10,11)
+    base_monomers:
+    - A
+  HAP:
+    id: N(6)-hydroxyadenine
+    name: N-hydroxy-1H-purin-6-amine
+    comments: A member of the class of 6-aminopurinnes that is adenine in which one
+      of the exocyclic amino hydrogens is replaced by a hydroxy group.
+    synonyms:
+    - hap
+    - 6-n-hydroxylaminopurine
+    - n-(7h-purin-6-yl)hydroxylamine
+    - 6-hydroxyaminopurine
+    - 6-hydroxylaminopurine
+    - n-hydroxyadenine
+    - n(6)-hydroxyadenine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:78235
+    structure: InChI=1S/C5H5N5O/c11-10-5-3-4(7-1-6-3)8-2-9-5/h1-2,11H,(H2,6,7,8,9,10)/p+1
+    base_monomers:
+    - A
+  AHAP:
+    id: 2-amino-6-hydroxyaminopurine
+    name: N(6)-hydroxy-3H-purine-2,6-diamine
+    comments: A 2,6-diaminopurine that is the N(6)-hydroxy derivative of 2,6-diamino-3H-purine.
+    synonyms:
+    - 2-amino-n6-hydroxyadenine
+    - guanine oxime
+    - 2-amino-n(6)-hydroxyadenine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:78685
+    structure: InChI=1S/C5H6N6O/c6-5-9-3-2(7-1-8-3)4(10-5)11-12/h1,12H,(H4,6,7,8,9,10,11)
+    base_monomers:
+    - A
+  1mA:
+    id: 1-methyladenine
+    name: 1-methyl-1H-purin-6-amine
+    comments: Adenine substituted with a methyl group at position N-1.
+    synonyms:
+    - n1-methyladenine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:18083
+    structure: InChI=1S/C6H7N5/c1-11-3-10-6-4(5(11)7)8-2-9-6/h2-3H,7H2,1H3
+    base_monomers:
+    - A
+  3mA:
+    id: 3-methyladenine
+    name: 3-methyl-3H-purin-6-amine, 3-methyladenine
+    comments: A  methyladenine that is adenine substituted with a methyl group at
+      position N-3.
+    synonyms:
+    - 6-amino-3-methylpurine
+    - 3-methyl-3h-adenine
+    - 3-methyl-3h-purin-6-ylamine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:38635
+    structure: InChI=1S/C6H7N5/c1-11-3-10-5(7)4-6(11)9-2-8-4/h2-3H,7H2,1H3
+    base_monomers:
+    - A
+  9mA:
+    id: 9-methyladenine
+    name: 9-methyl-9H-purin-6-amine
+    comments: Adenine substituted with a methyl group at position N-9.
+    synonyms:
+    - n9-methyladenine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:40526
+    structure: InChI=1S/C6H7N5/c1-11-3-10-4-5(7)8-2-9-6(4)11/h2-3H,1H3,(H2,7,8,9)
+    base_monomers:
+    - A
+  4mA:
+    id: 4-methyladenine
+    name: 4-methyl-4,7-dihydro-1H-purin-6-amine
+    comments: A methyladenine in which the methyl substituent is located at position
+      4.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:134106
+    structure: InChI=1S/C6H9N5/c1-6-4(8-2-10-6)5(7)9-3-11-6/h2-3H,7H2,1H3,(H,8,10)(H,9,11)
+    base_monomers:
+    - A
+  7mA:
+    id: 7-methyladenine
+    name: 7-methyl-7H-purin-6-amine
+    comments: Adenine substituted with a methyl group at position N-7.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:28921
+    structure: InChI=1S/C6H7N5/c1-11-3-10-6-4(11)5(7)8-2-9-6/h2-3H,1H3,(H2,7,8,9)
+    base_monomers:
+    - A
+  a:
+    id: 6-methyladenine
+    name: N-methyl-9H-purin-6-amine
+    comments: A methyladenine that is 9H-purin-6-amine substituted by a methyl group
+      at the amino nitrogen.
+    synonyms:
+    - 6-methylaminopurine
+    - n6-methyladenine
+    - n6-monomethyladenine
+    - 6-map
+    identifiers:
+    - ns: chebi
+      id: CHEBI:28871
+    structure: InChI=1S/C6H7N5/c1-7-5-4-6(10-2-8-4)11-3-9-5/h2-3H,1H3,(H2,7,8,9,10,11)
+    base_monomers:
+    - A
+  o:
+    id: 8-oxoguanine
+    name: 2-amino-1H-purine-6,8-dione
+    comments: An oxopurine that is guanine which is substituted by an oxo group at
+      position 8.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:44605
+    structure: InChI=1S/C5H3N5O2/c6-4-8-2-1(3(11)10-4)7-5(12)9-2/h(H3,6,8,9,10,11,12)
+    base_monomers:
+    - G
+  CEG:
+    id: N(2)-carboxyethylguanine
+    name: N-(6-oxo-6,9-dihydro-1H-purin-2-yl)alanine
+    comments: An alanine derivative consisting of alanine having a 6-oxo-6,9-dihydro-1H-purin-2-yl
+      group attached to the amino function.
+    synonyms:
+    - ceguanine
+    - n(2)-(1-carboxyethyl)guanine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:62032
+    structure: InChI=1S/C8H9N5O3/c1-3(7(15)16)11-8-12-5-4(6(14)13-8)9-2-10-5/h2-3H,1H3,(H,15,16)(H3,9,10,11,12,13,14)/p-1
+    base_monomers:
+    - G
+  N(2),3-ɛG:
+    id: N(2),3-ethenoguanine
+    name: 1H-imidazo(2,1-b)purin-4(5H)-one
+    comments: A nucleobase analogue obtained by addition of an etheno group across
+      positions N2 and 3 of guanine.
+    synonyms:
+    - n(2),3-epsilong
+    identifiers:
+    - ns: chebi
+      id: CHEBI:134095
+    structure: InChI=1S/C7H5N5O/c13-6-4-5(10-3-9-4)12-2-1-8-7(12)11-6/h1-3H,(H,9,10)(H,8,11,13)
+    base_monomers:
+    - G
+  1,N(2)-ɛG:
+    id: 1,N(2)-ethenoguanine
+    name: 1,4-dihydro-9H-imidazo[1,2-a]purin-9-one
+    comments: A nucleobase analogue obtained by addition of an etheno group across
+      positions 1 and N2 of guanine.
+    synonyms:
+    - 1,n(2)-ethenoguanine
+    - 1,n(2)-epsilong
+    identifiers:
+    - ns: chebi
+      id: CHEBI:134096
+    structure: InChI=1S/C7H5N5O/c13-6-4-5(10-3-9-4)11-7-8-1-2-12(6)7/h1-3H,(H,8,11)(H,9,10)
+    base_monomers:
+    - G
+  ADG:
+    id: 7-amido-7-deazaguanosine
+    name: 2-amino-4-oxo-7-beta-D-ribofuranosyl-4,7-dihydro-1H-pyrrolo[2,3-d]pyrimidine-5-carboxamide
+    comments: A 7-deazaguanosine ribonucleoside that has 7-carbamoyl-7-deazaguanine
+      as the nucleobase. It is present in archaeal tRNA and has also been found in
+      bacterial DNA.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:131836
+    structure: InChI=1S/C12H15N5O6/c13-8(21)3-1-17(9-5(3)10(22)16-12(14)15-9)11-7(20)6(19)4(2-18)23-11/h1,4,6-7,11,18-20H,2H2,(H2,13,21)(H3,14,15,16,22)/t4-,6-,7-,11-/m1/s1
+    base_monomers:
+    - G
+  1mG:
+    id: 1-methylguanine
+    name: 2-amino-1-methyl-1,9-dihydro-6H-purin-6-one
+    synonyms:
+    - n1-methylguanine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:21803
+    structure: InChI=1S/C6H7N5O/c1-11-5(12)3-4(9-2-8-3)10-6(11)7/h2H,1H3,(H2,7,10)(H,8,9)
+    base_monomers:
+    - G
+  2mG:
+    id: N(2)-methylguanine
+    name: 2-(methylamino)-1,7-dihydro-6H-purin-6-one
+    comments: A methylguanine in which the methyl group is located at the N2-position.
+    synonyms:
+    - 2-methylamino-6-oxopurine
+    - 2-methylguanine
+    - 1,7-dihydro-2-(methylamino)-6h-purin-6-one
+    - n-methyl-guanine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:21818
+    structure: InChI=1S/C6H7N5O/c1-7-6-10-4-3(5(12)11-6)8-2-9-4/h2H,1H3,(H3,7,8,9,10,11,12)
+    base_monomers:
+    - G
+  m6G:
+    id: 6-O-methylguanine
+    name: 6-methoxy-7H-purin-2-amine
+    comments: A methylguanine in which the methyl group is positioned on the oxygen
+      at position 6. Formed in DNA by alkylation of the oxygen atom of guanine, most
+      often by N-nitroso compounds and sometimes due to methylation by other compounds
+      such as endogenous S-adenosylmethionine, it base-pairs to thymine rather than
+      cytidine, causing a G:C to A:T transition in DNA.
+    synonyms:
+    - 6-methoxyguanine
+    - 6-methoxy-1h-purine-2-amine
+    - 2-amino-6-methoxypurine
+    - o(6)-methylguanine
+    - o-(6)-methylguanine
+    identifiers:
+    - ns: chebi
+      id: CHEBI:20689
+    structure: InChI=1S/C6H7N5O/c1-12-5-3-4(9-2-8-3)10-6(7)11-5/h2H,1H3,(H3,7,8,9,10,11)
+    base_monomers:
+    - G
+  dhpUra:
+    id: 5-(4,5-dihydroxypentyl)uracil
+    name: 5-(4,5-dihydroxypentyl)pyrimidine-2,4(1H,3H)-dione
+    comments: A nucleobase analogue that is uracil substituted at position 5 by a
+      4,5-dihydroxypentyl group.
+    identifiers:
+    - ns: chebi
+      id: CHEBI:132195
+    structure: InChI=1S/C9H14N2O4/c12-5-7(13)3-1-2-6-4-10-9(15)11-8(6)14/h4,7,12-13H,1-3,5H2,(H2,10,11,14,15)
+    base_monomers:
+    - U
+  g:
+    id: 5-hydroxymethyluracil
+    name: 5-(hydroxymethyl)pyrimidine-2,4(1H,3H)-dione
+    comments: A primary alcohol that is uracil bearing a hydroxymethyl substituent
+      at the 5-position.
+    synonyms:
+    - 5-hydroxymethyl uracil
+    - 5-(hydroxymethyl)uracil
+    - 5-(hydroxymethyl)-2,4(1h,3h)-pyrimidinedione
+    identifiers:
+    - ns: chebi
+      id: CHEBI:16964
+    structure: InChI=1S/C5H6N2O3/c8-2-3-1-6-5(10)7-4(3)9/h1,8H,2H2,(H2,6,7,9,10)
+    base_monomers:
+    - U

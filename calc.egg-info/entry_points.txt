@@ -1,0 +1,3 @@
+[console_scripts]
+calc = calc.__main__:main
+
