@@ -1,0 +1,111 @@
+### MODEL NAME
+# G2M
+
+
+### MODEL NOTES
+# This model was taken from the paper "Model scenarios for switch-like mitotic transitions" published by Vinod and Novak in 2015
+# This model can be used to reproduce Fig. 4C-D.
+# The model shows how tCb flips the G2/M toggle between Cb and B55. The switch is required
+# for rapid Cb activation. The toggle comprises B55 and pENSA, which mutually inhibit each other. The excess
+# of tENSA over B55 provides nonlinearity (this is an alternative to modelling Cdk1 phosphorylation as a Goldbeter-
+# Koshland cycle unsing Michaelis-Menten kinetics (which is (a) probably unrealistic for protein-protein interaction
+# networks unless [Cdk1], is much higher than [Wee1 or Cdc25], and (b) probably wrong, because experimental
+# inhibition of the greatwall pathway removes bistability))).
+
+
+### Relation to other models:
+# Sister model G2M_2D is the 2D version with steady state approximations.
+
+
+### Major assumptions:
+# All reactions (even non elementary reactions) are best modelled with mass action kinetics for all reactions.
+# Protein expression takes no time.
+# Levels of tEnsa, tB55, tGw, tWee, tCdc25 and tDna are constant. Their degradation rate is incorporated in
+# the corresponding dephosphorylation and dissociation rates.
+# B55 invokes negative feedback at two steps: (1) at Gw and (2) at Wee/Cdc25
+
+
+### Variables (quantities of dimension concentration given in the arbitrary units shown in square brackets):
+# pEnsa: phosporylated Ensa (endosulfine & cAMP regulated phosphoprotein 19), incl. pEnsaB55; [ensa]
+# Cb: active cyclin B-Cdk1 complex; [b]
+# B55: free protein phosphatase 2A-B55 (a hetrotrimeric enzyme complex); [ensa]
+# pGw: phosphorylated Greatwall 1; [gw]
+# pEB55: pEnsa-B55 complex; [ensa]
+
+
+### Parameter description:
+# kPhEnsa, kDpEnsa: phosphorylation efficiency (k_cat/other substrates) and dephosphorylation rate of Ensa; [1/(min*gw)], [1/min] 
+#   tEnsa: total amount of Ensa in the system; [ensa]
+# tCb: concentration of total Cb in the system; [b]
+# tB55; [ensa]
+# kPhGw, kDpGw1, kDpGw2: phosphorylation, background dephosphorylation, and B55 mediated dephosphorylation
+# efficiencies of Gw; [1/(min*b)], [1/min], [1/(min*ensa)]
+#   tGw: concentration of total Gw in the system; [gw]
+# kWee1, kWee2: inactive Wee1 and active Wee mediated phosphorylation efficiencies of Cb times concentration of
+# inactive Wee1 and active Wee, respectively; [1/min]
+#   kPhWee, kDpWee: Cb mediated phosphorylation and B55 mediated dephosphorylation efficiencies of Wee;  [1/(min*b)], [1/(min*ensa)]
+# kCdc25_1=0.1, kCdc25_2=1: Cdc25 mediated dephosphorylation efficiencies of Cb times concentration of inactive
+# and active Cdc25, respectively; [1/min]
+#   kPhCdc25, kDpCdc25: Cb mediated phosphorylation and B55 mediated dephosphorylation efficiencies
+#   of Cdc25; [1/(min*b)], [1/(min*ensa)]
+# kDipEB55, kAspEB55: dissociation and association rate constants of pEB55; [1/min], [1/(min*ensa)]
+
+
+### Idea behind parameter values:
+# Parameters shall be biologically reasonable. Experimental values from https://elifesciences.org/articles/01695
+# were used where applicable.
+# tCb shall be in the interval [0, 1]
+
+
+##################################################################################
+
+### MODEL STATES
+pEnsa' = kPhEnsa*pGw*(tEnsa - pEnsa) - kDpEnsa*pEB55
+Cb' = (kCdc25_1 + (kCdc25_2 - kCdc25_1)*pCdc25)*(tCb - Cb) - (kWee1 + (kWee2-kWee1)*Wee) * Cb
+pGw' = kPhGw*Cb*(tGw-pGw) - (kDpGw1+kDpGw2*B55)*pGw
+pEB55' = kAspEB55*B55*(pEnsa - pEB55) - (kDipEB55 + kDpEnsa)*pEB55
+Wee' = kDpWee * B55 * (tWee - Wee) - kPhWee * Cb * Wee
+pCdc25' = kPhCdc25*Cb*(tCdc25-pCdc25) - kDpCdc25*pCdc25*B55
+
+
+### INITIAL CONDITIONS (to be taken from RP-G1S_v2)
+init pEnsa = 0.01, Cb = 0.01
+
+
+### ALGEBRAIC EQUATIONS
+# Mass conservations:
+B55 = tB55 - pEB55
+
+# Substitutions
+# rWee = kWee1 + (kWee2-kWee1)*kDpWee*B55/(kDpWee*B55 + kPhWee*Cb)
+# rCdc25 = kCdc25_1 + (kCdc25_2-kCdc25_1)*(kPhCdc25*Cb)/(kPhCdc25*Cb + kDpCdc25*B55)
+
+
+### AUXILIARY QUANTITIES (for plotting purposes)
+aux B55_ = B55
+aux pGw_ = pGw
+aux pEB55_ = pEB55
+
+
+### MODEL PARAMETERS
+par tCb=0.8 , tWee = 1, tCdc25 = 1
+par kPhEnsa=0.1, kDpEnsa=0.05
+  par tEnsa=1
+par tB55=0.25
+par kPhGw=1, kDpGw1=0.25, kDpGw2=10
+  par tGw=1
+par kWee1=0.01, kWee2=1, kPhWee=1, kDpWee=10
+par kCdc25_1=0.1, kCdc25_2=1, kPhCdc25=1, kDpCdc25=10
+par kDipEB55=0.0068, kAspEB55=57
+
+
+### XppAut SETTINGS
+@ Method=stiff, Total=1200, Bounds=100, Dt=1
+@ xp=time, yp=Cb, xlo=0, xhi=300, ylo=0, yhi=1, nmesh=400
+@ Nplot=4, Yp1=pEnsa, Yp2=Cb, Yp3=B55_, Yp4=pGw_
+
+@ Ntst=150, Nmax=1000000, Npr=1000
+@ Ds=.001, Dsmin=.0001, Dsmax=.005, ParMin=0, ParMax=1
+@ AutoVar=Cb, AutoXmin=0, AutoXmax=1, AutoYmin=0, AutoYmax=1
+
+done
