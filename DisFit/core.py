@@ -5,8 +5,11 @@
 
 import importlib
 import libsbml
+import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas as pd
+import pickle
 import scipy as sp
 import shutil
 import sys
@@ -30,8 +33,13 @@ class DisFitProblem(object):
             fold_change (:obj:`float`, optional): fold change window of parameter search range wrt sbml parameters
         """
         self._initialization = True
+        self._optimized = False
+        self._files_written = False
+        self._pickled = False
+        self._plotted = False
         self._jl = Julia(compiled_modules=False)
         self._initialization = True
+        self._results = {}
         self.sbml_path = sbml_path
         self.data_path = data_path
         self.t_ratio = t_ratio
@@ -87,13 +95,24 @@ class DisFitProblem(object):
         Raises:
             ValueError: if data_path is not a csv file
         """
-        if not isinstance(value, str) or not value.endswith('.csv'):
+        if not isinstance(value, str) or not (value.endswith('.csv')):
             raise ValueError('`data_path` must be a path to a csv file')
         if not os.path.isfile(value):
             raise ValueError('Cannot find file `{}`'.format(value))
+        df = pd.read_csv(value)
         self._data_path = value
+        self._exp_data = df
         if not self._initialization:
             self._set_julia_code()
+
+    @property
+    def exp_data(self):
+        """Get exp_data
+        
+        Returns:
+            :obj:`pandas.DataFrame`: experimental data
+        """
+        return self._exp_data
 
     @property
     def t_ratio(self):
@@ -164,21 +183,80 @@ class DisFitProblem(object):
         """
         return self._results
 
-    def julia_code_to_file(self):
-        pass
+    def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
+        with open(path, 'w') as f:
+            f.write(self.julia_code['optimzer'])
+            f.write(self.julia_code['x_best'])
+            f.write(self.julia_code['values'])
+            self._julia_file = path
+            self._files_written = True
 
     def optimize(self):
         self._results = {}
-        print('Running optimization problem in julia')
-        optimizer = self._jl.eval(self.julia_code['optimizer'])
-        print('Retreiving parameters')
-        self._results['parameters'] = self._jl.eval(self.julia_code['parameters'])
-        print('Retreiving values')
-        self._results['values'] = self._jl.eval(self.julia_code['values'])
+        print('Running optimization problem in julia...')
+        self._results['optimizer_log'] = self._jl.eval(self.julia_code['optimizer'])
+        print('the julia optimizer output is:')
+        print(self._results['optimizer_log'])
+        print('Retreiving parameters...')
+        x_best = self._jl.eval(self.julia_code['x_best'])
+        x_0 = dict(zip(self._par_names, self._par_values))
+        # print(x_0.keys())
+        # print(x_0)
+        # print(x_best)
+        x_best_to_x_0_col = [x_best[key] / x_0[str(key).split()[1].rstrip('>')] for key in x_best.keys()]
+        name_col = [str(key).split()[1].rstrip('>') for key in x_best.keys()]
+        x_0_col = [x_0[str(key).split()[1].rstrip('>')] for key in x_best.keys()]
+        x_best_col = [x_0[str(key).split()[1].rstrip('>')] for key in x_best.keys()]
+        self._results['parameters'] = pd.DataFrame(list(zip(name_col, x_0_col, x_best_col,
+            x_best_to_x_0_col)), columns = ['Name', 'x_0', 'x_best', 'x_best_to_x_0'])
+        print('Retreiving values...')
+        self._results['values'] = pd.DataFrame(self._jl.eval(self.julia_code['values']))
+        if self._optimized == True:
+            self.pickle(self._pickle_file)
+        self._optimized = True
         return(self.results)
 
-    def plot_results(self):
-        pass
+    def plot_results(self, variables=[], path=os.path.join('.', 'plot.pdf'), size=(6, 5)):
+
+        # Options
+        x_label = 'time'
+        y_label = 'Abundance'
+        print(self.exp_data)
+        t = self.exp_data.loc[:, 't'].values
+        t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
+        print(t_sim)
+        if not variables:
+            values = self.results['values']
+            var_names = self._var_names
+            exp_data = self._exp_data
+        else:
+            values = self.results['values'].loc[:, variables]
+            var_names = self.results['values'].loc[:, variables].index
+            exp_data = self.exp_data.loc[:, variables]
+
+        print('values')
+        print(values)
+
+        # Determine the size of the figure
+        plt.figure(figsize=size)
+
+        # the main axes is subplot(111) by default
+        a = plt.axes([0.1, 0.1, 0.8, 0.8])
+        a.plot(t_sim, values, linewidth=3) # See matplotlib.lines.Line2D for details
+        a.legend(tuple(values.columns))
+        plt.plot(t, exp_data, 'x')
+        a.legend(tuple(values.columns))
+        plt.xlim(np.min(t), np.max(t))
+        plt.ylim(0, 1.1 * max(values.max()))
+        plt.xlabel(x_label, fontsize=18)
+        plt.ylabel(y_label, fontsize=18)
+        plt.title('DisFit time course')
+
+        plt.savefig(path)
+        plt.close()
+
+        self._plotted = True
+        self._plot_file = path
 
     def _set_julia_code(self):
         #----------------------------------------------------------------------#
@@ -235,6 +313,7 @@ class DisFitProblem(object):
             if species.getBoundaryCondition() == True or (species.getId() in variables):
                 continue
             variables[species.getId()] = []
+        self._var_names = list(variables.keys())
 
         par_values = []
         par_names = []
@@ -244,6 +323,8 @@ class DisFitProblem(object):
             par_names.append(element.getId())
         par_values_string = str(par_values)
         par_names_string = str(par_names)
+        self._par_values = par_values
+        self._par_names = par_names
         
         x_0 = []
         for variable in variables:
@@ -368,7 +449,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('end\n\n', 'utf8'))
         generated_code.extend(bytes('paramvalues\n\n\n', 'utf8'))
         code = generated_code.decode()
-        self._julia_code['parameters'] = code
+        self._julia_code['x_best'] = code
 
         generated_code = bytearray('', 'utf8')
         generated_code.extend(bytes('variables = [', 'utf8'))
@@ -389,6 +470,14 @@ class DisFitProblem(object):
         generated_code.extend(bytes('variablevalues\n\n\n', 'utf8'))
         code = generated_code.decode()
         self._julia_code['values'] = code
+        
+        # Updating self and files if needed
+        if self._optimized == True:
+            self.optimize()
+        if self._files_written == True:
+            self.write_jl_file(self._julia_file)
+        if self._plotted == True:
+            self.plot(self._plot_file)
 
         # # Ploting
         # generated_code.extend(bytes('using Plots\n', 'utf8'))
