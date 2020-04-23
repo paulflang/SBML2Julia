@@ -1,0 +1,3004 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" level="3" version="1">
+  <model id="__main" name="__main">
+    <listOfCompartments>
+      <compartment sboTerm="SBO:0000410" id="default_compartment" spatialDimensions="3" size="1" constant="true"/>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species id="Rb" compartment="default_compartment" initialConcentration="0.0876395890556912" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pRb" compartment="default_compartment" initialConcentration="0.840746489528993" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pE2fRb" compartment="default_compartment" initialConcentration="0.000150496430896411" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="E2fRb" compartment="default_compartment" initialConcentration="0.0714634249835783" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Pcb" compartment="default_compartment" initialConcentration="0.998096764157212" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pFoxPcb" compartment="default_compartment" initialConcentration="0.00190323584276426" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="ACE" compartment="default_compartment" initialConcentration="0.108946403524652" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Apc" compartment="default_compartment" initialConcentration="4.02879969967968" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="ApcCdh" compartment="default_compartment" initialConcentration="0.713570023533813" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pACE" compartment="default_compartment" initialConcentration="0.00221082185554591" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pApc" compartment="default_compartment" initialConcentration="0.0630350885172917" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pApcCdc" compartment="default_compartment" initialConcentration="0.0698415841229336" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pApcCdh" compartment="default_compartment" initialConcentration="0.0135963787675785" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Cdh" compartment="default_compartment" initialConcentration="0.000571296258137497" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pCdh" compartment="default_compartment" initialConcentration="0.161105076061553" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Ensa" compartment="default_compartment" initialConcentration="0.8268804851859" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pEB55" compartment="default_compartment" initialConcentration="0.172791088895363" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pEnsa" compartment="default_compartment" initialConcentration="0.000328425918752097" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="B55" compartment="default_compartment" initialConcentration="0.0772089111046333" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Gw" compartment="default_compartment" initialConcentration="0.997527044188728" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pGw" compartment="default_compartment" initialConcentration="0.00247295581127999" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Cdc25" compartment="default_compartment" initialConcentration="0.981587433772169" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pCdc25" compartment="default_compartment" initialConcentration="0.0184125662278329" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pWee" compartment="default_compartment" initialConcentration="0.0195325004522952" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Wee" compartment="default_compartment" initialConcentration="0.9804674995477" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="E2fPx" compartment="default_compartment" initialConcentration="0.155219162658195" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Px" compartment="default_compartment" initialConcentration="0.844780837341805" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Pcdc" compartment="default_compartment" initialConcentration="0.999238155498483" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pFoxPcdc" compartment="default_compartment" initialConcentration="0.000761844501518302" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Cb" compartment="default_compartment" initialConcentration="0.00188206535647011" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pCb" compartment="default_compartment" initialConcentration="0.00751336008466442" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Emi" compartment="default_compartment" initialConcentration="0.000717804382833033" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pEmi" compartment="default_compartment" initialConcentration="1.88025888778141e-05" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Cdc20" compartment="default_compartment" initialConcentration="0.229982509267466" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="E2f" compartment="default_compartment" initialConcentration="0.0184803526365495" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pFox" compartment="default_compartment" initialConcentration="0.000381111811390532" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Ce" compartment="default_compartment" initialConcentration="0.232258539454284" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Ca" compartment="default_compartment" initialConcentration="0.00702863208377227" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pE2f" compartment="default_compartment" initialConcentration="3.80728578950688e-05" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="Fox" compartment="default_compartment" initialConcentration="0.0055647355512613" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+    </listOfSpecies>
+    <listOfParameters>
+      <parameter id="tRb" value="0.999999999999159" constant="false"/>
+      <parameter id="tPcb" value="0.999999999999977" constant="false"/>
+      <parameter id="tApc" value="5.00000000000149" constant="false"/>
+      <parameter id="t_pApc" value="0.14868387326335" constant="false"/>
+      <parameter id="tCdh" value="1.00000000000128" constant="false"/>
+      <parameter id="tEnsa" value="1.00000000000001" constant="false"/>
+      <parameter id="tB55" value="0.249999999999996" constant="false"/>
+      <parameter id="tGw" value="1.00000000000001" constant="false"/>
+      <parameter id="tCdc25" value="1" constant="false"/>
+      <parameter id="tWee" value="0.999999999999995" constant="false"/>
+      <parameter id="tPx" value="1" constant="false"/>
+      <parameter id="tPcdc" value="1" constant="false"/>
+      <parameter id="tCb" value="0.00939542544113453" constant="false"/>
+      <parameter id="tEmi" value="0.111893832351909" constant="false"/>
+      <parameter id="tCdc20" value="0.2998240933904" constant="false"/>
+      <parameter id="kSyE2f1" value="0.001" constant="true"/>
+      <parameter id="kAsFPcb" value="50" constant="true"/>
+      <parameter id="kSyE2f2" value="0.01" constant="true"/>
+      <parameter id="kDeE2f1" value="0.01" constant="true"/>
+      <parameter id="kDiEPx" value="5" constant="true"/>
+      <parameter id="kAsE2fRb" value="50" constant="true"/>
+      <parameter id="kDiE2fRb" value="0.05" constant="true"/>
+      <parameter id="kPhRbD" value="0.8" constant="true"/>
+      <parameter id="Cd" value="1" constant="true"/>
+      <parameter id="kPhRbE" value="1" constant="true"/>
+      <parameter id="kPhRb" value="3" constant="true"/>
+      <parameter id="kPhE2f" value="0.2" constant="true"/>
+      <parameter id="kDpE2f1" value="0" constant="true"/>
+      <parameter id="kDpE2f2" value="10" constant="true"/>
+      <parameter id="kDeE2f2" value="0.2" constant="true"/>
+      <parameter id="kSyCe1" value="0.002" constant="true"/>
+      <parameter id="kSyCa2" value="0.0075" constant="true"/>
+      <parameter id="kDeCe" value="0.02" constant="true"/>
+      <parameter id="kPhCeE" value="0.01" constant="true"/>
+      <parameter id="kDpRb" value="0.2" constant="true"/>
+      <parameter id="kDpApc" value="5" constant="true"/>
+      <parameter id="kPhApcA" value="0.01" constant="true"/>
+      <parameter id="kPhApcB" value="0.01" constant="true"/>
+      <parameter id="kAsACdh" value="50" constant="true"/>
+      <parameter id="kDiACdh" value="0.05" constant="true"/>
+      <parameter id="kPhCdhA" value="2.5" constant="true"/>
+      <parameter id="kPhCdhE" value="0.1" constant="true"/>
+      <parameter id="kPhCdhB" value="25" constant="true"/>
+      <parameter id="kDeEmi1" value="0.05" constant="true"/>
+      <parameter id="kDeEmi2" value="0.05" constant="true"/>
+      <parameter id="kPhEmiA" value="0.005" constant="true"/>
+      <parameter id="kPhEmiB" value="0.025" constant="true"/>
+      <parameter id="kAsACE" value="50" constant="true"/>
+      <parameter id="kDiACE" value="0.05" constant="true"/>
+      <parameter id="kDpEmi" value="0.0005" constant="true"/>
+      <parameter id="kDeEmi3" value="0.5" constant="true"/>
+      <parameter id="kSyFox1" value="0.001" constant="true"/>
+      <parameter id="kSyEmi2" value="0.05" constant="true"/>
+      <parameter id="kDpCdh" value="0.5" constant="true"/>
+      <parameter id="kSyCa1" value="0.001" constant="true"/>
+      <parameter id="kDeCa1" value="0.001" constant="true"/>
+      <parameter id="kPhCeA" value="1" constant="true"/>
+      <parameter id="kDeCa2" value="0.4" constant="true"/>
+      <parameter id="kDeCa3" value="0.1" constant="true"/>
+      <parameter id="kSyFox2" value="0.0075" constant="true"/>
+      <parameter id="kDeFox1" value="0.001" constant="true"/>
+      <parameter id="kDeFox2" value="0.5" constant="true"/>
+      <parameter id="kPhFoxE" value="0.1" constant="true"/>
+      <parameter id="kPhFoxA" value="0.1" constant="true"/>
+      <parameter id="kPhFoxB" value="0.5" constant="true"/>
+      <parameter id="kDpFox" value="0.005" constant="true"/>
+      <parameter id="kSyCb1" value="0.001" constant="true"/>
+      <parameter id="kSyCb2" value="0.0075" constant="true"/>
+      <parameter id="kAsEPx" value="50" constant="true"/>
+      <parameter id="kDiFPcb" value="10" constant="true"/>
+      <parameter id="kDeCb1" value="0.001" constant="true"/>
+      <parameter id="kDeCb2" value="0.125" constant="true"/>
+      <parameter id="kDeCb3" value="0.125" constant="true"/>
+      <parameter id="kAspACdc" value="1" constant="true"/>
+      <parameter id="kDipACdc" value="0.125" constant="true"/>
+      <parameter id="kDeCdc_1" value="0.004" constant="true"/>
+      <parameter id="kDeCdc_2" value="0.04" constant="true"/>
+      <parameter id="kSyCdc_1" value="0.001" constant="true"/>
+      <parameter id="kSyCdc_2" value="0.01" constant="true"/>
+      <parameter id="kAsFPcdc" value="50" constant="true"/>
+      <parameter id="kDiFPcdc" value="25" constant="true"/>
+      <parameter id="kWee2" value="1" constant="true"/>
+      <parameter id="kWee1" value="0.01" constant="true"/>
+      <parameter id="kCdc25_2" value="1" constant="true"/>
+      <parameter id="kCdc25_1" value="0.1" constant="true"/>
+      <parameter id="kPhC25B" value="1" constant="true"/>
+      <parameter id="kPhC25A" value="0" constant="true"/>
+      <parameter id="kDpCdc25" value="10" constant="true"/>
+      <parameter id="kDpWee" value="10" constant="true"/>
+      <parameter id="kPhWeeA" value="0.1" constant="true"/>
+      <parameter id="kPhWeeB" value="1" constant="true"/>
+      <parameter id="kPhGw" value="1" constant="true"/>
+      <parameter id="kDpGw1" value="0.25" constant="true"/>
+      <parameter id="kDpGw2" value="10" constant="true"/>
+      <parameter id="kPhEnsa" value="0.1" constant="true"/>
+      <parameter id="kAspEB55" value="57" constant="true"/>
+      <parameter id="kDipEB55" value="0.0068" constant="true"/>
+      <parameter id="kDpEnsa" value="0.05" constant="true"/>
+      <parameter id="kSyEmi1" value="0.005" constant="true"/>
+      <parameter id="kSyCe2" value="0.06" constant="true"/>
+    </listOfParameters>
+    <listOfRules>
+      <assignmentRule variable="tRb">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Rb </ci>
+            <ci> pRb </ci>
+            <ci> pE2fRb </ci>
+            <ci> E2fRb </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tPcb">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Pcb </ci>
+            <ci> pFoxPcb </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tApc">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> ACE </ci>
+            <ci> Apc </ci>
+            <ci> ApcCdh </ci>
+            <ci> pACE </ci>
+            <ci> pApc </ci>
+            <ci> pApcCdc </ci>
+            <ci> pApcCdh </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="t_pApc">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> pACE </ci>
+            <ci> pApc </ci>
+            <ci> pApcCdc </ci>
+            <ci> pApcCdh </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tCdh">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> ACE </ci>
+            <ci> ApcCdh </ci>
+            <ci> Cdh </ci>
+            <ci> pACE </ci>
+            <ci> pApcCdh </ci>
+            <ci> pCdh </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tEnsa">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Ensa </ci>
+            <ci> pEB55 </ci>
+            <ci> pEnsa </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tB55">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> B55 </ci>
+            <ci> pEB55 </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tGw">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Gw </ci>
+            <ci> pGw </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tCdc25">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Cdc25 </ci>
+            <ci> pCdc25 </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tWee">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> pWee </ci>
+            <ci> Wee </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tPx">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> E2fPx </ci>
+            <ci> Px </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tPcdc">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Pcdc </ci>
+            <ci> pFoxPcdc </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tCb">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Cb </ci>
+            <ci> pCb </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tEmi">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> ACE </ci>
+            <ci> Emi </ci>
+            <ci> pACE </ci>
+            <ci> pEmi </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="tCdc20">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <ci> Cdc20 </ci>
+            <ci> pApcCdc </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+    </listOfRules>
+    <listOfReactions>
+      <reaction id="SyE2f1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyE2f1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspFoxPcb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+          <speciesReference species="Pcb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+          <speciesReference species="pFoxPcb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kAsFPcb </ci>
+              <ci> pFox </ci>
+              <ci> Pcb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyE2f2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyE2f2 </ci>
+              <ci> E2fPx </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeE2f" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeE2f1 </ci>
+              <ci> E2f </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DiE2fPx" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Px" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDiEPx </ci>
+              <ci> E2fPx </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AsE2fRb" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAsE2fRb </ci>
+                <ci> E2f </ci>
+                <ci> Rb </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDiE2fRb </ci>
+                <ci> E2fRb </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbE2fByCd" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRbD </ci>
+              <ci> E2fRb </ci>
+              <ci> Cd </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbE2fByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRbE </ci>
+              <ci> E2fRb </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbE2fByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRb </ci>
+              <ci> E2fRb </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbE2fByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRb </ci>
+              <ci> E2fRb </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhE2fByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhE2f </ci>
+              <ci> E2f </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhE2fByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhE2f </ci>
+              <ci> E2f </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppE2f1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpE2f1 </ci>
+              <ci> pE2f </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppE2fRb2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpE2f2 </ci>
+              <ci> pE2fRb </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepE2f1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeE2f1 </ci>
+              <ci> pE2f </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepE2f2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeE2f2 </ci>
+              <ci> pE2f </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspE2fRb" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAsE2fRb </ci>
+                <ci> pE2f </ci>
+                <ci> Rb </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDiE2fRb </ci>
+                <ci> pE2fRb </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbpE2fByCd" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRbD </ci>
+              <ci> pE2fRb </ci>
+              <ci> Cd </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbpE2fByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRb </ci>
+              <ci> pE2fRb </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbpE2fByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRb </ci>
+              <ci> pE2fRb </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbpE2fByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRbE </ci>
+              <ci> pE2fRb </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhE2fRbByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhE2f </ci>
+              <ci> E2fRb </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhE2fRbByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhE2f </ci>
+              <ci> E2fRb </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppE2fRb1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpE2f1 </ci>
+              <ci> pE2fRb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeE2fRb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeE2f1 </ci>
+              <ci> E2fRb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepE2fRb1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeE2f1 </ci>
+              <ci> pE2fRb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepE2fRb2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2fRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeE2f2 </ci>
+              <ci> pE2fRb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbByCd" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRbD </ci>
+              <ci> Rb </ci>
+              <ci> Cd </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRbE </ci>
+              <ci> Rb </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRb </ci>
+              <ci> Rb </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhRbByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhRb </ci>
+              <ci> Rb </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCe1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyCe1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCa2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyCa2 </ci>
+              <ci> E2fPx </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCe1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCe </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCe2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ce" stoichiometry="2" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCeE </ci>
+              <apply>
+                <power/>
+                <ci> Ce </ci>
+                <cn type="integer"> 2 </cn>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DpRb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pRb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Rb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpRb </ci>
+              <ci> pRb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppApcCdc20" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="B55"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpApc </ci>
+              <ci> pApcCdc </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhApcByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhApcA </ci>
+              <ci> Apc </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhApcByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhApcB </ci>
+              <ci> Apc </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppApc" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpApc </ci>
+              <ci> pApc </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AsApcCdh" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAsACdh </ci>
+                <ci> Cdh </ci>
+                <ci> Apc </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDiACdh </ci>
+                <ci> ApcCdh </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhApcByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhA </ci>
+              <ci> ApcCdh </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCAEByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ce"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhE </ci>
+              <ci> ACE </ci>
+              <ci> Ce </ci>
+              <cn> 0.8 </cn>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCAEByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhA </ci>
+              <ci> ACE </ci>
+              <ci> Ca </ci>
+              <cn> 0.8 </cn>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCAEByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhB </ci>
+              <ci> ACE </ci>
+              <ci> Cb </ci>
+              <cn> 0.8 </cn>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCpAEByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ce"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhE </ci>
+              <ci> pACE </ci>
+              <ci> Ce </ci>
+              <cn> 0.8 </cn>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCpAEByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhA </ci>
+              <ci> pACE </ci>
+              <ci> Ca </ci>
+              <cn> 0.8 </cn>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCpAEByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhB </ci>
+              <ci> pACE </ci>
+              <ci> Cb </ci>
+              <cn> 0.8 </cn>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhpApcByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ce"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhE </ci>
+              <ci> pApcCdh </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppApcCdh" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="B55"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpApc </ci>
+              <ci> pApcCdh </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspApcCdh" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAsACdh </ci>
+                <ci> pApc </ci>
+                <ci> Cdh </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDiACdh </ci>
+                <ci> pApcCdh </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeEpAC1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi1 </ci>
+              <ci> pACE </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeEpAC2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi2 </ci>
+              <ci> pACE </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEpACByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEmiA </ci>
+              <ci> pACE </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEpACByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEmiB </ci>
+              <ci> pACE </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspACE" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAsACE </ci>
+                <ci> Emi </ci>
+                <ci> pApcCdh </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDiACE </ci>
+                <ci> pACE </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhACEByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhApcA </ci>
+              <ci> ACE </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhACEByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhApcB </ci>
+              <ci> ACE </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppACE" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="B55"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpApc </ci>
+              <ci> pACE </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEmiByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEmiA </ci>
+              <ci> Emi </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEmiByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEmiB </ci>
+              <ci> Emi </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppEmi" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpEmi </ci>
+              <ci> pEmi </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEACByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEmiA </ci>
+              <ci> ACE </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEACByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEmiB </ci>
+              <ci> ACE </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepEmi1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi1 </ci>
+              <ci> pEmi </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepEmi2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pEmi" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi3 </ci>
+              <ci> pEmi </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyFox1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyFox1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyEmi2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyEmi2 </ci>
+              <ci> E2fPx </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AsACE" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAsACE </ci>
+                <ci> ApcCdh </ci>
+                <ci> Emi </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDiACE </ci>
+                <ci> ACE </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhE </ci>
+              <ci> Cdh </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhA </ci>
+              <ci> Cdh </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhB </ci>
+              <ci> Cdh </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppCdh" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpCdh </ci>
+              <ci> pCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCa1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyCa1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCa1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCa1 </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCe3" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCeA </ci>
+              <ci> Ce </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCa2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCa2 </ci>
+              <ci> Ca </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCa2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCa2 </ci>
+              <ci> Ca </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCa3" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCa3 </ci>
+              <ci> Ca </ci>
+              <ci> pApcCdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyFox2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyFox2 </ci>
+              <ci> E2fPx </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeFox1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeFox1 </ci>
+              <ci> Fox </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeFox2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeFox2 </ci>
+              <ci> Fox </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepFox2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeFox2 </ci>
+              <ci> pFox </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepFox1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeFox1 </ci>
+              <ci> pFox </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepFox2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeFox2 </ci>
+              <ci> pFox </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeFox2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeFox2 </ci>
+              <ci> Fox </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhFoxByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhFoxE </ci>
+              <ci> Fox </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhFoxByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhFoxA </ci>
+              <ci> Fox </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhFoxByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhFoxB </ci>
+              <ci> Fox </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppFox" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Fox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpFox </ci>
+              <ci> pFox </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCb1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyCb1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCb2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFoxPcb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pFoxPcb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyCb2 </ci>
+              <ci> pFoxPcb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AsE2fPx" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="Px" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kAsEPx </ci>
+              <ci> E2f </ci>
+              <ci> Px </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DipFoxPcb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFoxPcb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Pcb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDiFPcb </ci>
+              <ci> pFoxPcb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCb1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb1 </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCb2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb2 </ci>
+              <ci> Cb </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCb2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb2 </ci>
+              <ci> Cb </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCb3" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb3 </ci>
+              <ci> Cb </ci>
+              <ci> pApcCdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspApcCdc20" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAspACdc </ci>
+                <ci> pApc </ci>
+                <ci> Cdc20 </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDipACdc </ci>
+                <ci> pApcCdc </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCdcpApc1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCdc_1 </ci>
+              <ci> pApcCdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCdcpApc2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCdc_2 </ci>
+              <ci> pApcCdc </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCdcpApc2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCdc_2 </ci>
+              <ci> pApcCdc </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCdc20_1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyCdc_1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCdc20_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFoxPcdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pFoxPcdc" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyCdc_2 </ci>
+              <ci> pFoxPcdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspFoxPcdc" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+          <speciesReference species="Pcdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pFoxPcdc" stoichiometry="1" constant="true"/>
+          <speciesReference species="pFox" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kAsFPcdc </ci>
+              <ci> pFox </ci>
+              <ci> Pcdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DipFoxPcdc" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pFoxPcdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Pcdc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDiFPcdc </ci>
+              <ci> pFoxPcdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCbByWee" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Wee" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Wee" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kWee2 </ci>
+              <ci> Cb </ci>
+              <ci> Wee </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCbBypWee" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pWee" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pWee" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kWee1 </ci>
+              <ci> Cb </ci>
+              <ci> pWee </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppCbBypCdc25" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdc25" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdc25" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kCdc25_2 </ci>
+              <ci> pCb </ci>
+              <ci> pCdc25 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppCbByCdc25" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cdc25" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cdc25" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kCdc25_1 </ci>
+              <ci> pCb </ci>
+              <ci> Cdc25 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepCb1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb1 </ci>
+              <ci> pCb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepCb2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb2 </ci>
+              <ci> pCb </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepCb2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb2 </ci>
+              <ci> pCb </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DepCb3" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCb3 </ci>
+              <ci> pCb </ci>
+              <ci> pApcCdc </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdc25ByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdc25" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdc25" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhC25B </ci>
+              <ci> Cdc25 </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdc25ByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdc25" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pCdc25" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhC25A </ci>
+              <ci> Cdc25 </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppCdc25" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pCdc25" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cdc25" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpCdc25 </ci>
+              <ci> pCdc25 </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppWee" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pWee" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+          <speciesReference species="Wee" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpWee </ci>
+              <ci> pWee </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhWeeByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Wee" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Ca" stoichiometry="1" constant="true"/>
+          <speciesReference species="pWee" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhWeeA </ci>
+              <ci> Wee </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhWeeByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Wee" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+          <speciesReference species="pWee" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhWeeB </ci>
+              <ci> Wee </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhGw" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Gw" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pGw" stoichiometry="1" constant="true"/>
+          <speciesReference species="Cb" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhGw </ci>
+              <ci> Gw </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppGw1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pGw" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Gw" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpGw1 </ci>
+              <ci> pGw </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppGw2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pGw" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+          <speciesReference species="Gw" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpGw2 </ci>
+              <ci> pGw </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhEnsa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Ensa" stoichiometry="1" constant="true"/>
+          <speciesReference species="pGw" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pGw" stoichiometry="1" constant="true"/>
+          <speciesReference species="pEnsa" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhEnsa </ci>
+              <ci> Ensa </ci>
+              <ci> pGw </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="AspEB55" reversible="true" fast="false">
+        <listOfReactants>
+          <speciesReference species="pEnsa" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pEB55" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <ci> kAspEB55 </ci>
+                <ci> pEnsa </ci>
+                <ci> B55 </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kDipEB55 </ci>
+                <ci> pEB55 </ci>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppEB55" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pEB55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ensa" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpEnsa </ci>
+              <ci> pEB55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyEmi1" reversible="false" fast="false">
+        <listOfProducts>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <ci> kSyEmi1 </ci>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="SyCe2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2fPx" stoichiometry="1" constant="true"/>
+          <speciesReference species="Ce" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kSyCe2 </ci>
+              <ci> E2fPx </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCdc20_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCdc_1 </ci>
+              <ci> Cdc20 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCdc20_2_1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCdc_2 </ci>
+              <ci> Cdc20 </ci>
+              <ci> ApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeCdc20_2_2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Cdc20" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeCdc_2 </ci>
+              <ci> Cdc20 </ci>
+              <ci> pApcCdh </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DppE2f2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pE2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="E2f" stoichiometry="1" constant="true"/>
+          <speciesReference species="B55" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDpE2f2 </ci>
+              <ci> pE2f </ci>
+              <ci> B55 </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhpApcByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhA </ci>
+              <ci> pApcCdh </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhpApcByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="pApc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhB </ci>
+              <ci> pApcCdh </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhApcByCe" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ce"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhE </ci>
+              <ci> ApcCdh </ci>
+              <ci> Ce </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhCdhApcByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pCdh" stoichiometry="1" constant="true"/>
+          <speciesReference species="Apc" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhCdhB </ci>
+              <ci> ApcCdh </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeEAC1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi1 </ci>
+              <ci> ACE </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeEAC2" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ACE" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi2 </ci>
+              <ci> ACE </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhApcCdhByCa" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Ca"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhApcA </ci>
+              <ci> ApcCdh </ci>
+              <ci> Ca </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="PhApcCdhByCb" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="ApcCdh" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="pApcCdh" stoichiometry="1" constant="true"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Cb"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kPhApcB </ci>
+              <ci> ApcCdh </ci>
+              <ci> Cb </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="DeEmi1" reversible="false" fast="false">
+        <listOfReactants>
+          <speciesReference species="Emi" stoichiometry="1" constant="true"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> kDeEmi1 </ci>
+              <ci> Emi </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+    </listOfReactions>
+  </model>
+</sbml>

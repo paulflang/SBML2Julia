@@ -364,11 +364,15 @@ class DisFitProblem(object):
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('# create JuMP model object")\n', 'utf8'))
         generated_code.extend(bytes('# m = Model(with_optimizer(KNITRO.Optimizer, ms_enable=1, ms_maxtime_real=10))\n', 'utf8'))
-        generated_code.extend(bytes('m = Model(with_optimizer(Ipopt.Optimizer))\n', 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('# Model parameters\n', 'utf8'))
-        generated_code.extend(bytes('println("Defining parameters ...")\n', 'utf8'))  
+        generated_code.extend(bytes('results = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["objective_val"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["x_best"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('for i_start in 1:1\n', 'utf8'))  
         i = 0
         for i in range(mod.getNumParameters()):
             element = mod.getParameter(i)

@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" level="3" version="1">
+  <model id="doc0" name="doc0">
+    <listOfFunctionDefinitions>
+      <functionDefinition id="max_">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <lambda>
+            <bvar>
+              <ci> x </ci>
+            </bvar>
+            <bvar>
+              <ci> y </ci>
+            </bvar>
+            <piecewise>
+              <piece>
+                <ci> x </ci>
+                <apply>
+                  <gt/>
+                  <ci> x </ci>
+                  <ci> y </ci>
+                </apply>
+              </piece>
+              <otherwise>
+                <ci> y </ci>
+              </otherwise>
+            </piecewise>
+          </lambda>
+        </math>
+      </functionDefinition>
+      <functionDefinition id="min_">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <lambda>
+            <bvar>
+              <ci> x </ci>
+            </bvar>
+            <bvar>
+              <ci> y </ci>
+            </bvar>
+            <piecewise>
+              <piece>
+                <ci> x </ci>
+                <apply>
+                  <lt/>
+                  <ci> x </ci>
+                  <ci> y </ci>
+                </apply>
+              </piece>
+              <otherwise>
+                <ci> y </ci>
+              </otherwise>
+            </piecewise>
+          </lambda>
+        </math>
+      </functionDefinition>
+      <functionDefinition id="heav">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <lambda>
+            <bvar>
+              <ci> x </ci>
+            </bvar>
+            <piecewise>
+              <piece>
+                <cn type="integer"> 0 </cn>
+                <apply>
+                  <lt/>
+                  <ci> x </ci>
+                  <cn type="integer"> 0 </cn>
+                </apply>
+              </piece>
+              <piece>
+                <cn> 0.5 </cn>
+                <apply>
+                  <eq/>
+                  <ci> x </ci>
+                  <cn type="integer"> 0 </cn>
+                </apply>
+              </piece>
+              <piece>
+                <cn type="integer"> 1 </cn>
+                <apply>
+                  <gt/>
+                  <ci> x </ci>
+                  <cn type="integer"> 0 </cn>
+                </apply>
+              </piece>
+              <otherwise>
+                <cn type="integer"> 0 </cn>
+              </otherwise>
+            </piecewise>
+          </lambda>
+        </math>
+      </functionDefinition>
+      <functionDefinition id="mod">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <lambda>
+            <bvar>
+              <ci> x </ci>
+            </bvar>
+            <bvar>
+              <ci> y </ci>
+            </bvar>
+            <piecewise>
+              <piece>
+                <apply>
+                  <minus/>
+                  <ci> x </ci>
+                  <apply>
+                    <times/>
+                    <ci> y </ci>
+                    <apply>
+                      <ceiling/>
+                      <apply>
+                        <divide/>
+                        <ci> x </ci>
+                        <ci> y </ci>
+                      </apply>
+                    </apply>
+                  </apply>
+                </apply>
+                <apply>
+                  <xor/>
+                  <apply>
+                    <lt/>
+                    <ci> x </ci>
+                    <cn type="integer"> 0 </cn>
+                  </apply>
+                  <apply>
+                    <lt/>
+                    <ci> y </ci>
+                    <cn type="integer"> 0 </cn>
+                  </apply>
+                </apply>
+              </piece>
+              <otherwise>
+                <apply>
+                  <minus/>
+                  <ci> x </ci>
+                  <apply>
+                    <times/>
+                    <ci> y </ci>
+                    <apply>
+                      <floor/>
+                      <apply>
+                        <divide/>
+                        <ci> x </ci>
+                        <ci> y </ci>
+                      </apply>
+                    </apply>
+                  </apply>
+                </apply>
+              </otherwise>
+            </piecewise>
+          </lambda>
+        </math>
+      </functionDefinition>
+    </listOfFunctionDefinitions>
+    <listOfParameters>
+      <parameter id="B55" value="0.25" units="dimensionless" constant="false"/>
+      <parameter id="tB55" name="tB55 = 0.25" value="0.25" constant="false"/>
+      <parameter id="pEB55" value="0" units="dimensionless" constant="false"/>
+      <parameter id="B55_" value="0.25" units="dimensionless" constant="false"/>
+      <parameter id="pGw_" value="0" units="dimensionless" constant="false"/>
+      <parameter id="pGw" value="0" units="dimensionless" constant="false"/>
+      <parameter id="pEB55_" value="0" units="dimensionless" constant="false"/>
+      <parameter id="t" name="model time" value="0" units="dimensionless" constant="false"/>
+      <parameter id="pEnsa" name="pEnsa = 0.01" value="0.01" constant="false"/>
+      <parameter id="kPhEnsa" name="kPhEnsa = 0.1" value="0.1" constant="false"/>
+      <parameter id="tEnsa" name="tEnsa = 1" value="1" constant="false"/>
+      <parameter id="kDpEnsa" name="kDpEnsa = 0.05" value="0.05" constant="false"/>
+      <parameter id="kPhGw" name="kPhGw = 1" value="1" constant="false"/>
+      <parameter id="Cb" name="Cb = 0.01" value="0.01" constant="false"/>
+      <parameter id="tGw" name="tGw = 1" value="1" constant="false"/>
+      <parameter id="kDpGw1" name="kDpGw1 = 0.25" value="0.25" constant="false"/>
+      <parameter id="kDpGw2" name="kDpGw2 = 10" value="10" constant="false"/>
+      <parameter id="kAspEB55" name="kAspEB55 = 57" value="57" constant="false"/>
+      <parameter id="kDipEB55" name="kDipEB55 = 0.0068" value="0.0068" constant="false"/>
+      <parameter id="kCdc25_1" name="kCdc25_1 = 0.1" value="0.1" constant="false"/>
+      <parameter id="kCdc25_2" name="kCdc25_2 = 1" value="1" constant="false"/>
+      <parameter id="pCdc25" value="0" units="dimensionless" constant="false"/>
+      <parameter id="tCb" name="tCb = 0.8" value="0.8" constant="false"/>
+      <parameter id="kWee1" name="kWee1 = 0.01" value="0.01" constant="false"/>
+      <parameter id="kWee2" name="kWee2 = 1" value="1" constant="false"/>
+      <parameter id="Wee" value="0" units="dimensionless" constant="false"/>
+      <parameter id="kPhCdc25" name="kPhCdc25 = 1" value="1" constant="false"/>
+      <parameter id="tCdc25" name="tCdc25 = 1" value="1" constant="false"/>
+      <parameter id="kDpCdc25" name="kDpCdc25 = 10" value="10" constant="false"/>
+      <parameter id="kDpWee" name="kDpWee = 10" value="10" constant="false"/>
+      <parameter id="tWee" name="tWee = 1" value="1" constant="false"/>
+      <parameter id="kPhWee" name="kPhWee = 1" value="1" constant="false"/>
+    </listOfParameters>
+    <listOfRules>
+      <assignmentRule variable="B55">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <ci> tB55 </ci>
+            <ci> pEB55 </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <rateRule variable="pEB55">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <ci> kAspEB55 </ci>
+              <ci> B55 </ci>
+              <apply>
+                <minus/>
+                <ci> pEnsa </ci>
+                <ci> pEB55 </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <apply>
+                <plus/>
+                <ci> kDipEB55 </ci>
+                <ci> kDpEnsa </ci>
+              </apply>
+              <ci> pEB55 </ci>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+      <assignmentRule variable="B55_">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <ci> B55 </ci>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="pGw_">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <ci> pGw </ci>
+        </math>
+      </assignmentRule>
+      <rateRule variable="pGw">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <ci> kPhGw </ci>
+              <ci> Cb </ci>
+              <apply>
+                <minus/>
+                <ci> tGw </ci>
+                <ci> pGw </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <apply>
+                <plus/>
+                <ci> kDpGw1 </ci>
+                <apply>
+                  <times/>
+                  <ci> kDpGw2 </ci>
+                  <ci> B55 </ci>
+                </apply>
+              </apply>
+              <ci> pGw </ci>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+      <assignmentRule variable="pEB55_">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <ci> pEB55 </ci>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="t">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+        </math>
+      </assignmentRule>
+      <rateRule variable="pEnsa">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <ci> kPhEnsa </ci>
+              <ci> pGw </ci>
+              <apply>
+                <minus/>
+                <ci> tEnsa </ci>
+                <ci> pEnsa </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> kDpEnsa </ci>
+              <ci> pEB55 </ci>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+      <rateRule variable="Cb">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <apply>
+                <plus/>
+                <ci> kCdc25_1 </ci>
+                <apply>
+                  <times/>
+                  <apply>
+                    <minus/>
+                    <ci> kCdc25_2 </ci>
+                    <ci> kCdc25_1 </ci>
+                  </apply>
+                  <ci> pCdc25 </ci>
+                </apply>
+              </apply>
+              <apply>
+                <minus/>
+                <ci> tCb </ci>
+                <ci> Cb </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <apply>
+                <plus/>
+                <ci> kWee1 </ci>
+                <apply>
+                  <times/>
+                  <apply>
+                    <minus/>
+                    <ci> kWee2 </ci>
+                    <ci> kWee1 </ci>
+                  </apply>
+                  <ci> Wee </ci>
+                </apply>
+              </apply>
+              <ci> Cb </ci>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+      <rateRule variable="pCdc25">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <ci> kPhCdc25 </ci>
+              <ci> Cb </ci>
+              <apply>
+                <minus/>
+                <ci> tCdc25 </ci>
+                <ci> pCdc25 </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> kDpCdc25 </ci>
+              <ci> pCdc25 </ci>
+              <ci> B55 </ci>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+      <rateRule variable="Wee">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <ci> kDpWee </ci>
+              <ci> B55 </ci>
+              <apply>
+                <minus/>
+                <ci> tWee </ci>
+                <ci> Wee </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> kPhWee </ci>
+              <ci> Cb </ci>
+              <ci> Wee </ci>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+    </listOfRules>
+  </model>
+</sbml>
