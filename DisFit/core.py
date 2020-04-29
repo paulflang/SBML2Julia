@@ -44,8 +44,6 @@ class DisFitProblem(object):
         self._set_julia_code()
         self._initialization = False
 
-        
-
     @property
     def sbml_path(self):
         """Get sbml path
@@ -241,10 +239,6 @@ class DisFitProblem(object):
         y_label = 'Abundance'
         t = self.exp_data.loc[:, 't'].values
         t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
-        print('before checking')
-        print(variables)
-        print(type(variables))
-        # print(type(variables[0]))
         if not isinstance(variables, list):
             raise ValueError('`variables` must be a list of variables.')
         if not variables:

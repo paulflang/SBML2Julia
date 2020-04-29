@@ -82,6 +82,8 @@ class OptimizeController(cement.Controller):
         try:
             print('\n--- Plotting results ---')
             variables = re.split(', |,', args.plot_vars.strip('[]'))
+            if variables == ['']:
+                variables = []
             problem.plot_results(path=os.path.join(args.out_dir, 'plot.pdf'),
                 variables=variables)
         except Exception as error:
