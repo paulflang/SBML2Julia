@@ -1,6 +1,8 @@
 """ Class to fit PEtab problem via time discretization in Julia
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-15
+:Copyright: 2020, Paul F Lang
+:License: MIT
 """
 
 import importlib
@@ -9,22 +11,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
-import pickle
 import scipy as sp
-import shutil
 import sys
-import subprocess
 import tempfile
-import time as timer
-import warnings
-from scipy.signal import find_peaks
 from julia.api import Julia
 importlib.reload(libsbml)
 
 
 class DisFitProblem(object):
 
-    def __init__(self, sbml_path, data_path, t_ratio=2, fold_change=2):
+    def __init__(self, sbml_path, data_path, t_ratio=2, fold_change=2, n_starts=1):
         """        
         Args:
             sbml_path (:obj:`str`): path to sbml file
@@ -44,6 +40,7 @@ class DisFitProblem(object):
         self.data_path = data_path
         self.t_ratio = t_ratio
         self.fold_change = fold_change
+        self.n_starts = n_starts
         self._set_julia_code()
         self._initialization = False
 
@@ -106,15 +103,6 @@ class DisFitProblem(object):
             self._set_julia_code()
 
     @property
-    def exp_data(self):
-        """Get exp_data
-        
-        Returns:
-            :obj:`pandas.DataFrame`: experimental data
-        """
-        return self._exp_data
-
-    @property
     def t_ratio(self):
         """Get t_ratio
         
@@ -161,7 +149,32 @@ class DisFitProblem(object):
         """
         if not (isinstance(value, float) or isinstance(value, int)) or (value <= 1):
             raise ValueError('`fold_change` must be a float > 1')
-        self._fold_change = value
+        self._fold_change = float(value)
+        if not self._initialization:
+            self._set_julia_code()
+
+    @property
+    def n_starts(self):
+        """Get n_starts
+        
+        Returns:
+            :obj:`int`: number of multistarts
+        """
+        return self._n_starts
+
+    @n_starts.setter
+    def n_starts(self, value):
+        """Set n_starts
+        
+        Args:
+            value (:obj:`int`): number of multistarts
+        
+        Raises:
+            ValueError: if n_starts is not a positive integer
+        """
+        if not isinstance(value, int) or not (value > 0):
+            raise ValueError('`n_starts` must be a positive integer')
+        self._n_starts = value
         if not self._initialization:
             self._set_julia_code()
 
@@ -175,6 +188,15 @@ class DisFitProblem(object):
         return self._julia_code
 
     @property
+    def exp_data(self):
+        """Get exp_data
+        
+        Returns:
+            :obj:`pandas.DataFrame`: experimental data
+        """
+        return self._exp_data
+
+    @property
     def results(self):
         """Get results
         
@@ -185,57 +207,54 @@ class DisFitProblem(object):
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
         with open(path, 'w') as f:
-            f.write(self.julia_code['optimzer'])
-            f.write(self.julia_code['x_best'])
-            f.write(self.julia_code['values'])
+            f.write(self.julia_code)
             self._julia_file = path
             self._files_written = True
 
     def optimize(self):
-        self._results = {}
         print('Running optimization problem in julia...')
-        self._results['optimizer_log'] = self._jl.eval(self.julia_code['optimizer'])
-        print('the julia optimizer output is:')
-        print(self._results['optimizer_log'])
-        print('Retreiving parameters...')
-        x_best = self._jl.eval(self.julia_code['x_best'])
-        x_0 = dict(zip(self._par_names, self._par_values))
-        # print(x_0.keys())
-        # print(x_0)
-        # print(x_best)
-        x_best_to_x_0_col = [x_best[key] / x_0[str(key).split()[1].rstrip('>')] for key in x_best.keys()]
-        name_col = [str(key).split()[1].rstrip('>') for key in x_best.keys()]
-        x_0_col = [x_0[str(key).split()[1].rstrip('>')] for key in x_best.keys()]
-        x_best_col = [x_0[str(key).split()[1].rstrip('>')] for key in x_best.keys()]
-        self._results['parameters'] = pd.DataFrame(list(zip(name_col, x_0_col, x_best_col,
-            x_best_to_x_0_col)), columns = ['Name', 'x_0', 'x_best', 'x_best_to_x_0'])
-        print('Retreiving values...')
-        self._results['values'] = pd.DataFrame(self._jl.eval(self.julia_code['values']))
-        if self._optimized == True:
-            self.pickle(self._pickle_file)
-        self._optimized = True
-        return(self.results)
+        out = self._jl.eval(self.julia_code)
+        self._results['states'] = out['states']
+        print('Finished optimization in julia.')
+        self._best_iter = min(out['objective_val'], key=out['objective_val'].get)
+        self._results['x'] = {}
+        for i_iter in range(1, self._n_starts+1):
+            self._results['x'][str(i_iter)] = {str(k).split()[1].rstrip('>'): v for k, v in out['x'][str(i_iter)].items()}
+        x_best = self.results['x'][self._best_iter]
 
-    def plot_results(self, variables=[], path=os.path.join('.', 'plot.pdf'), size=(6, 5)):
+        x_0 = dict(zip(self._par_names, self._par_values))
+        x_best_to_x_0_col = [x_best[key] / x_0[str(key)] for key in x_best.keys()]
+        name_col = [str(key) for key in x_best.keys()]
+        x_0_col = [x_0[str(key)] for key in x_best.keys()]
+        x_best_col = [x_0[str(key)] for key in x_best.keys()]
+        self._results['x_best'] = pd.DataFrame(list(zip(name_col, x_0_col, x_best_col,
+            x_best_to_x_0_col)), columns = ['Name', 'x_0', 'x_best', 'x_best_to_x_0'])
+        self._results['x_best'] = self._results['x_best'].sort_values(by=['Name']).reset_index(drop=True)
+
+        self._optimized = True
+        return self.results
+
+    def plot_results(self, path=os.path.join('.', 'plot.pdf'), variables=[], size=(6, 5)):
 
         # Options
         x_label = 'time'
         y_label = 'Abundance'
-        print(self.exp_data)
         t = self.exp_data.loc[:, 't'].values
         t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
-        print(t_sim)
+        print('before checking')
+        print(variables)
+        print(type(variables))
+        # print(type(variables[0]))
+        if not isinstance(variables, list):
+            raise ValueError('`variables` must be a list of variables.')
         if not variables:
-            values = self.results['values']
+            values = pd.DataFrame(self.results['states'][self._best_iter])
             var_names = self._var_names
             exp_data = self._exp_data
         else:
-            values = self.results['values'].loc[:, variables]
-            var_names = self.results['values'].loc[:, variables].index
+            values = pd.DataFrame(self.results['states'][self._best_iter]).loc[:, variables]
+            var_names = pd.DataFrame(self.results['states'][self._best_iter]).loc[:, variables].index
             exp_data = self.exp_data.loc[:, variables]
-
-        print('values')
-        print(values)
 
         # Determine the size of the figure
         plt.figure(figsize=size)
@@ -258,6 +277,11 @@ class DisFitProblem(object):
         self._plotted = True
         self._plot_file = path
 
+    def write_results(self, path=os.path.join('.', 'results.xlsx')):
+        with pd.ExcelWriter(path) as writer:  
+            self.results['x_best'].to_excel(writer, sheet_name='x_best')
+            pd.DataFrame(self.results['states'][self._best_iter]).to_excel(writer, sheet_name='states')
+
     def _set_julia_code(self):
         #----------------------------------------------------------------------#
         """ `_set_julia_code` is adapted from Frank T. Bergman
@@ -266,7 +290,6 @@ class DisFitProblem(object):
         https://www.dropbox.com/s/2bfpiausejp0gd0/convert_reactions.py?dl=0 """
         #----------------------------------------------------------------------#
 
-        self._julia_code = {}
         doc = libsbml.readSBMLFromFile(self.sbml_path)
         if doc.getNumErrors(libsbml.LIBSBML_SEV_FATAL):
             print('Encountered serious errors while reading file')
@@ -275,10 +298,8 @@ class DisFitProblem(object):
            
         # clear errors
         doc.getErrorLog().clearLog()
-         
-        #
+
         # perform conversions
-        #
         props = libsbml.ConversionProperties()
         props.addOption("promoteLocalParameters", True)
          
@@ -299,10 +320,8 @@ class DisFitProblem(object):
         if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
             print('The document could not be converted')
             print(doc.getErrorLog().toString())
-           
-        #
+
         # figure out which species are variable 
-        #
         mod = doc.getModel()
 
         n_params = mod.getNumParameters()
@@ -342,9 +361,7 @@ class DisFitProblem(object):
         n_x_0 = len(x_0)
         x_0_string = str(x_0)
 
-        #
         # start generating the code by appending to bytearray
-        #
         generated_code = bytearray('', 'utf8')
         generated_code.extend(bytes('using JuMP\n', 'utf8'))
         generated_code.extend(bytes('using Ipopt\n', 'utf8'))
@@ -359,35 +376,29 @@ class DisFitProblem(object):
         generated_code.extend(bytes('data_path = "{}"\n'.format(self.data_path), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
         generated_code.extend(bytes('t_exp = Vector(df[!, :t]) # set of simulation times.)\n', 'utf8'))
-        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n', 'utf8'))
-        
-        generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('# create JuMP model object")\n', 'utf8'))
-        generated_code.extend(bytes('# m = Model(with_optimizer(KNITRO.Optimizer, ms_enable=1, ms_maxtime_real=10))\n', 'utf8'))
+        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
 
-        generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('# Model parameters\n', 'utf8'))
         generated_code.extend(bytes('results = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["objective_val"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["x_best"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["x"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('for i_start in 1:1\n', 'utf8'))  
+        generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
+        generated_code.extend(bytes('m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
         i = 0
         for i in range(mod.getNumParameters()):
             element = mod.getParameter(i)
-            generated_code.extend(bytes('@variable(m, {0}/fc <= {1} <= {0}*fc)\n'.format(par_values[i], element.getId()), 'utf8'))
+            generated_code.extend(bytes('    @variable(m, {0}/fc <= {1} <= {0}*fc, start={0}/fc+({0}*fc-{0}/fc)*rand(Float64))\n'.format(par_values[i], element.getId()), 'utf8'))
             i =+ 1
 
         generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('# Model states\n', 'utf8'))
-        generated_code.extend(bytes('println("Defining states ...")\n', 'utf8'))
+        generated_code.extend(bytes('    # Model states\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
         for variable in variables.keys():
-            generated_code.extend(bytes('@variable(m, 0 <= {0}[k in 1:length(t_sim)] <= 1)\n'.format(variable), 'utf8'))
+            generated_code.extend(bytes('    @variable(m, 0 <= {0}[k in 1:length(t_sim)] <= 1)\n'.format(variable), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('# Model ODEs\n', 'utf8'))
-        generated_code.extend(bytes('println("Defining ODEs ...")\n', 'utf8'))
+        generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining ODEs ...")\n', 'utf8'))
         
         reactions = {}
         for i in range(mod.getNumReactions()):
@@ -420,60 +431,54 @@ class DisFitProblem(object):
                 variables[species.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
         for variable in variables:
-            generated_code.extend(bytes('@NLconstraint(m, [k in 1:length(t_sim)-1],\n', 'utf8'))
-            generated_code.extend(bytes('    {}[k+1] == {}[k] + ('.format(variable, variable), 'utf8'))
+            generated_code.extend(bytes('    @NLconstraint(m, [k in 1:length(t_sim)-1],\n', 'utf8'))
+            generated_code.extend(bytes('        {}[k+1] == {}[k] + ('.format(variable, variable), 'utf8'))
             for (coef, reaction_name) in variables[variable]:
                 reaction_formula = ' {}*({})'.format(coef, reactions[reaction_name])
                 generated_code.extend(bytes(reaction_formula, 'utf8'))
-            generated_code.extend(bytes(' ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
+            generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
-        generated_code.extend(bytes('# Define objective\n', 'utf8'))
-        generated_code.extend(bytes('println("Defining objective ...")\n', 'utf8'))
-        generated_code.extend(bytes('@NLobjective(m, Min,', 'utf8'))
+        generated_code.extend(bytes('    # Define objective\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining objective ...")\n', 'utf8'))
+        generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
         for variable in variables:
             sums_of_squares.append('sum(({}[(k-1)*t_ratio+1]-df[k, :{}])^2 for k in 1:length(t_exp))\n'.format(variable, variable))
-        generated_code.extend(bytes('    + '.join(sums_of_squares), 'utf8'))
-        generated_code.extend(bytes('    )\n\n', 'utf8'))
+        generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
+        generated_code.extend(bytes('        )\n\n', 'utf8'))
 
-        generated_code.extend(bytes('println("Optimizing...")\noptimize!(m)\n\n\n', 'utf8'))
-        code = generated_code.decode()
-        self._julia_code['optimizer'] = code
+        generated_code.extend(bytes('    println("Optimizing...")\n', 'utf8'))
+        generated_code.extend(bytes('    optimize!(m)\n\n', 'utf8'))
 
         # Retreiving the solution
-        generated_code = bytearray('', 'utf8')
-        generated_code.extend(bytes('println("# Obtain the solution")\n', 'utf8'))
-        generated_code.extend(bytes('println("Retreiving solution...")\n', 'utf8'))
-        # generated_code.extend(bytes('species_to_plot = {}\n'.format(species_to_plot), 'utf8'))
-        generated_code.extend(bytes('params = ' + str(par_names).replace('\'', '') + '\n', 'utf8'))
-        generated_code.extend(bytes('paramvalues = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('for param in params\n', 'utf8'))
-        generated_code.extend(bytes('    paramvalues[param] = JuMP.value.(param)\n', 'utf8'))
-        generated_code.extend(bytes('end\n\n', 'utf8'))
-        generated_code.extend(bytes('paramvalues\n\n\n', 'utf8'))
-        code = generated_code.decode()
-        self._julia_code['x_best'] = code
+        generated_code.extend(bytes('    println("Retreiving solution...")\n', 'utf8'))
+        # generated_code.extend(bytes('    species_to_plot = {}\n'.format(species_to_plot), 'utf8'))
+        generated_code.extend(bytes('    params = ' + str(par_names).replace('\'', '') + '\n', 'utf8'))
+        generated_code.extend(bytes('    paramvalues = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    for param in params\n', 'utf8'))
+        generated_code.extend(bytes('        paramvalues[param] = JuMP.value.(param)\n', 'utf8'))
+        generated_code.extend(bytes('    end\n\n', 'utf8'))
 
-        generated_code = bytearray('', 'utf8')
-        generated_code.extend(bytes('variables = [', 'utf8'))
+        generated_code.extend(bytes('    variables = [', 'utf8'))
         for variable in variables:
-            generated_code.extend(bytes(' :'+variable+'\n', 'utf8'))
+            generated_code.extend(bytes(variable+', ', 'utf8'))
         generated_code.extend(bytes(']\n', 'utf8'))
-        generated_code.extend(bytes('variablevalues = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('for v in variables\n', 'utf8'))
-        generated_code.extend(bytes('    variablevalues[string(v)] = Vector(JuMP.value.(eval(v)))\n', 'utf8'))
+        generated_code.extend(bytes('    variablevalues = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    for v in variables\n', 'utf8'))
+        generated_code.extend(bytes('        variablevalues[string(v[1])[1:end-3]] = Vector(JuMP.value.(v))\n', 'utf8'))
+        generated_code.extend(bytes('    end\n\n', 'utf8'))
+
+        generated_code.extend(bytes('    v = objective_value(m)\n\n', 'utf8'))
+        generated_code.extend(bytes('    results["objective_val"][string(i_start)] = v\n', 'utf8'))
+        generated_code.extend(bytes('    results["x"][string(i_start)] = paramvalues\n', 'utf8'))
+        generated_code.extend(bytes('    results["states"][string(i_start)] = variablevalues\n\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
-        # generated_code.extend(bytes('data_matrix = zeros(length(t_sim), length(species_to_plot))\n', 'utf8'))
-        # generated_code.extend(bytes('i = 1\n', 'utf8'))
-        # generated_code.extend(bytes('for s in species_to_plot\n', 'utf8'))
-        # generated_code.extend(bytes('    data_matrix[:, i] = variablevalues[string(s)]\n', 'utf8'))
-        # generated_code.extend(bytes('i = i+1\n', 'utf8'))
-        # generated_code.extend(bytes('end\n\n\n', 'utf8'))
-        generated_code.extend(bytes('variablevalues\n\n\n', 'utf8'))
+        generated_code.extend(bytes('results\n\n', 'utf8'))
+
         code = generated_code.decode()
-        self._julia_code['values'] = code
+        self._julia_code = code
         
         # Updating self and files if needed
         if self._optimized == True:
@@ -481,15 +486,4 @@ class DisFitProblem(object):
         if self._files_written == True:
             self.write_jl_file(self._julia_file)
         if self._plotted == True:
-            self.plot(self._plot_file)
-
-        # # Ploting
-        # generated_code.extend(bytes('using Plots\n', 'utf8'))
-        # generated_code.extend(bytes('using DataFrames\n', 'utf8'))
-        # generated_code.extend(bytes('using StatPlots\n', 'utf8'))
-        # generated_code.extend(bytes('p = plot(t_sim, data_matrix, xlabel="Time (hr)", ylabel="Abundance", label=species_to_plot\n, legend=:topleft)\n\n', 'utf8'))
-        # generated_code.extend(bytes('@df df plot!(p, t_exp, seriestype=:scatter, markershape = :x,\n', 'utf8'))
-        # generated_code.extend(bytes('    markersize = 2,\n    markerstrokewidth = 0.1,\n    markerstrokealpha = 1)', 'utf8'))
-
-        # code = generated_code.decode()
-        # self._julia_code = code
+            self.plot_results(self._plot_file)

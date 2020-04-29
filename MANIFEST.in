@@ -2,11 +2,11 @@
 README.rst
 
 # version
-include calc/VERSION
+include DisFit/VERSION
 
 # license
 include LICENSE
 
 # requirements
 include requirements.txt
-include requirements.optional.txt
+include requirements.dev.txt

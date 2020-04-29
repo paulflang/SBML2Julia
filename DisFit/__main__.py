@@ -1,14 +1,16 @@
-""" calc command line interface
-
-:Author: Jonathan Karr <karr@mssm.edu>
-:Date: 2019-01-31
-:Copyright: 2019, Karr Lab
+""" DisFit command line interface
+:Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
+:Date: 2020-04-26
+:Copyright: 2020, Paul F Lang
 :License: MIT
 """
 
-import calc
-import calc.util
+from .core import DisFitProblem
+# import DisFit
 import cement
+import os
+import re
+import sys
 
 
 class BaseController(cement.Controller):
@@ -16,130 +18,94 @@ class BaseController(cement.Controller):
 
     class Meta:
         label = 'base'
-        description = "calc"
+        description = "DisFit"
+        help = "DisFit"
         arguments = [
-            (['-v', '--version'], dict(action='version', version='0.0.1')), # todo: it should be version=calc.__version__
+            # (['-v', '--version'], dict(action='version', version=DisFit.__version__)),
         ]
 
-    @cement.ex(hide=True)
+    # @cement.ex(hide=False)
     def _default(self):
         raise SystemExit(self._parser.print_help())
 
 
-class IsPrimeController(cement.Controller):
-    """ Validate a biopolymer form """
+class OptimizeController(cement.Controller):
+    """ Optimize fitting problem """
 
     class Meta:
-        label = 'isprime'
-        description = 'Checks if a number is prime'
+        label = 'optimize'
+        description = 'Optimize a fitting problem'
+        help = 'Optimize a fitting problem'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
-            (['number'], dict(type=int, help='Number')),
+            (['sbml_file'], dict(type=str, help='sbml file')),
+            (['data_file'], dict(type=str, help='data file in csv format')),
+            (['-t', '--t_ratio'], dict(default=2, type=int,
+                            help='ratio between experimental observation intervals and time discretization intervals')),
+            (['-f', '--fold_change'], dict(default=2, type=float,
+                            help='fold change window of parameter search range wrt sbml parameters')),
+            (['-n', '--n_starts'], dict(default=1, type=int,
+                            help='number of multistarts')),
+            (['-o', '--out_dir'], dict(default='./DisFit_results', type=str,
+                            help='output directory for julia_code, results and plot')),
+            (['-p', '--plot_vars'], dict(default='[]', type=str,
+                            help='list of variables to be plotted'))
         ]
 
-    @cement.ex(hide=True)
+    @cement.ex(hide=False)
     def _default(self):
         args = self.app.pargs
-        print(calc.util.isPrime(args.number))
 
+        try:
+            print('--- Generating optimization problem ---')
+            problem = DisFitProblem(args.sbml_file, args.data_file, t_ratio=args.t_ratio, 
+                fold_change=args.fold_change, n_starts=args.n_starts)
+        except Exception as error:
+            raise SystemExit('Error occured: {}'.format(str(error)))
 
-# class GetPropertiesController(cement.Controller):
-#     """ Calculate physical properties such as length, chemical formula, molecular weight, and charge """
+        try:
+            print('\n--- Writing problem to julia file ---')
+            if not os.path.isdir(args.out_dir):
+                print('Creating {}'.format(args.out_dir))
+                os.makedirs(args.out_dir)
+            problem.write_jl_file(path=os.path.join(args.out_dir, 'julia_code.jl'))
+        except Exception as error:
+            print('Error occured: {}'.format(error), file=sys.stderr)
+        
+        try:
+            print('\n--- Optimizing ---')
+            problem.optimize()
+        except Exception as error:
+            raise SystemExit('Error occured: {}'.format(str(error)))
 
-#     class Meta:
-#         label = 'get-properties'
-#         description = 'Calculate physical properties such as length, chemical formula, molecular weight, and charge'
-#         stacked_on = 'base'
-#         stacked_type = 'nested'
-#         arguments = [
-#             (['type'], dict(type=str, help='Type of biopolymer')),
-#             (['structure'], dict(type=str, help='Biopolymer structure')),
-#             (['--ph'], dict(default=None, type=float,
-#                             help='pH at which calculate major protonation state of each monomer')),
-#             (['--major-tautomer'], dict(action='store_true', default=False,
-#                                         help='If set, calculate the major tautomer')),
-#         ]
+        try:
+            print('\n--- Plotting results ---')
+            variables = re.split(', |,', args.plot_vars.strip('[]'))
+            problem.plot_results(path=os.path.join(args.out_dir, 'plot.pdf'),
+                variables=variables)
+        except Exception as error:
+            print('Error occured: {}'.format(error), file=sys.stderr)
 
-#     @cement.ex(hide=True)
-#     def _default(self):
-#         args = self.app.pargs
-#         type = bpforms.util.get_form(args.type)
-#         try:
-#             form = type().from_str(args.structure)
-#         except Exception as error:
-#             raise SystemExit('Form is invalid: {}'.format(str(error)))
-#         if args.ph is not None:
-#             form.protonate(args.ph, major_tautomer=args.major_tautomer)
-#         print('Length: {}'.format(len(form)))
-#         print('Formula: {}'.format(form.get_formula()))
-#         print('Molecular weight: {}'.format(form.get_mol_wt()))
-#         print('Charge: {}'.format(form.get_charge()))
-
-
-# class ProtonateController(cement.Controller):
-#     """ Calculate the major protonation and tautomerization """
-
-#     class Meta:
-#         label = 'protonate'
-#         description = 'Calculate the major protonation and tautomerization state of a biopolymer form to a specific pH'
-#         stacked_on = 'base'
-#         stacked_type = 'nested'
-#         arguments = [
-#             (['type'], dict(type=str, help='Type of biopolymer')),
-#             (['structure'], dict(type=str, help='Biopolymer structure')),
-#             (['ph'], dict(type=float, help='pH')),
-#             (['--major-tautomer'], dict(action='store_true', default=False,
-#                                         help='If set, calculate the major tautomer')),
-#         ]
-
-#     @cement.ex(hide=True)
-#     def _default(self):
-#         args = self.app.pargs
-#         type = bpforms.util.get_form(args.type)
-#         try:
-#             form = type().from_str(args.structure)
-#         except Exception as error:
-#             raise SystemExit('Form is invalid: {}'.format(str(error)))
-#         form.protonate(args.ph, major_tautomer=args.major_tautomer)
-#         print(str(form))
-
-
-# class BuildAlphabetsController(cement.Controller):
-#     """ Build DNA, RNA, and protein alphabets from DNAmod, MODOMICS, and RESID """
-
-#     class Meta:
-#         label = 'build-alphabets'
-#         description = 'Build DNA, RNA, and protein alphabets from DNAmod, MODOMICS, and RESID'
-#         stacked_on = 'base'
-#         stacked_type = 'nested'
-#         arguments = [
-#             (['--ph'], dict(type=float, default=7.4,
-#                             help='pH at which calculate major protonation state of each monomer')),
-#             (['--not-major-tautomer'], dict(action='store_true', default=False,
-#                                             help='If set, do not calculate the major tautomer')),
-#             (['--max-monomers'], dict(type=float, default=float('inf'),
-#                                       help='Maximum number of monomers to build. Used for testing')),
-#         ]
-
-#     @cement.ex(hide=True)
-#     def _default(self):
-#         args = self.app.pargs
-#         bpforms.util.build_alphabets(ph=args.ph, major_tautomer=not args.not_major_tautomer, _max_monomers=args.max_monomers)
-#         print('Alphabets successfully built')
+        try:
+            print('\n--- Writing results to excel ---')
+            problem.write_results(path=os.path.join(args.out_dir, 'results.xlsx'))
+        except Exception as error:
+            print('Error occured: {}'.format(error), file=sys.stderr)
 
 
 class App(cement.App):
     """ Command line application """
     class Meta:
-        label = 'calc'
+        label = 'DisFit'
         base_controller = 'base'
         handlers = [
             BaseController,
-            IsPrimeController,
+            OptimizeController
         ]
 
 
+# if __name__ == '__main__':
 def main():
     with App() as app:
         app.run()

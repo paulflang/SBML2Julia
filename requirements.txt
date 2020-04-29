@@ -1,2 +1,12 @@
 cement >= 3.0.0
+importlib
+libsbml
+matplotlib.pyplot
+numpy
+os
+pandas
+re
+scipy
 setuptools
+sys
+julia.api
