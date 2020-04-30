@@ -1,12 +1,9 @@
-cement >= 3.0.0
-libsbml
+cement>=3.0.0
+python-libsbml
 matplotlib
 numpy
 openpyxl
-os
 pandas
-re
 scipy
 setuptools
-sys
 julia

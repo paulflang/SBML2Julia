@@ -1,0 +1,3 @@
+[console_scripts]
+DisFit = DisFit.__main__:main
+

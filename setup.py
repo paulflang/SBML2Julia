@@ -30,7 +30,7 @@ setuptools.setup(
     license='MIT',
     keywords='Parameter fitting, ODE discretization',
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']), # include all packages (i.e. folders, wit __inti__.py files) except tests
-    install_requires=['cement >= 3.0.0', 'importlib', 'python-libsbml', 'matplotlib', 'numpy',
+    install_requires=['cement >= 3.0.0', 'python-libsbml', 'matplotlib', 'numpy', 'openpyxl',
         # 'os',
         'pandas', # 're',
         'scipy', 'setuptools', # 'sys', 'tempfile',
