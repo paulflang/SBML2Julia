@@ -1,0 +1,47 @@
+version: 2.1
+workflows:
+  version: 2.1
+  master:
+    jobs:
+    - Dependencies
+    - test_core:
+        requires:
+        - Dependencies
+    - test_main:
+        requires:
+        - Dependencies
+jobs:
+  Dependencies:
+    docker:
+    - image: paulflang/disfit
+    working_directory: ~/repo
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ checksum "requirements.dev.txt" }}
+        - v1-dependencies-
+    - run:
+        name: install dependencies
+        command: python -m pip install -r requirements.dev.txt
+    - save_cache:
+        key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
+    - store_artifacts:
+        path: test-reports
+        destination: test-reports
+  test_core:
+    docker:
+    - image: paulflang/disfit
+    working_directory: ~/repo
+    steps:
+    - run:
+        name: test_core
+        command: python -m pytest tests/test_core.py
+  test_main:
+    docker:
+    - image: paulflang/disfit
+    working_directory: ~/repo
+    steps:
+    - run:
+        name: test main
+        command: python -m pytest tests/test_core.py

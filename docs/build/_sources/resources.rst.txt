@@ -1,5 +1,0 @@
-Resources
-
-The package uses the function published by
-
-Jeff Knupp
