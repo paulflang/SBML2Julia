@@ -1,0 +1,20 @@
+# python cache
+__pycache__/
+
+#distribution files
+/build/
+/dist/
+/sdists/
+*.egg-info
+
+# .rst-formatted README
+README.rst
+
+# compiled documentation
+docs/source
+docs/_build
+docs/.doctrees/
+
+# pytest .cache directory
+.cache/
+.pytest_cache/
