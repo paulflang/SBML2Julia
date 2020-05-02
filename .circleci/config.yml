@@ -12,7 +12,7 @@ jobs:
       #       - v1-dependencies-
       - run:
           name: install dependencies
-          command: python -m pip install -r requirements.dev.txt
+          command: python3 -m pip install -r requirements.dev.txt
         # - save_cache:
         #   key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
         # - store_artifacts:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - run:
           name: test_core
-          command: python -m pytest tests/test_core.py
+          command: python3 -m pytest tests/test_core.py
   test_main:
     docker:
       - image: paulflang/disfit
@@ -33,7 +33,7 @@ jobs:
     steps:
       - run:
           name: test main
-          command: python -m pytest tests/test_core.py
+          command: python3 -m pytest tests/test_core.py
 
 workflows:
   version: 2.1
