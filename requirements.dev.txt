@@ -1,7 +1,7 @@
 capturer
 # filecmp
 mock
-pickle
+# pickle
 pkg_resources
 shutil
 tempfile
