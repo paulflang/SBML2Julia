@@ -1,5 +1,5 @@
 capturer
-filecmp
+# filecmp
 mock
 pickle
 pkg_resources
