@@ -5,8 +5,8 @@ workflows:
     jobs:
       - Dependencies
       - test_core:
-        requires:
-          - Dependencies
+          requires:
+            - Dependencies
       - test_main:
           requires:
             - Dependencies
