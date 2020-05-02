@@ -49,4 +49,4 @@ setuptools.setup(
             'DisFit = DisFit.__main__:main', 
         ],
     }, # The entry_point says that when I type into the console "DisFit", what will be executed is the function main in calc.__main__.py
-)
+) #
