@@ -3,6 +3,6 @@ capturer
 mock
 # pickle
 # pkg_resources
-shutil
+# shutil
 tempfile
 unittest
