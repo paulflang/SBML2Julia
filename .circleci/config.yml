@@ -1,15 +1,15 @@
 version: 2.1
 workflows:
   version: 2.1
-  master:
+  test_build_core_main:
     jobs:
       - Dependencies
       - test_core:
         requires:
           - Dependencies
-    - test_main:
-        requires:
-          - Dependencies
+      - test_main:
+          requires:
+            - Dependencies
 jobs:
   Dependencies:
     docker:
