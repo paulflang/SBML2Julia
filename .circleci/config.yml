@@ -68,7 +68,7 @@ jobs:
       - image: paulflang/disfit
     # working_directory: ~/repo
     steps:
-      -checkout
+      - checkout
       - run:
           name: Install Python deps in a venv
           command: |
