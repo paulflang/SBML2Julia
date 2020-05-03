@@ -7,9 +7,11 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.dev.txt" }}
-            - v1-dependencies-
+          key: deps1-{{ .Branch }}-{{ checksum "requirements.dev.txt" }}
+      # - restore_cache:
+      #     keys:
+      #       - v1-dependencies-{{ checksum "requirements.dev.txt" }}
+      #       - v1-dependencies-
       # - run:
       #     name: install dependencies
       #     command: python3 -m pip install -r requirements.dev.txt
@@ -24,8 +26,12 @@ jobs:
             . venv/bin/activate
             python3 -m pip install -r requirements.dev.txt
       - save_cache:
-          key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
+          key: deps1-{{ .Branch }}-{{ checksum "requirements.dev.txt" }}
           paths:
+            - "venv"
+      # - save_cache:
+      #     key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
+      #     paths:
             # - /usr/local/lib/python3.8/dist-packages
             - "venv"
       # - store_artifacts:
@@ -51,7 +57,8 @@ jobs:
       - run:
           name: test main
           command: |
-            . venv/bin/activatepython3 -m pytest tests/test_main.py
+            . venv/bin/activate
+            python3 -m pytest tests/test_main.py
 
 workflows:
   version: 2.1
