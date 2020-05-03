@@ -10,16 +10,23 @@ jobs:
           keys:
             - v1-dependencies-{{ checksum "requirements.dev.txt" }}
             - v1-dependencies-
+      # - run:
+      #     name: install dependencies
+      #     command: python3 -m pip install -r requirements.dev.txt
+      # - run:
+      #     name: install pytest
+      #     command: python3 -m pip install -U pytest
       - run:
-          name: install dependencies
-          command: python3 -m pip install -r requirements.dev.txt
-      - run:
-          name: install pytest
-          command: python3 -m pip install -U pytest
+          name: Install Python deps in a venv
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            python3 -m pip install -r requirements/dev.txt
       - save_cache:
           key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
           paths:
-            - /usr/local/lib/python3.8/dist-packages
+            # - /usr/local/lib/python3.8/dist-packages
+            - "venv"
       # - store_artifacts:
       #   path: test-reports
       #   destination: test-reports
@@ -28,9 +35,11 @@ jobs:
       - image: paulflang/disfit
     # working_directory: ~/repo
     steps:
-      - run:
+      - run: 
           name: test_core
-          command: python3 -m pytest tests/test_core.py
+          command: |
+            . venv/bin/activate
+            python3 -m pytest tests/test_core.py
   test_main:
     docker:
       - image: paulflang/disfit
@@ -38,7 +47,8 @@ jobs:
     steps:
       - run:
           name: test main
-          command: python3 -m pytest tests/test_core.py
+          command: |
+            . venv/bin/activatepython3 -m pytest tests/test_main.py
 
 workflows:
   version: 2.1
