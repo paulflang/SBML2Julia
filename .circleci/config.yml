@@ -5,15 +5,15 @@ jobs:
       - image: paulflang/disfit
     # working_directory: ~/repo
     steps:
-      - run:
-          name: look at envir
-          command: |
-            pwd
-            echo "lsing:"
-            ls
-            DisFit optimize -h
-            cd /DisFit
-            ls
+      # - run:
+      #     name: look at envir
+      #     command: |
+      #       pwd
+      #       echo "lsing:"
+      #       ls
+      #       DisFit optimize -h
+      #       cd /DisFit
+      #       ls
       - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.dev.txt" }}
