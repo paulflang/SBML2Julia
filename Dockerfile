@@ -9,12 +9,21 @@ RUN apt-get update -y \
     && locale-gen en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Install Python (e.g., 3.6.9), pip, and setuptools
+# Install Python (e.g., 3.6.9), pip, git, setuptools and test-dependencies
 RUN apt-get update -y \
     && apt-get install --no-install-recommends -y \
         python3 \
         python3-pip \
-    && pip3 install -U pip setuptools \
+        git \
+    && pip3 install -U setuptools \
+    && pip3 install -U pytest \
+    && pip3 install -U capturer \
+    && pip3 install -U mock \
+    # && pip3 install -U pickle \
+    # && pip3 install -U pkg_resources \
+    # && pip3 install -U shutil \
+    # && pip3 install -U tempfile \
+    # && pip3 install -U unittest \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
     
@@ -30,13 +39,3 @@ RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="JuMP", version="0.21.1"))'
 RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="Ipopt", version="0.6.1"))'
 RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="CSV", version="0.6.1"))'
 RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="PyCall", version="1.91.4"))'
-
-# Copy DisFit and associated files to Docker image
-#COPY DisFit /DisFit/DisFit
-#COPY docs /DisFit/docs
-#COPY examples /DisFit/examples
-#COPY tests /DisFit/tests
-COPY . /DisFit 
-
-# Install DisFit
-RUN pip3 install /DisFit
