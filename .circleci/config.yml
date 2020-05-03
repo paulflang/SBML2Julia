@@ -15,7 +15,7 @@ jobs:
           command: python3 -m pip install -r requirements.dev.txt
       - run:
           name: install pytest
-          command: python3 -m pip install pytest
+          command: python3 -m pip install -U pytest
         # - save_cache:
         #   key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
         # - store_artifacts:
