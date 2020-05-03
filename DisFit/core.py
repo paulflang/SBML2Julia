@@ -25,7 +25,7 @@ class DisFitProblem(object):
         Args:
             sbml_path (:obj:`str`): path to sbml file
             data_path (:obj:`str`): path to data file
-            t_ratio (:obj:`int`, optional): number of time discretiaation steps
+            t_ratio (:obj:`int`, optional): number of time discretiation steps
             fold_change (:obj:`float`, optional): fold change window of parameter search range wrt sbml parameters
         """
         self._initialization = True
@@ -105,8 +105,8 @@ class DisFitProblem(object):
         """Get t_ratio
         
         Returns:
-            :obj:`int`: ratio between experimental observation intervals and time
-            discretization intervals
+            :obj:`int`: ratio between experimental observation intervals and simulation
+            time-discretization intervals
         """
         return self._t_ratio
 
