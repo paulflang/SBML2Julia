@@ -9,9 +9,10 @@ jobs:
           name: look at envir
           command: |
             pwd
+            echo "lsing:"
             ls
             DisFit optimize -h
-            cd DisFit
+            cd /DisFit
             ls
       - checkout
       - restore_cache:
