@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  Dependencies:
+  build:
     docker:
       - image: paulflang/disfit
     # working_directory: ~/repo
@@ -24,7 +24,12 @@ jobs:
             apt-get install python3-venv -y
             python3 -m venv venv
             . venv/bin/activate
+            ls
             python3 -m pip install -r requirements.dev.txt
+            ls
+            cd venv/bin/activate
+            ls
+            sdfs
       - save_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.dev.txt" }}
           paths:
@@ -64,11 +69,11 @@ workflows:
   version: 2.1
   test_build_core_main:
     jobs:
-      - Dependencies
+      - build
       - test_core:
           requires:
-            - Dependencies
+            - build
       - test_main:
           requires:
-            - Dependencies
+            - build
             - test_core
