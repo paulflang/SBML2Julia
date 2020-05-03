@@ -34,7 +34,7 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             ls
-            python3 -m pip install -e DisFit
+            python3 -m pip install -e /root/project
             python3 -m pip install -r requirements.dev.txt
             ls
             echo "source /root/project/venv/bin/activate" >> $BASH_ENV
