@@ -38,15 +38,15 @@ jobs:
           name: test main
           command: python3 -m pytest tests/test_core.py
 
-workflows:
-  version: 2.1
-  test_build_core_main:
-    jobs:
-      - Dependencies
-      - test_core:
-          requires:
-            - Dependencies
-      - test_main:
-          requires:
-            - Dependencies
-            - test_core
+# workflows:
+#   version: 2.1
+#   test_build_core_main:
+#     jobs:
+#       - Dependencies
+#       - test_core:
+#           requires:
+#             - Dependencies
+#       - test_main:
+#           requires:
+#             - Dependencies
+#             - test_core
