@@ -10,7 +10,8 @@ jobs:
           command: |
             pwd
             ls
-            cd /DisFit
+            DisFit optimize -h
+            cd DisFit
             ls
       - checkout
       - restore_cache:
