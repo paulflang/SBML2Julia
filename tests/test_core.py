@@ -5,11 +5,11 @@
 :License: MIT
 """
 
-import filecmp
 import os
 import pandas as pd
 import pickle
 import pkg_resources
+import re
 import shutil
 import tempfile
 import unittest
@@ -22,9 +22,11 @@ from pandas.testing import assert_frame_equal
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 SBML_PATH = os.path.join(FIXTURES, 'G2M_copasi.xml')
 DATA_PATH = os.path.join(FIXTURES, 'G2M_copasi.csv')
-JL_FILE_GOLD = os.path.join(FIXTURES, 'jl_file_gold.jl')
-with open(JL_FILE_GOLD, 'r') as f:
+jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
+with open(jl_file_gold, 'r') as f:
     JL_CODE_GOLD = f.read()
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+    FIXTURES, JL_CODE_GOLD)
 
 class DisFitProblemTestCase(unittest.TestCase):
     
@@ -99,7 +101,9 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_write_jl_file(self):
         problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
         problem.write_jl_file(path=os.path.join(self.dirname, 'jl_code.jl'))
-        self.assertTrue(filecmp.cmp(os.path.join(self.dirname, 'jl_code.jl'), JL_FILE_GOLD))
+        with open(os.path.join(self.dirname, 'jl_code.jl'), 'r') as f:
+            jl_code = f.read()
+        self.assertEqual(jl_code, JL_CODE_GOLD)
 
     def test_optimize_results_plot(self):
 

@@ -7,10 +7,10 @@
 
 import capturer
 import DisFit
-import filecmp
 import mock
 import os
 import pkg_resources
+import re
 import shutil
 import tempfile
 import unittest
@@ -19,7 +19,11 @@ from DisFit import __main__
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 SBML_PATH = os.path.join(FIXTURES, 'G2M_copasi.xml')
 DATA_PATH = os.path.join(FIXTURES, 'G2M_copasi.csv')
-JL_FILE_GOLD = os.path.join(FIXTURES, 'jl_file_gold.jl')
+jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
+with open(jl_file_gold, 'r') as f:
+    JL_CODE_GOLD = f.read()
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+    FIXTURES, JL_CODE_GOLD)
 
 class CliTestCase(unittest.TestCase):
     def setUp(self):
@@ -70,7 +74,9 @@ class CliTestCase(unittest.TestCase):
             app.run()
 
             # test that the CLI produced the correct output
-            self.assertTrue(filecmp.cmp(os.path.join(self.tempdir_1, 'julia_code.jl'), JL_FILE_GOLD))
+            with open(os.path.join(self.tempdir_1, 'julia_code.jl'), 'r') as f:
+                jl_code = f.read()
+            self.assertEqual(jl_code, JL_CODE_GOLD)
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plot.pdf')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
 
