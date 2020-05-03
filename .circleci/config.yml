@@ -5,6 +5,13 @@ jobs:
       - image: paulflang/disfit
     # working_directory: ~/repo
     steps:
+      - run:
+          name: look at envir
+          command: |
+            pwd
+            ls
+            cd /DisFit
+            ls
       - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.dev.txt" }}
