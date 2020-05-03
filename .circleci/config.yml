@@ -6,21 +6,21 @@ jobs:
     # working_directory: ~/repo
     steps:
       - checkout
-      # - restore_cache:
-      #     keys:
-      #       - v1-dependencies-{{ checksum "requirements.dev.txt" }}
-      #       - v1-dependencies-
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.dev.txt" }}
+            - v1-dependencies-
       - run:
           name: install dependencies
           command: python3 -m pip install -r requirements.dev.txt
       - run:
           name: install pytest
           command: python3 -m pip install -U pytest
-        # - save_cache:
-        #   key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
-        # - store_artifacts:
-        #   path: test-reports
-        #   destination: test-reports
+      - save_cache:
+          key: v1-dependencies-{{ checksum "requirements.dev.txt" }}
+      # - store_artifacts:
+      #   path: test-reports
+      #   destination: test-reports
   test_core:
     docker:
       - image: paulflang/disfit
@@ -38,15 +38,15 @@ jobs:
           name: test main
           command: python3 -m pytest tests/test_core.py
 
-# workflows:
-#   version: 2.1
-#   test_build_core_main:
-#     jobs:
-#       - Dependencies
-#       - test_core:
-#           requires:
-#             - Dependencies
-#       - test_main:
-#           requires:
-#             - Dependencies
-#             - test_core
+workflows:
+  version: 2.1
+  test_build_core_main:
+    jobs:
+      - Dependencies
+      - test_core:
+          requires:
+            - Dependencies
+      - test_main:
+          requires:
+            - Dependencies
+            - test_core
