@@ -45,6 +45,16 @@ jobs:
       - image: paulflang/disfit
     # working_directory: ~/repo
     steps:
+      - run:
+          name: Install Python deps in a venv
+          command: |
+            apt-get install python3-venv -y
+            python3 -m venv venv
+            . venv/bin/activate
+            ls
+            python3 -m pip install -r requirements.dev.txt
+            ls
+            echo "source /root/project/venv/bin/activate" >> $BASH_ENV
       - run: 
           name: test_core
           command: |
@@ -57,6 +67,16 @@ jobs:
       - image: paulflang/disfit
     # working_directory: ~/repo
     steps:
+      - run:
+          name: Install Python deps in a venv
+          command: |
+            apt-get install python3-venv -y
+            python3 -m venv venv
+            . venv/bin/activate
+            ls
+            python3 -m pip install -r requirements.dev.txt
+            ls
+            echo "source /root/project/venv/bin/activate" >> $BASH_ENV
       - run:
           name: test main
           command: |
