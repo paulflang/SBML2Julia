@@ -6,7 +6,7 @@
 """
 
 from .core import DisFitProblem
-# import DisFit
+import DisFit
 import cement
 import os
 import re
