@@ -25,6 +25,23 @@ with open(jl_file_gold, 'r') as f:
 JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
     FIXTURES, JL_CODE_GOLD)
 
+class CliVersionTestCase(unittest.TestCase):
+    def test_version(self):
+        with __main__.App(argv=['-v']) as app:
+            with capturer.CaptureOutput(merged=False, relay=False) as captured:
+                with self.assertRaises(SystemExit):
+                    app.run()
+                self.assertEqual(captured.stdout.get_text(), DisFit.__version__)
+                self.assertEqual(captured.stderr.get_text(), '')
+
+        with __main__.App(argv=['--version']) as app:
+            with capturer.CaptureOutput(merged=False, relay=False) as captured:
+                with self.assertRaises(SystemExit):
+                    app.run()
+                self.assertEqual(captured.stdout.get_text(), DisFit.__version__)
+                self.assertEqual(captured.stderr.get_text(), '')
+
+
 class CliTestCase(unittest.TestCase):
     def setUp(self):
         self.tempdir_1 = tempfile.mkdtemp()
@@ -49,28 +66,10 @@ class CliTestCase(unittest.TestCase):
             with __main__.App(argv=['--help']) as app:
                 app.run()
 
-    '''
-    def test_version(self):
-        with __main__.App(argv=['-v']) as app:
-            with capturer.CaptureOutput(merged=False, relay=False) as captured:
-                with self.assertRaises(SystemExit):
-                    app.run()
-                self.assertEqual(captured.stdout.get_text(), DisFit.__version__)
-                self.assertEqual(captured.stderr.get_text(), '')
-
-        with __main__.App(argv=['--version']) as app:
-            with capturer.CaptureOutput(merged=False, relay=False) as captured:
-                with self.assertRaises(SystemExit):
-                    app.run()
-                self.assertEqual(captured.stdout.get_text(), DisFit.__version__)
-                self.assertEqual(captured.stderr.get_text(), '')
-                '''
-
     def test_optimize(self):
         with __main__.App(argv=['optimize', SBML_PATH, DATA_PATH,
             '-t', '2', '-f', '2', '-n', '1', '-o',
             self.tempdir_1, '-p', '[Cb, pCb]']) as app:
-            # run app
             app.run()
 
             # test that the CLI produced the correct output
@@ -80,12 +79,12 @@ class CliTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plot.pdf')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
 
-        with __main__.App(argv=['optimize', 'a', DATA_PATH,
-            '-t', '3', '-f', '3.2', '-n', '2', '-o', self.tempdir_1, '-p', '[Cb, pCb]']) as app:
-            with self.assertRaises(SystemExit):
-                app.run()
-
         with __main__.App(argv=['optimize', SBML_PATH, DATA_PATH,
             '-t', '3', '-f', '3.2', '-n', '2', '-o', self.tempdir_2, '-p', '[a, b]']) as app:
             app.run()
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
+
+        with __main__.App(argv=['optimize', 'a', DATA_PATH,
+            '-t', '3', '-f', '3.2', '-n', '2', '-o', self.tempdir_1, '-p', '[Cb, pCb]']) as app:
+            with self.assertRaises(SystemExit):
+                app.run()
