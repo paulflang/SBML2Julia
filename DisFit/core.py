@@ -278,10 +278,16 @@ class DisFitProblem(object):
 
     def _set_julia_code(self):
         #----------------------------------------------------------------------#
-        """ `_set_julia_code` is adapted from Frank T. Bergman
+        """
+        `_set_julia_code` is adapted from Frank T. Bergman
         Date: 2019
         Availability: https://groups.google.com/forum/#!topic/sbml-discuss/inS4Lzp3Ri8 or
-        https://www.dropbox.com/s/2bfpiausejp0gd0/convert_reactions.py?dl=0 """
+        https://www.dropbox.com/s/2bfpiausejp0gd0/convert_reactions.py?dl=0 
+        and based on the methods published by Sungho Shin et al. in "Scalable Nonlinear
+        Programming Framework for Parameter Estimation in Dynamic Biological System Models"
+        Date: 2019
+        Availability: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828
+        """
         #----------------------------------------------------------------------#
 
         doc = libsbml.readSBMLFromFile(self.sbml_path)

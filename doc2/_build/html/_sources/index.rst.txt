@@ -20,7 +20,6 @@ Optimization tasks can be performed from a command line interface or Python API.
 
    installation.rst
    tutorial.rst
-   examples.rst
    contributing.rst
    about.rst
 
