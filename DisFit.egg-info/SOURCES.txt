@@ -1,11 +1,12 @@
+LICENSE
 MANIFEST.in
 README.md
 requirements.dev.txt
 requirements.txt
 setup.py
-DisFit/VERSION
 DisFit/__init__.py
 DisFit/__main__.py
+DisFit/_version.py
 DisFit/core.py
 DisFit.egg-info/PKG-INFO
 DisFit.egg-info/SOURCES.txt
