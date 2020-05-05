@@ -1,5 +1,7 @@
 # python cache
 __pycache__/
+DisFit/__pycache__
+tests/__pycache__
 
 #distribution files
 /build/
@@ -11,9 +13,10 @@ __pycache__/
 README.rst
 
 # compiled documentation
-docs/source
 docs/_build
 docs/.doctrees/
+docs/make.bat
+docs/Makefile
 
 # pytest .cache directory
 .cache/
