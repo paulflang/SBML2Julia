@@ -1,7 +1,7 @@
 Installation
 ============
 
-`DisFit` depends on several python and julia packages. If you have docker installed on your machine the easiest way of installing these dependencies is to pull the latest DisFit docker image from dockerhub and build a container.::
+`DisFit` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest `DisFit docker image <https://hub.docker.com/repository/docker/paulflang/disfit>`_ from dockerhub and build a container.:
 
 	docker pull paulflang/disfit:latest
 	docker run -it paulflang/disfit:latest

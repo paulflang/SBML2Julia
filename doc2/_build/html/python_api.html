@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python API &mdash; DisFit 0.0.1 documentation</title>
+  <title>2.1. Python API &mdash; DisFit 0.0.1 documentation</title>
   
 
   
@@ -32,10 +32,11 @@
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Command line interface" href="cli.html" />
-    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+    <link rel="next" title="2.2. Command line interface" href="cli.html" />
+    <link rel="prev" title="2. Tutorial" href="tutorial.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -79,20 +80,21 @@
               
             
             
-              <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="tutorial.html">Tutorial</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Python API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#importing-disfit">Importing <cite>DisFit</cite></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#specifying-an-optimization-problem">Specifying an optimization problem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#running-the-optimization">Running the optimization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#accessing-the-results">Accessing the results</a></li>
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">1. Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorial.html">2. Tutorial</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.1. Python API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#importing-disfit">2.1.1. Importing <cite>DisFit</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#specifying-an-optimization-problem">2.1.2. Specifying an optimization problem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-optimization">2.1.3. Running the optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#accessing-the-results">2.1.4. Accessing the results</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="cli.html">Command line interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html">2.2. Command line interface</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">3. Contributing to <cite>DisFit</cite></a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">4. About</a></li>
 </ul>
 
             
@@ -138,9 +140,9 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="tutorial.html">Tutorial</a> &raquo;</li>
+          <li><a href="tutorial.html">2. Tutorial</a> &raquo;</li>
         
-      <li>Python API</li>
+      <li>2.1. Python API</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -160,33 +162,33 @@
            <div itemprop="articleBody">
             
   <div class="section" id="python-api">
-<span id="id1"></span><h1>Python API<a class="headerlink" href="#python-api" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>2.1. Python API<a class="headerlink" href="#python-api" title="Permalink to this headline">¶</a></h1>
 <p>The following tutorial illustrates how to use the <cite>DisFit</cite> Python API.</p>
 <div class="section" id="importing-disfit">
-<h2>Importing <cite>DisFit</cite><a class="headerlink" href="#importing-disfit" title="Permalink to this headline">¶</a></h2>
-<p>Run this command to import <cite>BpForms</cite>:</p>
+<h2>2.1.1. Importing <cite>DisFit</cite><a class="headerlink" href="#importing-disfit" title="Permalink to this headline">¶</a></h2>
+<p>Run this command to import <cite>DisFit</cite>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">DisFit</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="specifying-an-optimization-problem">
-<h2>Specifying an optimization problem<a class="headerlink" href="#specifying-an-optimization-problem" title="Permalink to this headline">¶</a></h2>
+<h2>2.1.2. Specifying an optimization problem<a class="headerlink" href="#specifying-an-optimization-problem" title="Permalink to this headline">¶</a></h2>
 <p>All you need to specify an optimization problem is</p>
 <ul class="simple">
-<li>The sbml file of your ODE model (curently only sbml Level 2 Version 4 generated by Copasi has been tested).</li>
-<li>The csv file with your data. Columns are <cite>t</cite> for time in identical intervals and the names of the model species.:</li>
+<li>The <strong>sbml file</strong> of your ODE model (curently only sbml Level 2 Version 4 generated by Copasi has been tested).</li>
+<li>The <strong>csv file</strong> with your data. Columns are <cite>t</cite> for time in identical intervals and the names of the model species.</li>
 </ul>
 <p>Optionally, you can also set</p>
 <ul class="simple">
-<li>t_ratio: ratio between experimental observation intervals and simulation time-discretization intervals</li>
-<li>fold_change: fold_change of the parameter fitting window with respect to the parameter values x_0 specified in the sbml file [x_0/fold_change, x_0*fold_change].</li>
-<li>n_starts: number of multistarts</li>
+<li><strong>t_ratio</strong>: ratio between experimental observation intervals and simulation time-discretization intervals. Default <code class="docutils literal notranslate"><span class="pre">2</span></code>.</li>
+<li><strong>fold_change</strong>: fold_change of the parameter fitting window with respect to the parameter values x_0 specified in the sbml file [x_0/fold_change, x_0*fold_change]. Default <code class="docutils literal notranslate"><span class="pre">2</span></code></li>
+<li><strong>n_starts</strong>: number of multistarts. Default <code class="docutils literal notranslate"><span class="pre">1</span></code>.</li>
 </ul>
 <p>The problem is then specified as:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">problem</span> <span class="o">=</span> <span class="n">DisFit</span><span class="o">.</span><span class="n">DisFitProblem</span><span class="p">(</span><span class="n">sbml_path</span><span class="p">,</span> <span class="n">csv_path</span><span class="p">,</span> <span class="n">t_ratio</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fold_change</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_starts</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Once the problem is specified, DisFit has transformed the problem to a julia JuMP model. The code for this model can be accessed via:</p>
+<p>Once the problem is specified, <cite>DisFit</cite> has transformed the problem to a julia JuMP model. The code for this model can be accessed via:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">code</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">julia_code</span>
 </pre></div>
 </div>
@@ -197,14 +199,15 @@
 <p>If you want to change the optimization problem in a way that is not yet supported by <cite>DisFit</cite>, you can manually modify the julia code and run the optimization in julia yourself.</p>
 </div>
 <div class="section" id="running-the-optimization">
-<h2>Running the optimization<a class="headerlink" href="#running-the-optimization" title="Permalink to this headline">¶</a></h2>
-<p>Running the optimization may take a while, but is as easy as:</p>
+<h2>2.1.3. Running the optimization<a class="headerlink" href="#running-the-optimization" title="Permalink to this headline">¶</a></h2>
+<p>The optimization can be run with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">problem</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>Please note that this may take a while.</p>
 </div>
 <div class="section" id="accessing-the-results">
-<h2>Accessing the results<a class="headerlink" href="#accessing-the-results" title="Permalink to this headline">¶</a></h2>
+<h2>2.1.4. Accessing the results<a class="headerlink" href="#accessing-the-results" title="Permalink to this headline">¶</a></h2>
 <p>The results can be accessed via:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">problem</span><span class="o">.</span><span class="n">results</span>
 </pre></div>
@@ -217,7 +220,7 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">problem</span><span class="o">.</span><span class="n">plot_results</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s1">&#39;path_to_plot.pdf&#39;</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">[],</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>where the optional <cite>variables</cite> accepts a list of species that shall be plotted. The optional <cite>size</cite> argument specifies the size of the figure.</p>
+<p>where the optional <code class="docutils literal notranslate"><span class="pre">variables</span></code> argument accepts a list of species that shall be plotted. The optional <code class="docutils literal notranslate"><span class="pre">size</span></code> argument specifies the size of the figure.</p>
 </div>
 </div>
 
@@ -229,10 +232,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="cli.html" class="btn btn-neutral float-right" title="Command line interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="2.2. Command line interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="tutorial.html" class="btn btn-neutral float-left" title="2. Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
