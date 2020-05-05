@@ -1,4 +1,4 @@
-[![Documentation](https://readthedocs.org/projects/disfit/badge/?version=latest)](https://disfit.readthedocs.io/en/documentation/)
+[![Documentation](https://readthedocs.org/projects/disfit/badge/?version=latest)](https://disfit.readthedocs.io/en/latest/)
 [![Test results](https://circleci.com/gh/paulflang/DisFit.svg?style=shield)](https://app.circleci.com/pipelines/github/paulflang/DisFit)
 [![License](https://img.shields.io/github/license/paulflang/disfit.svg)](LICENSE)
 
