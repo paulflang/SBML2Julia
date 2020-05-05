@@ -39,7 +39,7 @@ Alternatively, the `DisFit` dependencies can be installed as indicated in the [D
 Optimization tasks can be performed from a Python API or a command line interface.
 
 ## Tutorial, and documentation
-Please see the [documentation](https://disfit.readthedocs.io/en/documentation/index.html) for a description of how to use `DisFit`. 
+Please see the [documentation](https://disfit.readthedocs.io/en/latest/index.html) for a description of how to use `DisFit`. 
 
 ## License
 The package is released under the [MIT license](LICENSE).
