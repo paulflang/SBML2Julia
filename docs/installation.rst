@@ -16,7 +16,7 @@ To check if the installation was succesful, run::
 	DisFit -h
 
 
-Alternatively, the `DisFit` dependencies can be installed as indicated in the `Dockerfile <https://github.com/paulflang/DisFit/blob/master/Dockerfile>`_ in the `DisFit` Git repository. Once these dependencie are installed, `DisFit` can be installed as above::
+Alternatively, the `DisFit` dependencies can be installed on Ubuntu machines as indicated in the `Dockerfile <https://github.com/paulflang/DisFit/blob/master/Dockerfile>`_ in the `DisFit` Git repository. Once these dependencie are installed, `DisFit` can be installed as above::
 
 	git clone https://github.com/paulflang/DisFit.git
 	python3 -m pip install -e DisFit
