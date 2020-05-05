@@ -27,6 +27,7 @@ class DisFitProblem(object):
             data_path (:obj:`str`): path to data file
             t_ratio (:obj:`int`, optional): number of time discretiaation steps
             fold_change (:obj:`float`, optional): fold change window of parameter search range wrt sbml parameters
+            n_starts (:obj:`int`): number of multistarts
         """
         self._initialization = True
         self._optimized = False
@@ -204,12 +205,22 @@ class DisFitProblem(object):
         return self._results
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
+        """Write code to julia file
+        
+        Args:
+            path (:obj:`str`, optional): path to output julia file
+        """
         with open(path, 'w') as f:
             f.write(self.julia_code)
             self._julia_file = path
             self._files_written = True
 
     def optimize(self):
+        """Optimize DisFitProblem
+        
+        Returns:
+            :obj:`dict`: Results in a dict with keys 'states', 'x' and 'x_best'
+        """
         print('Running optimization problem in julia...')
         out = self._jl.eval(self.julia_code)
         self._results['states'] = out['states']
@@ -224,7 +235,7 @@ class DisFitProblem(object):
         x_best_to_x_0_col = [x_best[key] / x_0[str(key)] for key in x_best.keys()]
         name_col = [str(key) for key in x_best.keys()]
         x_0_col = [x_0[str(key)] for key in x_best.keys()]
-        x_best_col = [x_0[str(key)] for key in x_best.keys()]
+        x_best_col = [x_best[str(key)] for key in x_best.keys()]
         self._results['x_best'] = pd.DataFrame(list(zip(name_col, x_0_col, x_best_col,
             x_best_to_x_0_col)), columns = ['Name', 'x_0', 'x_best', 'x_best_to_x_0'])
         self._results['x_best'] = self._results['x_best'].sort_values(by=['Name']).reset_index(drop=True)
@@ -233,7 +244,16 @@ class DisFitProblem(object):
         return self.results
 
     def plot_results(self, path=os.path.join('.', 'plot.pdf'), variables=[], size=(6, 5)):
-
+        """Plot results
+        
+        Args:
+            path (:obj:`str`, optional): path to output plot
+            variables (:obj:`list`, optional): list of variables to be plotted
+            size (:obj:`tuple`, optional): size of image
+        
+        Raises:
+            ValueError: if `variables` is not a list
+        """
         # Options
         x_label = 'time'
         y_label = 'Abundance'
@@ -253,9 +273,8 @@ class DisFitProblem(object):
         # Determine the size of the figure
         plt.figure(figsize=size)
 
-        # the main axes is subplot(111) by default
         a = plt.axes([0.1, 0.1, 0.8, 0.8])
-        a.plot(t_sim, values, linewidth=3) # See matplotlib.lines.Line2D for details
+        a.plot(t_sim, values, linewidth=3)
         a.legend(tuple(values.columns))
         plt.plot(t, exp_data, 'x')
         a.legend(tuple(values.columns))
@@ -272,11 +291,18 @@ class DisFitProblem(object):
         self._plot_file = path
 
     def write_results(self, path=os.path.join('.', 'results.xlsx')):
+        """Write results to excel file
+        
+        Args:
+            path (:obj:`str`, optional): path of excel file to write results to.
+        """
         with pd.ExcelWriter(path) as writer:  
             self.results['x_best'].to_excel(writer, sheet_name='x_best')
             pd.DataFrame(self.results['states'][self._best_iter]).to_excel(writer, sheet_name='states')
 
     def _set_julia_code(self):
+        """Transform sbml file to Julia JuMP model.
+        """
         #----------------------------------------------------------------------#
         """
         `_set_julia_code` is adapted from Frank T. Bergman
