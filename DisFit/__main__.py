@@ -6,7 +6,7 @@
 """
 
 from .core import DisFitProblem
-# import DisFit
+import DisFit
 import cement
 import os
 import re
@@ -21,7 +21,7 @@ class BaseController(cement.Controller):
         description = "DisFit"
         help = "DisFit"
         arguments = [
-            # (['-v', '--version'], dict(action='version', version=DisFit.__version__)),
+            (['-v', '--version'], dict(action='version', version=DisFit.__version__)),
         ]
 
     # @cement.ex(hide=False)
