@@ -12,26 +12,26 @@
 
 ## Installation
 
-`DisFit` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest [DisFit docker image](https://hub.docker.com/repository/docker/paulflang/disfit) from dockerhub and build a container.
+`DisFit` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest [DisFit docker image](https://hub.docker.com/repository/docker/paulflang/disfit) from Docker Hub and build a container.
   ```
-  docker pull paulflang/disfit:latest
-  docker run -it paulflang/disfit:latest
+  user@bash:/$ docker pull paulflang/disfit:latest
+  user@bash:/$ docker run -it paulflang/disfit:latest
   ```
-To install the latest `DisFit` version in the docker container, run:
+To install the latest `DisFit` version in the Docker container, run:
   ```
-  git clone https://github.com/paulflang/DisFit.git
-  python3 -m pip install -e DisFit
+  user@bash:/$ git clone https://github.com/paulflang/DisFit.git
+  user@bash:/$ python3 -m pip install -e DisFit
   ```
 To check if the installation was succesful, run:
   ```
-  DisFit -h
+  user@bash:/$ DisFit -h
   ```
 
 Alternatively, the `DisFit` dependencies can be installed as indicated in the [Dockerfile](https://github.com/paulflang/DisFit/blob/master/Dockerfile) in the `DisFit` Git repository. Once these dependencie are installed, `DisFit` can be installed as above:
   ```
-  git clone https://github.com/paulflang/DisFit.git
-  python3 -m pip install -e DisFit
-  DisFit -h
+  user@bash:/$ git clone https://github.com/paulflang/DisFit.git
+  user@bash:/$ python3 -m pip install -e DisFit
+  user@bash:/$ DisFit -h
   ```
 
 ## Interfaces
