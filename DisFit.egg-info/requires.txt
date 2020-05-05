@@ -1,9 +1,0 @@
-cement>=3.0.0
-python-libsbml
-matplotlib
-numpy
-openpyxl
-pandas
-scipy
-setuptools
-julia
