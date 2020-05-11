@@ -1,7 +1,7 @@
 Example
 =======
 
-The `DisFit GitHub repository <https://github.com/paulflang/DisFit/tree/master/tests/fixtures>`_ contains a version of the `Vinod et Novak model <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ of the G2/M cell cycle transition along with simulated experimental data.
+The `DisFit GitHub repository <https://github.com/paulflang/DisFit/tree/master/tests/fixtures>`_ contains a version of the `Vinod et Novak model <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ of the G2/M cell cycle transition, along with simulated experimental data.
 
 Using the Python API
 --------------------
