@@ -49,4 +49,4 @@ This package was developed by the [Paul F. Lang](https://www.linkedin.com/in/pau
 
 
 ## Questions and comments
-Please contact the [Paul F. Lang](mailto:paul.lang@wolfson.ox.ac.uk) with any questions or comments.
+Please contact [Paul F. Lang](mailto:paul.lang@wolfson.ox.ac.uk) with any questions or comments.
