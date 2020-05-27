@@ -20,7 +20,7 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, sbml_path, data_path, t_ratio=2, fold_change=2, n_starts=1):
+    def __init__(self, sbml_path, data_path, t_ratio=2, fold_change=2, n_starts=1, optimizer_options={}):
         """        
         Args:
             sbml_path (:obj:`str`): path to sbml file
@@ -28,6 +28,7 @@ class DisFitProblem(object):
             t_ratio (:obj:`int`, optional): number of time discretiation steps
             fold_change (:obj:`float`, optional): fold change window of parameter search range wrt sbml parameters
             n_starts (:obj:`int`): number of multistarts
+            optimizer_options (:obj:`dict`): optimization solver options
         """
         self._initialization = True
         self._optimized = False
@@ -42,9 +43,10 @@ class DisFitProblem(object):
         self.t_ratio = t_ratio
         self.fold_change = fold_change
         self.n_starts = n_starts
+        self.optimizer_options = optimizer_options
         self._set_julia_code()
         self._initialization = False
-
+        
     @property
     def sbml_path(self):
         """Get sbml path
@@ -174,6 +176,31 @@ class DisFitProblem(object):
         if not isinstance(value, int) or not (value > 0):
             raise ValueError('`n_starts` must be a positive integer')
         self._n_starts = value
+        if not self._initialization:
+            self._set_julia_code()
+
+    @property
+    def optimizer_options(self):
+        """Get optimizer_options
+        
+        Returns:
+            :obj:`dict`: optimization solver options
+        """    
+        return self._optimizer_options
+
+    @optimizer_options.setter
+    def optimizer_options(self,value):
+        """Set n_starts
+        
+        Args:
+            value (:obj:`int`): number of multistarts
+        
+        Raises:
+            ValueError: if n_starts is not a positive integer
+        """
+        if not isinstance(value, dict):
+            raise ValueError('`optimizer_options` must be a dictionary')
+        self._optimizer_options = value
         if not self._initialization:
             self._set_julia_code()
 
@@ -409,7 +436,17 @@ class DisFitProblem(object):
         generated_code.extend(bytes('results["x"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
-        generated_code.extend(bytes('m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
+        generated_code.extend(bytes('m = Model(with_optimizer(Ipopt.Optimizer))\n', 'utf8'))
+
+        generated_code.extend(bytes('set_optimizer_attribute(m,"linear_solver","ma57")\n\n', 'utf8'))
+        for key in self.optimizer_options:
+            if isinstance(self.optimizer_options[key],str):
+                generated_code.extend(bytes('set_optimizer_attribute(m,"{}","{}")\n\n'.format(key,self.optimizer_options[key]), 'utf8'))
+            else:
+                generated_code.extend(bytes('set_optimizer_attribute(m,"{}",{})\n\n'.format(key,self.optimizer_options[key]), 'utf8'))
+            
+                
+        
         i = 0
         for i in range(mod.getNumParameters()):
             element = mod.getParameter(i)
