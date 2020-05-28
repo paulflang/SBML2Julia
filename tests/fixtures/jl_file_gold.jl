@@ -16,7 +16,7 @@ results["objective_val"] = Dict()
 results["x"] = Dict()
 results["states"] = Dict()
 for i_start in 1:1
-m = Model(with_optimizer(Ipopt.Optimizer))
+    m = Model(with_optimizer(Ipopt.Optimizer))
 
     @variable(m, 0.1/fc <= kPhEnsa <= 0.1*fc, start=0.1/fc+(0.1*fc-0.1/fc)*rand(Float64))
     @variable(m, 0.05/fc <= kDpEnsa <= 0.05*fc, start=0.05/fc+(0.05*fc-0.05/fc)*rand(Float64))

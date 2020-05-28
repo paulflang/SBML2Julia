@@ -436,16 +436,13 @@ class DisFitProblem(object):
         generated_code.extend(bytes('results["x"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
-        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
-
+        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n', 'utf8'))
         for key in self.optimizer_options:
             if isinstance(self.optimizer_options[key],str):
                 generated_code.extend(bytes('    set_optimizer_attribute(m,"{}","{}")\n'.format(key,self.optimizer_options[key]), 'utf8'))
             else:
-                generated_code.extend(bytes('    set_optimizer_attribute(m,"{}",{})\n'.format(key,self.optimizer_options[key]), 'utf8'))
-                
-        generated_code.extend(bytes('\n', 'utf8'))
-                
+                generated_code.extend(bytes('    set_optimizer_attribute(m,"{}",{})\n'.format(key,self.optimizer_options[key]), 'utf8'))      
+        generated_code.extend(bytes('\n', 'utf8'))          
         
         i = 0
         for i in range(mod.getNumParameters()):
