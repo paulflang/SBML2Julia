@@ -1,0 +1,14 @@
+observableId	observableName	observableFormula	noiseFormula	observableTransformation	noiseDistribution
+abCCNE_sum		Ce	1	lin	normal
+abCCNA2		Ca	1	lin	normal
+abCCNB1		Cb + fCDK1*pCb	1	lin	normal
+ab_activeCDKfraction		Cb/(fCDK1*pCb+Cb)	1	lin	normal
+abRB1_pSer807pSer811		fRB1_p*pRb	1	lin	normal
+abE2F_sum		E2f+E2fProCa+E2fProCe+E2fProE2f+E2fProEmi+E2fProFox+E2fRb+pE2f+pE2fRb	1	lin	normal
+abFOXM1		Fox+pFox+pFoxProCb+pFoxProCdc	1	lin	normal
+abFBXO5		ACE+pEmi+pACE+Emi	1	lin	normal
+abCDC25A		Cdc25+pCdc25	1	lin	normal
+abCDC25A_pSer18		fCdc25_p*pCdc25	1	lin	normal
+abWEE1		Wee+pWee	1	lin	normal
+abWEE1_pSer123		fWee1_p*pWee	1	lin	normal
+abCDC20		fCdc20*Cdc20+pApcCdc	1	lin	normal

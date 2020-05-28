@@ -1,0 +1,13 @@
+format_version: 1
+parameter_file: parameters_G2M_copasi.tsv
+problems:
+- condition_files:
+  - experimentalCondition_G2M_copasi.tsv
+  measurement_files:
+  - measurementData_G2M_copasi.tsv
+  observable_files:
+  - observables_G2M_copasi.tsv
+  sbml_files:
+  - model_G2M_copasi.xml
+  species_files:
+  - species_G2M_copasi.tsv
