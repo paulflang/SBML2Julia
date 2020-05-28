@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import petab
 import scipy as sp
 import sys
 import tempfile
@@ -20,7 +21,7 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, sbml_path, data_path, t_ratio=2, fold_change=2, n_starts=1):
+    def __init__(self, petab_yaml, t_ratio=2, n_starts=1):
         """        
         Args:
             sbml_path (:obj:`str`): path to sbml file
@@ -37,69 +38,21 @@ class DisFitProblem(object):
         self._jl = Julia(compiled_modules=False)
         self._initialization = True
         self._results = {}
-        self.sbml_path = sbml_path
-        self.data_path = data_path
+        self._petab_dirname = os.path.dirname(petab_yaml)
+        self.set_petab_problem(petab_yaml)
         self.t_ratio = t_ratio
-        self.fold_change = fold_change
         self.n_starts = n_starts
         self._set_julia_code()
         self._initialization = False
 
     @property
-    def sbml_path(self):
-        """Get sbml path
+    def petab_yaml_dict(self):
+        """Get petab_yaml_dict
         
         Returns:
-            :obj:`str`: path to `sbml` file
+            :obj:`dict`: petab_yaml_dict 
         """
-        return self._sbml_path
-
-    @sbml_path.setter
-    def sbml_path(self, value):
-        """Set sbml path
-        
-        Args:
-            value (:obj:`str`): path to `sbml` file
-        
-        Raises:
-            ValueError: if sbml_path is not a sbml file
-        """
-        if not isinstance(value, str) or not (value.endswith('.sbml') or value.endswith('.xml')):
-            raise ValueError('`sbml_path` must be a path to a sbml file')
-        if not os.path.isfile(value):
-            raise ValueError('Cannot find file `{}`'.format(value))
-        self._sbml_path = value
-        if not self._initialization:
-            self._set_julia_code()
-
-    @property
-    def data_path(self):
-        """Get data path
-        
-        Returns:
-            :obj:`str`: path to data file
-        """
-        return self._data_path
-
-    @data_path.setter
-    def data_path(self, value):
-        """Set data path
-        
-        Args:
-            value (:obj:`str`): path to data file
-        
-        Raises:
-            ValueError: if data_path is not a csv file
-        """
-        if not isinstance(value, str) or not (value.endswith('.csv')):
-            raise ValueError('`data_path` must be a path to a csv file')
-        if not os.path.isfile(value):
-            raise ValueError('Cannot find file `{}`'.format(value))
-        df = pd.read_csv(value)
-        self._data_path = value
-        self._exp_data = df
-        if not self._initialization:
-            self._set_julia_code()
+        return self._petab_yaml_dict
 
     @property
     def t_ratio(self):
@@ -127,30 +80,6 @@ class DisFitProblem(object):
         if not self._initialization:
             self._set_julia_code()
 
-    @property
-    def fold_change(self):
-        """Get fold_change
-        
-        Returns:
-            :obj:`float`: fold change window of parameter search range wrt sbml parameters
-        """
-        return self._fold_change
-
-    @fold_change.setter
-    def fold_change(self, value):
-        """Set fold_change
-        
-        Args:
-            value (:obj:`float`): fold change window of parameter search range wrt sbml parameters
-        
-        Raises:
-            ValueError: if fold_change <= 1
-        """
-        if not (isinstance(value, float) or isinstance(value, int)) or (value <= 1):
-            raise ValueError('`fold_change` must be a float > 1')
-        self._fold_change = float(value)
-        if not self._initialization:
-            self._set_julia_code()
 
     @property
     def n_starts(self):
@@ -187,15 +116,6 @@ class DisFitProblem(object):
         return self._julia_code
 
     @property
-    def exp_data(self):
-        """Get exp_data
-        
-        Returns:
-            :obj:`pandas.DataFrame`: experimental data
-        """
-        return self._exp_data
-
-    @property
     def results(self):
         """Get results
         
@@ -203,6 +123,15 @@ class DisFitProblem(object):
             :obj:`dict`: optimization results
         """
         return self._results
+
+    @property
+    def petab_problem(self):
+        """Get petab_problem
+        
+        Returns:
+            :obj:`petab.problem.Problem`: petab problem
+        """
+        return self._petab_problem
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
         """Write code to julia file
@@ -300,6 +229,18 @@ class DisFitProblem(object):
             self.results['x_best'].to_excel(writer, sheet_name='x_best')
             pd.DataFrame(self.results['states'][self._best_iter]).to_excel(writer, sheet_name='states')
 
+    def _set_petab_problem(self, petab_yaml):
+
+        problem = petab.problem.Problem()                                                                                                                                                                          
+        problem = problem.from_yaml(petab_yaml)
+        petab.lint.lint_problem(problem) # Returns `False` if no error occured and raises exception otherwise.
+        self._petab_problem = problem
+        with open("petab_yaml", 'r') as f:
+            try:
+                self._petab_yaml_dict = yaml.safe_load(f)
+            except yaml.YAMLError as error:
+                raise SystemExit('Error occured: {}'.format(str(error)))
+
     def _set_julia_code(self):
         """Transform sbml file to Julia JuMP model.
         """
@@ -316,39 +257,43 @@ class DisFitProblem(object):
         """
         #----------------------------------------------------------------------#
 
-        doc = libsbml.readSBMLFromFile(self.sbml_path)
-        if doc.getNumErrors(libsbml.LIBSBML_SEV_FATAL):
-            print('Encountered serious errors while reading file')
-            print(doc.getErrorLog().toString())
-            sys.exit(1)
+        # doc = libsbml.readSBMLFromFile(self.sbml_path)
+        # print(type(doc))
+        # doc = problem.sbml_model
+        # print(type(doc))
+        # if doc.getNumErrors(libsbml.LIBSBML_SEV_FATAL):
+        #     print('Encountered serious errors while reading file')
+        #     print(doc.getErrorLog().toString())
+        #     sys.exit(1)
            
-        # clear errors
-        doc.getErrorLog().clearLog()
+        # # clear errors
+        # doc.getErrorLog().clearLog()
 
-        # perform conversions
-        props = libsbml.ConversionProperties()
-        props.addOption("promoteLocalParameters", True)
+        # # perform conversions
+        # props = libsbml.ConversionProperties()
+        # props.addOption("promoteLocalParameters", True)
          
-        if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-            print('The document could not be converted')
-            print(doc.getErrorLog().toString())
+        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+        #     print('The document could not be converted')
+        #     print(doc.getErrorLog().toString())
            
-        props = libsbml.ConversionProperties()
-        props.addOption("expandInitialAssignments", True)
+        # props = libsbml.ConversionProperties()
+        # props.addOption("expandInitialAssignments", True)
          
-        if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-            print('The document could not be converted')
-            print(doc.getErrorLog().toString())
+        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+        #     print('The document could not be converted')
+        #     print(doc.getErrorLog().toString())
            
-        props = libsbml.ConversionProperties()
-        props.addOption("expandFunctionDefinitions", True)
+        # props = libsbml.ConversionProperties()
+        # props.addOption("expandFunctionDefinitions", True)
          
-        if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-            print('The document could not be converted')
-            print(doc.getErrorLog().toString())
+        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+        #     print('The document could not be converted')
+        #     print(doc.getErrorLog().toString())
 
-        # figure out which species are variable 
-        mod = doc.getModel()
+        # # figure out which species are variable 
+        # mod = doc.getModel()
+        mod = self.petab_problem.sbml_model
 
         n_params = mod.getNumParameters()
         
@@ -394,12 +339,13 @@ class DisFitProblem(object):
         generated_code.extend(bytes('using CSV\n', 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('fc = {} # Setting parameter search span\n'.format(self.fold_change), 'utf8'))
+        # generated_code.extend(bytes('fc = {} # Setting parameter search span\n'.format(self.fold_change), 'utf8'))
         generated_code.extend(bytes('t_ratio = {} # Setting number of ODE discretisation steps\n'.format(self.t_ratio), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))  
         generated_code.extend(bytes('# Data\n', 'utf8'))
-        generated_code.extend(bytes('data_path = "{}"\n'.format(self.data_path), 'utf8'))
+        print(self.petab_yaml_dict[problems][measurement_files[0]])
+        generated_code.extend(bytes('data_path = "{}"\n'.format(self._petab_dirname + self.petab_yaml_dict[problems][measurement_files][0]), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
         generated_code.extend(bytes('t_exp = Vector(df[!, :t]) # set of simulation times.)\n', 'utf8'))
         generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
@@ -411,9 +357,13 @@ class DisFitProblem(object):
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
         generated_code.extend(bytes('m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
         i = 0
+        parameter_df = self.petab_problem.parameter_df
         for i in range(mod.getNumParameters()):
             element = mod.getParameter(i)
-            generated_code.extend(bytes('    @variable(m, {0}/fc <= {1} <= {0}*fc, start={0}/fc+({0}*fc-{0}/fc)*rand(Float64))\n'.format(par_values[i], element.getId()), 'utf8'))
+            lb = parameter_df.loc[element.getId(), 'lower_bound']
+            ub = parameter_df.loc[element.getId(), 'upper_bound']
+            nominal = parameter_df.loc[element.getId(), 'upper_bound']
+            generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, element.getId()), ub, 'utf8'))
             i =+ 1
 
         generated_code.extend(bytes('\n', 'utf8'))
