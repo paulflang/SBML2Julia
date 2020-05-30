@@ -275,6 +275,10 @@ class DisFitProblem(object):
         observable_df = self.petab_problem.observable_df
         measurement_df = self.petab_problem.measurement_df
 
+        species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
+        species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
+        print(species_df)
+
         observableIds = list(observable_df.index)
 
         n_params = mod.getNumParameters()
@@ -354,7 +358,9 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Model states\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
         for variable in variables.keys():
-            generated_code.extend(bytes('    @variable(m, 0 <= {0}[k in 1:length(t_sim)] <= 1)\n'.format(variable), 'utf8'))
+            lb = species_df.loc[variable, 'lowerBound']
+            ub = species_df.loc[variable, 'upperBound']
+            generated_code.extend(bytes('    @variable(m, {0} <= {1}[k in 1:length(t_sim)] <= {2})\n'.format(lb, variable, ub), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
