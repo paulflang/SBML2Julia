@@ -37,5 +37,6 @@ RUN ln -s /opt/julia-1.0.5/bin/julia /usr/local/bin/julia
 # Install Julia packages
 RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="JuMP", version="0.21.1"))'
 RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="Ipopt", version="0.6.1"))'
-RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="CSV", version="0.6.1"))'
+RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="CSV", version="0.6.2"))'
+RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="DataFrames", version="0.21.1"))'
 RUN julia -e 'using Pkg; Pkg.add(PackageSpec(name="PyCall", version="1.91.4"))'

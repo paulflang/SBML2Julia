@@ -33,8 +33,8 @@ setuptools.setup(
     install_requires=['cement >= 3.0.0', 'python-libsbml', 'matplotlib', 'numpy', 'openpyxl',
         # 'os',
         'pandas', # 're',
-        'scipy', 'setuptools', # 'sys', 'tempfile',
-        'julia'], # installs dependencies that are on PyPI
+        'scipy', 'setuptools', # 'sys', 'tempfile', 'yaml'
+        'julia', 'petab'], # installs dependencies that are on PyPI
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',

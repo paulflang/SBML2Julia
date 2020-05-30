@@ -1,0 +1,17 @@
+parameterId	parameterName	parameterScale	lowerBound	upperBound	nominalValue	estimate
+kPhEnsa	kPhEnsa	log10	0.05	0.2	0.1	1
+kDpEnsa	kDpEnsa	log10	0.025	0.1	0.05	1
+kPhGw	kPhGw	log10	0.5	2	1	1
+kDpGw1	kDpGw1	log10	0.125	0.5	0.25	1
+kDpGw2	kDpGw2	log10	5	20	10	1
+kWee1	kWee1	log10	0.005	0.02	0.01	1
+kWee2	kWee2	log10	0.495	1.98	0.99	1
+kPhWee	kPhWee	log10	0.5	2	1	1
+kDpWee	kDpWee	log10	5	20	10	1
+kCdc25_1	kCdc25_1	log10	0.05	0.2	0.1	1
+kCdc25_2	kCdc25_2	log10	0.45	1.8	0.9	1
+kPhCdc25	kPhCdc25	log10	0.5	2	1	1
+kDpCdc25	kDpCdc25	log10	5	20	10	1
+kDipEB55	kDipEB55	log10	0.0034	0.0136	0.0068	1
+kAspEB55	kAspEB55	log10	28.5	114	57	1
+fCb	fCb	log10	1	4	2	1

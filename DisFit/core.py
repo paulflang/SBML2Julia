@@ -12,9 +12,11 @@ import numpy as np
 import os
 import pandas as pd
 import petab
+import re
 import scipy as sp
 import sys
 import tempfile
+import yaml
 from julia.api import Julia
 importlib.reload(libsbml)
 
@@ -24,9 +26,8 @@ class DisFitProblem(object):
     def __init__(self, petab_yaml, t_ratio=2, n_starts=1):
         """        
         Args:
-            sbml_path (:obj:`str`): path to sbml file
-            data_path (:obj:`str`): path to data file
-            t_ratio (:obj:`int`, optional): number of time discretiation steps
+            petab_yaml (:obj:`str`): path petab .yaml file
+            t_ratio (:obj:`int`, optional): number of time discretiation steps per time unit.
             fold_change (:obj:`float`, optional): fold change window of parameter search range wrt sbml parameters
             n_starts (:obj:`int`): number of multistarts
         """
@@ -39,7 +40,7 @@ class DisFitProblem(object):
         self._initialization = True
         self._results = {}
         self._petab_dirname = os.path.dirname(petab_yaml)
-        self.set_petab_problem(petab_yaml)
+        self._set_petab_problem(petab_yaml)
         self.t_ratio = t_ratio
         self.n_starts = n_starts
         self._set_julia_code()
@@ -59,8 +60,7 @@ class DisFitProblem(object):
         """Get t_ratio
         
         Returns:
-            :obj:`int`: ratio between experimental observation intervals and simulation
-            time-discretization intervals
+            :obj:`int`: number of time discretiation steps per time unit.
         """
         return self._t_ratio
 
@@ -69,7 +69,7 @@ class DisFitProblem(object):
         """Set t_ratio
         
         Args:
-            value (:obj:`int`): number of time discretization steps
+            value (:obj:`int`): number of time discretiation steps per time unit.
         
         Raises:
             ValueError: if t_ratio is not an integer >= 1
@@ -79,7 +79,6 @@ class DisFitProblem(object):
         self._t_ratio = value
         if not self._initialization:
             self._set_julia_code()
-
 
     @property
     def n_starts(self):
@@ -148,11 +147,12 @@ class DisFitProblem(object):
         """Optimize DisFitProblem
         
         Returns:
-            :obj:`dict`: Results in a dict with keys 'states', 'x' and 'x_best'
+            :obj:`dict`: Results in a dict with keys 'states', 'observables', 'x' and 'x_best'
         """
         print('Running optimization problem in julia...')
         out = self._jl.eval(self.julia_code)
         self._results['states'] = out['states']
+        self._results['observables'] = out['observables']
         print('Finished optimization in julia.')
         self._best_iter = min(out['objective_val'], key=out['objective_val'].get)
         self._results['x'] = {}
@@ -160,7 +160,7 @@ class DisFitProblem(object):
             self._results['x'][str(i_iter)] = {str(k).split()[1].rstrip('>'): v for k, v in out['x'][str(i_iter)].items()}
         x_best = self.results['x'][self._best_iter]
 
-        x_0 = dict(zip(self._par_names, self._par_values))
+        x_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
         x_best_to_x_0_col = [x_best[key] / x_0[str(key)] for key in x_best.keys()]
         name_col = [str(key) for key in x_best.keys()]
         x_0_col = [x_0[str(key)] for key in x_best.keys()]
@@ -172,32 +172,31 @@ class DisFitProblem(object):
         self._optimized = True
         return self.results
 
-    def plot_results(self, path=os.path.join('.', 'plot.pdf'), variables=[], size=(6, 5)):
+    def plot_results(self, path=os.path.join('.', 'plot.pdf'), observables=[], size=(6, 5)):
         """Plot results
         
         Args:
             path (:obj:`str`, optional): path to output plot
-            variables (:obj:`list`, optional): list of variables to be plotted
+            observables (:obj:`list`, optional): list of observables to be plotted
             size (:obj:`tuple`, optional): size of image
         
         Raises:
-            ValueError: if `variables` is not a list
+            ValueError: if `observables` is not a list
         """
         # Options
         x_label = 'time'
         y_label = 'Abundance'
-        t = self.exp_data.loc[:, 't'].values
+        measurement_df = self.petab_problem.measurement_df.pivot(index='time', columns='observableId')
+        t = list(measurement_df.index)
         t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
-        if not isinstance(variables, list):
-            raise ValueError('`variables` must be a list of variables.')
-        if not variables:
-            values = pd.DataFrame(self.results['states'][self._best_iter])
-            var_names = self._var_names
-            exp_data = self._exp_data
+        if not isinstance(observables, list):
+            raise ValueError('`observables` must be a list of observables.')
+        if not observables:
+            values = pd.DataFrame(self.results['observables'][self._best_iter])
+            exp_data = measurement_df.drop(['simulationConditionId'], axis=1)
         else:
-            values = pd.DataFrame(self.results['states'][self._best_iter]).loc[:, variables]
-            var_names = pd.DataFrame(self.results['states'][self._best_iter]).loc[:, variables].index
-            exp_data = self.exp_data.loc[:, variables]
+            values = pd.DataFrame(self.results['observables'][self._best_iter]).loc[:, observables]
+            exp_data = measurement_df.loc[:, variables]
 
         # Determine the size of the figure
         plt.figure(figsize=size)
@@ -206,7 +205,7 @@ class DisFitProblem(object):
         a.plot(t_sim, values, linewidth=3)
         a.legend(tuple(values.columns))
         plt.plot(t, exp_data, 'x')
-        a.legend(tuple(values.columns))
+        a.legend(tuple(values.columns)) # Todo: create a legend for experimental data.
         plt.xlim(np.min(t), np.max(t))
         plt.ylim(0, 1.1 * max(values.max()))
         plt.xlabel(x_label, fontsize=18)
@@ -227,22 +226,36 @@ class DisFitProblem(object):
         """
         with pd.ExcelWriter(path) as writer:  
             self.results['x_best'].to_excel(writer, sheet_name='x_best')
-            pd.DataFrame(self.results['states'][self._best_iter]).to_excel(writer, sheet_name='states')
+
+            df = pd.DataFrame(self.results['states'][self._best_iter])
+            df.axes[0].names = ['time']
+            df.to_excel(writer, sheet_name='states')
+            
+            df = pd.DataFrame(self.results['observables'][self._best_iter])
+            df.axes[0].names = ['time']
+            df.to_excel(writer, sheet_name='observables')
 
     def _set_petab_problem(self, petab_yaml):
-
+        """Converts petab yaml to dict and creates petab.problem.Problem object
+        
+        Args:
+            petab_yaml (:obj:`str`): path petab .yaml file
+        
+        Raises:
+            SystemExit: if petab yaml file cannot be loaded.
+        """
         problem = petab.problem.Problem()                                                                                                                                                                          
         problem = problem.from_yaml(petab_yaml)
         petab.lint.lint_problem(problem) # Returns `False` if no error occured and raises exception otherwise.
         self._petab_problem = problem
-        with open("petab_yaml", 'r') as f:
+        with open(petab_yaml, 'r') as f:
             try:
                 self._petab_yaml_dict = yaml.safe_load(f)
             except yaml.YAMLError as error:
                 raise SystemExit('Error occured: {}'.format(str(error)))
 
     def _set_julia_code(self):
-        """Transform sbml file to Julia JuMP model.
+        """Transform petab.problem.Problem to Julia JuMP model.
         """
         #----------------------------------------------------------------------#
         """
@@ -257,43 +270,12 @@ class DisFitProblem(object):
         """
         #----------------------------------------------------------------------#
 
-        # doc = libsbml.readSBMLFromFile(self.sbml_path)
-        # print(type(doc))
-        # doc = problem.sbml_model
-        # print(type(doc))
-        # if doc.getNumErrors(libsbml.LIBSBML_SEV_FATAL):
-        #     print('Encountered serious errors while reading file')
-        #     print(doc.getErrorLog().toString())
-        #     sys.exit(1)
-           
-        # # clear errors
-        # doc.getErrorLog().clearLog()
-
-        # # perform conversions
-        # props = libsbml.ConversionProperties()
-        # props.addOption("promoteLocalParameters", True)
-         
-        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-        #     print('The document could not be converted')
-        #     print(doc.getErrorLog().toString())
-           
-        # props = libsbml.ConversionProperties()
-        # props.addOption("expandInitialAssignments", True)
-         
-        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-        #     print('The document could not be converted')
-        #     print(doc.getErrorLog().toString())
-           
-        # props = libsbml.ConversionProperties()
-        # props.addOption("expandFunctionDefinitions", True)
-         
-        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-        #     print('The document could not be converted')
-        #     print(doc.getErrorLog().toString())
-
-        # # figure out which species are variable 
-        # mod = doc.getModel()
         mod = self.petab_problem.sbml_model
+        parameter_df = self.petab_problem.parameter_df
+        observable_df = self.petab_problem.observable_df
+        measurement_df = self.petab_problem.measurement_df
+
+        observableIds = list(observable_df.index)
 
         n_params = mod.getNumParameters()
         
@@ -334,9 +316,12 @@ class DisFitProblem(object):
 
         # start generating the code by appending to bytearray
         generated_code = bytearray('', 'utf8')
-        generated_code.extend(bytes('using JuMP\n', 'utf8'))
-        generated_code.extend(bytes('using Ipopt\n', 'utf8'))
+        
+        
         generated_code.extend(bytes('using CSV\n', 'utf8'))
+        generated_code.extend(bytes('using DataFrames\n', 'utf8'))
+        generated_code.extend(bytes('using Ipopt\n', 'utf8'))
+        generated_code.extend(bytes('using JuMP\n', 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
         # generated_code.extend(bytes('fc = {} # Setting parameter search span\n'.format(self.fold_change), 'utf8'))
@@ -344,27 +329,26 @@ class DisFitProblem(object):
 
         generated_code.extend(bytes('\n', 'utf8'))  
         generated_code.extend(bytes('# Data\n', 'utf8'))
-        print(self.petab_yaml_dict[problems][measurement_files[0]])
-        generated_code.extend(bytes('data_path = "{}"\n'.format(self._petab_dirname + self.petab_yaml_dict[problems][measurement_files][0]), 'utf8'))
+        generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
-        generated_code.extend(bytes('t_exp = Vector(df[!, :t]) # set of simulation times.)\n', 'utf8'))
+        generated_code.extend(bytes('df = unstack(df, :time, :observableId, :measurement)\n', 'utf8'))
+        generated_code.extend(bytes('t_exp = Vector(df[!, :time]) # set of simulation times.)\n', 'utf8'))
         generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
 
         generated_code.extend(bytes('results = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["objective_val"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["x"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["observables"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
-        generated_code.extend(bytes('m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
-        i = 0
-        parameter_df = self.petab_problem.parameter_df
-        for i in range(mod.getNumParameters()):
-            element = mod.getParameter(i)
-            lb = parameter_df.loc[element.getId(), 'lower_bound']
-            ub = parameter_df.loc[element.getId(), 'upper_bound']
-            nominal = parameter_df.loc[element.getId(), 'upper_bound']
-            generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, element.getId()), ub, 'utf8'))
-            i =+ 1
+        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
+        # i = 0
+        for element in parameter_df.index:
+            lb = parameter_df.loc[element, 'lowerBound']
+            ub = parameter_df.loc[element, 'upperBound']
+            nominal = parameter_df.loc[element, 'nominalValue']
+            generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, str(element), ub), 'utf8'))
+            # i =+ 1
 
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('    # Model states\n', 'utf8'))
@@ -415,12 +399,31 @@ class DisFitProblem(object):
             generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
+        # Define observables
+        generated_code.extend(bytes('    # Define observables\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining observables ...")\n', 'utf8'))
+        for observable in observableIds:
+            min_exp_val = np.min(measurement_df.loc[measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
+            max_exp_val = np.max(measurement_df.loc[measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
+            diff = max_exp_val - min_exp_val
+            lb = min_exp_val - 0.2*diff
+            ub = max_exp_val + 0.2*diff
+            generated_code.extend(bytes('    @variable(m, {0} <= {1}[k in 1:length(t_sim)] <= {2})\n'.format(lb, observable, ub), 'utf8'))
+            formula = observable_df.loc[observable, 'observableFormula'].split()
+            for i in range(len(formula)):
+                if formula[i] in self._var_names:
+                    formula[i] = formula[i]+'[k]'
+            formula = ''.join(formula)
+            generated_code.extend(bytes('    @NLconstraint(m, [k in 1:length(t_sim)], {0}[k] == {1})\n'.format(observable, formula), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
+        # Define objective
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining objective ...")\n', 'utf8'))
         generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
-        for variable in variables:
-            sums_of_squares.append('sum(({}[(k-1)*t_ratio+1]-df[k, :{}])^2 for k in 1:length(t_exp))\n'.format(variable, variable))
+        for observable in observableIds:
+            sums_of_squares.append('sum(({0}[(k-1)*t_ratio+1]-df[k, :{0}])^2 for k in 1:length(t_exp))\n'.format(observable))
         generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
@@ -430,7 +433,7 @@ class DisFitProblem(object):
         # Retreiving the solution
         generated_code.extend(bytes('    println("Retreiving solution...")\n', 'utf8'))
         # generated_code.extend(bytes('    species_to_plot = {}\n'.format(species_to_plot), 'utf8'))
-        generated_code.extend(bytes('    params = ' + str(par_names).replace('\'', '') + '\n', 'utf8'))
+        generated_code.extend(bytes('    params = ' + str(list(parameter_df.index)).replace('\'', '') + '\n', 'utf8'))
         generated_code.extend(bytes('    paramvalues = Dict()\n', 'utf8'))
         generated_code.extend(bytes('    for param in params\n', 'utf8'))
         generated_code.extend(bytes('        paramvalues[param] = JuMP.value.(param)\n', 'utf8'))
@@ -445,13 +448,23 @@ class DisFitProblem(object):
         generated_code.extend(bytes('        variablevalues[string(v[1])[1:end-3]] = Vector(JuMP.value.(v))\n', 'utf8'))
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
+        generated_code.extend(bytes('    observables = [', 'utf8'))
+        for observable in observableIds:
+            generated_code.extend(bytes(observable+', ', 'utf8'))
+        generated_code.extend(bytes(']\n', 'utf8'))
+        generated_code.extend(bytes('    observablevalues = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    for o in observables\n', 'utf8'))
+        generated_code.extend(bytes('        observablevalues[string(o[1])[1:end-3]] = Vector(JuMP.value.(o))\n', 'utf8'))
+        generated_code.extend(bytes('    end\n\n', 'utf8'))
+
         generated_code.extend(bytes('    v = objective_value(m)\n\n', 'utf8'))
         generated_code.extend(bytes('    results["objective_val"][string(i_start)] = v\n', 'utf8'))
         generated_code.extend(bytes('    results["x"][string(i_start)] = paramvalues\n', 'utf8'))
-        generated_code.extend(bytes('    results["states"][string(i_start)] = variablevalues\n\n', 'utf8'))
+        generated_code.extend(bytes('    results["states"][string(i_start)] = variablevalues\n', 'utf8'))
+        generated_code.extend(bytes('    results["observables"][string(i_start)] = observablevalues\n\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
-        generated_code.extend(bytes('results\n\n', 'utf8'))
+        generated_code.extend(bytes('results', 'utf8'))
 
         code = generated_code.decode()
         self._julia_code = code
