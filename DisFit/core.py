@@ -272,12 +272,12 @@ class DisFitProblem(object):
 
         mod = self.petab_problem.sbml_model
         parameter_df = self.petab_problem.parameter_df
+        condition_df = self.petab_problem.condition_df
         observable_df = self.petab_problem.observable_df
         measurement_df = self.petab_problem.measurement_df
 
         species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
         species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
-        print(species_df)
 
         observableIds = list(observable_df.index)
 
@@ -335,8 +335,23 @@ class DisFitProblem(object):
         generated_code.extend(bytes('# Data\n', 'utf8'))
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
-        generated_code.extend(bytes('df = unstack(df, :time, :observableId, :measurement)\n', 'utf8'))
-        generated_code.extend(bytes('t_exp = Vector(df[!, :time]) # set of simulation times.)\n', 'utf8'))
+
+        # Todo Sungho: I did not manage to read in the data correctly.
+        # Could you please make sure that experimental data is read into Julia in a way that is compatible with the objective function definition?
+        # Note that `df` is in molten/long form (see DisFit/tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv).
+        # As of now, I would have thought of accessing observable_x of condition j and time point k as `data[j][k, :observable_x]` (see a few lines below).
+        generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
+        generated_code.extend(bytes('data = [DataFrame() for i in length(dfg)]\n', 'utf8'))
+        generated_code.extend(bytes('data[i] = unstack(dfg[condition], :time, :observableId, :measurement)\n', 'utf8'))
+        generated_code.extend(bytes('i = 1\n', 'utf8'))
+        generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
+        generated_code.extend(bytes('    data[i] = unstack(dfg[condition], :time, :observableId, :measurement)\n', 'utf8'))
+        generated_code.extend(bytes('    i = i+1\n', 'utf8'))
+        generated_code.extend(bytes('end\n', 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+        generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8'))
+
+
         generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
 
         generated_code.extend(bytes('results = Dict()\n', 'utf8'))
@@ -347,20 +362,44 @@ class DisFitProblem(object):
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
         generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
         # i = 0
+        
+        generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
+        n_conditions = condition_df.shape[0]
+        for parameter in condition_df.columns:
+            if str(condition_df[parameter].dtype) in ('float64', 'int16'):
+                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, n_conditions), 'utf8'))
+                for i in range(1, n_conditions+1):
+                    generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(parameter, i, condition_df.iloc[i-1][parameter]), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
+        local_pars = []
+        generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
+        for parameter in condition_df.columns:
+            if str(condition_df[parameter].dtype) == 'object':
+                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, n_conditions), 'utf8'))
+                for i in range(1, n_conditions+1):
+                    local_pars.append(condition_df.iloc[i-1][parameter])
+                    correct_row = (parameter_df.index == condition_df.iloc[i-1][parameter])
+                    lb = parameter_df.loc[correct_row, 'lowerBound']
+                    ub = parameter_df.loc[correct_row, 'upperBound']
+                    generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, parameter, i, ub), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
+        generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
         for element in parameter_df.index:
-            lb = parameter_df.loc[element, 'lowerBound']
-            ub = parameter_df.loc[element, 'upperBound']
-            nominal = parameter_df.loc[element, 'nominalValue']
-            generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, str(element), ub), 'utf8'))
-            # i =+ 1
+            if element not in local_pars:
+                lb = parameter_df.loc[element, 'lowerBound']
+                ub = parameter_df.loc[element, 'upperBound']
+                nominal = parameter_df.loc[element, 'nominalValue']
+                generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, str(element), ub), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('    # Model states\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
         for variable in variables.keys():
-            lb = species_df.loc[variable, 'lowerBound']
+            lb = species_df.loc[variable, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
             ub = species_df.loc[variable, 'upperBound']
-            generated_code.extend(bytes('    @variable(m, {0} <= {1}[k in 1:length(t_sim)] <= {2})\n'.format(lb, variable, ub), 'utf8'))
+            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, variable, n_conditions, ub), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
@@ -396,11 +435,14 @@ class DisFitProblem(object):
                     continue
                 variables[species.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
+        patterns = [par+' ' for par in condition_df.columns]
         for variable in variables:
-            generated_code.extend(bytes('    @NLconstraint(m, [k in 1:length(t_sim)-1],\n', 'utf8'))
-            generated_code.extend(bytes('        {}[k+1] == {}[k] + ('.format(variable, variable), 'utf8'))
+            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(n_conditions), 'utf8'))
+            generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(variable, variable), 'utf8'))
             for (coef, reaction_name) in variables[variable]:
                 reaction_formula = ' {}*({})'.format(coef, reactions[reaction_name])
+                for pattern in patterns:
+                    reaction_formula = re.sub(pattern, pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
                 generated_code.extend(bytes(reaction_formula, 'utf8'))
             generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
@@ -414,13 +456,15 @@ class DisFitProblem(object):
             diff = max_exp_val - min_exp_val
             lb = min_exp_val - 0.2*diff
             ub = max_exp_val + 0.2*diff
-            generated_code.extend(bytes('    @variable(m, {0} <= {1}[k in 1:length(t_sim)] <= {2})\n'.format(lb, observable, ub), 'utf8'))
+            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, n_conditions, ub), 'utf8'))
             formula = observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
                 if formula[i] in self._var_names:
                     formula[i] = formula[i]+'[k]'
+                elif formula[i] in patterns:
+                    formula[i] = formula[i]+'[j]'
             formula = ''.join(formula)
-            generated_code.extend(bytes('    @NLconstraint(m, [k in 1:length(t_sim)], {0}[k] == {1})\n'.format(observable, formula), 'utf8'))
+            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[k] == {})\n'.format(n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Define objective
@@ -429,7 +473,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
         for observable in observableIds:
-            sums_of_squares.append('sum(({0}[(k-1)*t_ratio+1]-df[k, :{0}])^2 for k in 1:length(t_exp))\n'.format(observable))
+            sums_of_squares.append('sum(({0}[j, (k-1)*t_ratio+1]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, n_conditions))
         generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
@@ -451,7 +495,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes(']\n', 'utf8'))
         generated_code.extend(bytes('    variablevalues = Dict()\n', 'utf8'))
         generated_code.extend(bytes('    for v in variables\n', 'utf8'))
-        generated_code.extend(bytes('        variablevalues[string(v[1])[1:end-3]] = Vector(JuMP.value.(v))\n', 'utf8'))
+        generated_code.extend(bytes('        variablevalues[string(v[1])[1:end-3]] = Vector(JuMP.value.(v))\n', 'utf8')) # Todo: maybe replace `Vector` with `Array`
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
         generated_code.extend(bytes('    observables = [', 'utf8'))
@@ -460,7 +504,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes(']\n', 'utf8'))
         generated_code.extend(bytes('    observablevalues = Dict()\n', 'utf8'))
         generated_code.extend(bytes('    for o in observables\n', 'utf8'))
-        generated_code.extend(bytes('        observablevalues[string(o[1])[1:end-3]] = Vector(JuMP.value.(o))\n', 'utf8'))
+        generated_code.extend(bytes('        observablevalues[string(o[1])[1:end-3]] = Array(JuMP.value.(o))\n', 'utf8'))
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
         generated_code.extend(bytes('    v = objective_value(m)\n\n', 'utf8'))
