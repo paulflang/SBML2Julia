@@ -336,17 +336,10 @@ class DisFitProblem(object):
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
 
-        # Todo Sungho: I did not manage to read in the data correctly.
-        # Could you please make sure that experimental data is read into Julia in a way that is compatible with the objective function definition?
-        # Note that `df` is in molten/long form (see DisFit/tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv).
-        # As of now, I would have thought of accessing observable_x of condition j and time point k as `data[j][k, :observable_x]` (see a few lines below).
         generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
-        generated_code.extend(bytes('data = [DataFrame() for i in length(dfg)]\n', 'utf8'))
-        generated_code.extend(bytes('data[i] = unstack(dfg[condition], :time, :observableId, :measurement)\n', 'utf8'))
-        generated_code.extend(bytes('i = 1\n', 'utf8'))
+        generated_code.extend(bytes('data = []\n', 'utf8'))
         generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
-        generated_code.extend(bytes('    data[i] = unstack(dfg[condition], :time, :observableId, :measurement)\n', 'utf8'))
-        generated_code.extend(bytes('    i = i+1\n', 'utf8'))
+        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))\n', 'utf8'))
         generated_code.extend(bytes('end\n', 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8'))
