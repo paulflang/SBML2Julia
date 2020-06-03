@@ -269,8 +269,51 @@ class DisFitProblem(object):
         Availability: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828
         """
         #----------------------------------------------------------------------#
+        
+        # read the SBML from file 
+        sbml_filename = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['sbml_files'][0])
+        doc = libsbml.readSBMLFromFile(sbml_filename)
+        if doc.getNumErrors(libsbml.LIBSBML_SEV_FATAL):
+            print('Encountered serious errors while reading file')
+            print(doc.getErrorLog().toString())
+            sys.exit(1)
 
-        mod = self.petab_problem.sbml_model
+        # clear errors
+        doc.getErrorLog().clearLog()
+
+        # perform conversions
+        props = libsbml.ConversionProperties()
+        props.addOption("promoteLocalParameters", True)
+
+        if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+            print('The document could not be converted')
+            print(doc.getErrorLog().toString())
+
+        # props = libsbml.ConversionProperties()
+        # props.addOption("expandInitialAssignments", True)
+
+        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+        #     print('The document could not be converted')
+        #     print(doc.getErrorLog().toString())
+
+        props = libsbml.ConversionProperties()
+        props.addOption("expandFunctionDefinitions", True) # Todo: ask PEtab developers set this to `True` when creating `petab.problem.Problem()`
+
+        if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+            print('The document could not be converted')
+            print(doc.getErrorLog().toString())
+
+        # figure out which species are variable
+        # mod = self.petab_problem.sbml_model
+        mod = doc.getModel()
+
+        print('IC')
+        # print(mod.variables.getInitialConcentration())
+        initial_assignments = {}
+        for a in mod.getListOfInitialAssignments():
+            initial_assignments[a.getId()] = a.getMath().getName()
+        print(initial_assignments)
+
         parameter_df = self.petab_problem.parameter_df
         condition_df = self.petab_problem.condition_df
         observable_df = self.petab_problem.observable_df
@@ -308,7 +351,7 @@ class DisFitProblem(object):
             element = mod.getElementBySId(variable)
             if element.getTypeCode() == libsbml.SBML_PARAMETER: 
                 x_0.append(element.getValue())
-            elif element.getTypeCode() == libsbml.SBML_SPECIES: 
+            elif element.getTypeCode() == libsbml.SBML_SPECIES:
                 if element.isSetInitialConcentration(): 
                     x_0.append(element.getInitialConcentration())
                 else: 
@@ -320,8 +363,6 @@ class DisFitProblem(object):
 
         # start generating the code by appending to bytearray
         generated_code = bytearray('', 'utf8')
-        
-        
         generated_code.extend(bytes('using CSV\n', 'utf8'))
         generated_code.extend(bytes('using DataFrames\n', 'utf8'))
         generated_code.extend(bytes('using Ipopt\n', 'utf8'))
@@ -356,14 +397,16 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
         # i = 0
         
+        condition_defined_pars = []
         generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
         n_conditions = condition_df.shape[0]
         for parameter in condition_df.columns:
             if str(condition_df[parameter].dtype) in ('float64', 'int16'):
+                condition_defined_pars.append(condition_df[parameter])
                 generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, n_conditions), 'utf8'))
                 for i in range(1, n_conditions+1):
                     generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(parameter, i, condition_df.iloc[i-1][parameter]), 'utf8'))
-        generated_code.extend(bytes('\n', 'utf8'))
+                generated_code.extend(bytes('\n', 'utf8'))
 
         local_pars = []
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
@@ -373,10 +416,19 @@ class DisFitProblem(object):
                 for i in range(1, n_conditions+1):
                     local_pars.append(condition_df.iloc[i-1][parameter])
                     correct_row = (parameter_df.index == condition_df.iloc[i-1][parameter])
-                    lb = parameter_df.loc[correct_row, 'lowerBound']
-                    ub = parameter_df.loc[correct_row, 'upperBound']
-                    generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, parameter, i, ub), 'utf8'))
-        generated_code.extend(bytes('\n', 'utf8'))
+                    lb = parameter_df.iloc[ i-1]['lowerBound']
+                    ub = parameter_df.iloc[i-1]['upperBound']
+                    nominal = parameter_df.iloc[i-1]['nominalValue']
+                    estimate = parameter_df.iloc[i-1]['estimate']
+                    if estimate == 1:
+                        generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, parameter, i, ub), 'utf8'))
+                    elif estimate == 0:
+                        generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(parameter, i, nominal), 'utf8'))
+                    else:
+                        raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
+
+                generated_code.extend(bytes('\n', 'utf8'))
+        print(local_pars)
 
         generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
         for element in parameter_df.index:
@@ -384,29 +436,46 @@ class DisFitProblem(object):
                 lb = parameter_df.loc[element, 'lowerBound']
                 ub = parameter_df.loc[element, 'upperBound']
                 nominal = parameter_df.loc[element, 'nominalValue']
-                generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, str(element), ub), 'utf8'))
+                estimate = parameter_df.loc[element, 'estimate']
+                if estimate == 1:
+                    generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, str(element), ub), 'utf8'))
+                elif estimate == 0:
+                    generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(str(element), nominal), 'utf8'))
+                else:
+                    raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
 
-        generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('    # Model states\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
-        for variable in variables.keys():
-            lb = species_df.loc[variable, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
-            ub = species_df.loc[variable, 'upperBound']
-            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, variable, n_conditions, ub), 'utf8'))
 
-        generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining ODEs ...")\n', 'utf8'))
         
         reactions = {}
+        # print(mod.getFunctionDefinition('Inhibited_catalysis'))
+        # print(mod.getFunctionDefinition('Inhibited_catalysis').toSBML())
+        # print(mod.getFunctionDefinition('Inhibited_catalysis').toXMLNode())
+        # print(mod.getFunctionDefinition('Inhibited_catalysis').getMath())
+
+        # print(libsbml.formulaToString(mod.getFunctionDefinition('Inhibited_catalysis').toSBML()))
+
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()
-            kinetic_components = kinetics.getFormula().split(' * ')[1:]
-            for i in range(len(kinetic_components[1:])):
-                kinetic_components[i+1] = kinetic_components[i+1] + '[k+1]'
-            jump_formula = ' * '.join(kinetic_components)
-            reactions[reaction.getId()] = jump_formula
+            # print(kinetics.getListOfParameters())
+            # print(kinetics.getListOfParameters())
+            kinetic_components = kinetics.getFormula() #.split(' * ')[1:]
+            print(kinetic_components)
+            kinetic_components = re.sub('compartment \* ', '', kinetic_components)
+            print(kinetic_components)
+            # print(reaction)
+            # print(kinetics)
+            # print(kinetic_components)
+            # print(kinetics.getMath())
+            # print(libsbml.formulaToString(kinetics.getMath()))
+            # print(libsbml.parseFormula(kinetics.getMath()))
+            # print(libsbml.parseL3Formula(kinetics.getMath()))
+            # print(kinetics.getFormula())
+
+            # for i in range(len(kinetic_components[1:])):
+            #     kinetic_components[i+1] = kinetic_components[i+1] + '[k+1]'
+            # jump_formula = ' * '.join(kinetic_components)
+            reactions[reaction.getId()] = kinetic_components #jump_formula
         
         for i in range(mod.getNumReactions()): 
             reaction = mod.getReaction(i)
@@ -428,16 +497,48 @@ class DisFitProblem(object):
                     continue
                 variables[species.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
+        
+        generated_code.extend(bytes('\n', 'utf8'))
+        generated_code.extend(bytes('    # Model states\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
+        for variable in variables.keys():
+            print('before if loop')
+            print(variables[variable])
+
+            if variables[variable]:
+                lb = species_df.loc[variable, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
+                ub = species_df.loc[variable, 'upperBound']
+                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, variable, n_conditions, ub), 'utf8'))
+            else:
+                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(variable, n_conditions), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
+
+        generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining ODEs ...")\n', 'utf8'))
         patterns = [par+' ' for par in condition_df.columns]
         for variable in variables:
-            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(n_conditions), 'utf8'))
-            generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(variable, variable), 'utf8'))
-            for (coef, reaction_name) in variables[variable]:
-                reaction_formula = ' {}*({})'.format(coef, reactions[reaction_name])
-                for pattern in patterns:
-                    reaction_formula = re.sub(pattern, pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
-                generated_code.extend(bytes(reaction_formula, 'utf8'))
-            generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
+            if variables[variable]:
+                generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(n_conditions), 'utf8'))
+                generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(variable, variable), 'utf8'))
+                for (coef, reaction_name) in variables[variable]:
+                    reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
+                    for pattern in patterns:
+                        reaction_formula = re.sub(pattern, pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
+                    for var in self._var_names:
+                        if variables[var]:
+                            reaction_formula = re.sub('[^a-zA-Z0-9_]'+var+'[^a-zA-Z0-9_]', ' '+var+'[j, k+1] ', reaction_formula)
+                        else:
+                            reaction_formula = re.sub('[^a-zA-Z0-9_]'+var+'[^a-zA-Z0-9_]', ' '+var+'[j] ', reaction_formula)
+                    reaction_formula = re.sub('pow', '*', reaction_formula)
+                    # for i in range(50):
+                    #     reaction_formula = re.sub(', {}\)'.format(i), ')^{} '.format(i), reaction_formula)
+                    generated_code.extend(bytes(reaction_formula, 'utf8'))
+                generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
+            else:
+                print('IC')
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(n_conditions, variable, initial_assignments[variable]), 'utf8'))
+
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Define observables

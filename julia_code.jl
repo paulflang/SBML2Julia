@@ -9,12 +9,9 @@ t_ratio = 2 # Setting number of ODE discretisation steps
 data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv"
 df = CSV.read(data_path)
 dfg = groupby(df, :simulationConditionId)
-data = [DataFrame() for i in length(dfg)]
-data[i] = unstack(dfg[condition], :time, :observableId, :measurement)
-i = 1
+data = []
 for condition in keys(dfg)
-    data[i] = unstack(dfg[condition], :time, :observableId, :measurement)
-    i = i+1
+    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))
 end
 
 t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])
@@ -34,6 +31,7 @@ for i_start in 1:1
     @constraint(m, iWee_0[2] == 0.1)
     @constraint(m, iWee_0[3] == 0.0)
     @constraint(m, iWee_0[4] == 0.0)
+
     @variable(m, Cb_0[1:4])
     @constraint(m, Cb_0[1] == 0.8)
     @constraint(m, Cb_0[2] == 0.8)
@@ -42,47 +40,16 @@ for i_start in 1:1
 
     # Define condition-local parameters
     @variable(m, fB55[1:4])
-    @constraint(m, parameterId
-fB55_wt    0.5
-Name: lowerBound, dtype: float64 <= fB55[1] <= parameterId
-fB55_wt    2.0
-Name: upperBound, dtype: float64)
-    @constraint(m, parameterId
-fB55_iWee    0.45
-Name: lowerBound, dtype: float64 <= fB55[2] <= parameterId
-fB55_iWee    1.8
-Name: upperBound, dtype: float64)
-    @constraint(m, parameterId
-fB55_Cb_low    0.55
-Name: lowerBound, dtype: float64 <= fB55[3] <= parameterId
-fB55_Cb_low    2.2
-Name: upperBound, dtype: float64)
-    @constraint(m, parameterId
-fB55_pGw_weak    0.5
-Name: lowerBound, dtype: float64 <= fB55[4] <= parameterId
-fB55_pGw_weak    2.0
-Name: upperBound, dtype: float64)
+    @constraint(m, 0.025 <= fB55[1] <= 0.1)
+    @constraint(m, 0.5 <= fB55[2] <= 2.0)
+    @constraint(m, 0.125 <= fB55[3] <= 0.5)
+    @constraint(m, 5.0 <= fB55[4] <= 20.0)
+
     @variable(m, kPhEnsa[1:4])
-    @constraint(m, parameterId
-kPhEnsa_wt    0.05
-Name: lowerBound, dtype: float64 <= kPhEnsa[1] <= parameterId
-kPhEnsa_wt    0.2
-Name: upperBound, dtype: float64)
-    @constraint(m, parameterId
-kPhEnsa_iWee    0.05
-Name: lowerBound, dtype: float64 <= kPhEnsa[2] <= parameterId
-kPhEnsa_iWee    0.2
-Name: upperBound, dtype: float64)
-    @constraint(m, parameterId
-kPhEnsa_Cb_low    0.05
-Name: lowerBound, dtype: float64 <= kPhEnsa[3] <= parameterId
-kPhEnsa_Cb_low    0.2
-Name: upperBound, dtype: float64)
-    @constraint(m, parameterId
-kPhEnsa_pGw_weak    0.045
-Name: lowerBound, dtype: float64 <= kPhEnsa[4] <= parameterId
-kPhEnsa_pGw_weak    0.18
-Name: upperBound, dtype: float64)
+    @constraint(m, 0.025 <= kPhEnsa[1] <= 0.1)
+    @constraint(m, 0.5 <= kPhEnsa[2] <= 2.0)
+    @constraint(m, 0.125 <= kPhEnsa[3] <= 0.5)
+    @constraint(m, 5.0 <= kPhEnsa[4] <= 20.0)
 
     # Define global parameters
     @variable(m, 0.025 <= kDpEnsa <= 0.1, start=0.025+(0.1-0.025)*rand(Float64))
@@ -116,36 +83,35 @@ Name: upperBound, dtype: float64)
     @variable(m, 0 <= pEnsa[j in 1:4, k in 1:length(t_sim)] <= 1.1)
     @variable(m, 0 <= pEB55[j in 1:4, k in 1:length(t_sim)] <= 1.1)
     @variable(m, 0 <= B55[j in 1:4, k in 1:length(t_sim)] <= 1.1)
-    @variable(m, 0 <= iWee[j in 1:4, k in 1:length(t_sim)] <= 1.1)
+    @variable(m, iWee[j in 1:4])
 
     # Model ODEs
     println("Defining ODEs ...")
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        Cb[j, k+1] == Cb[j, k] + ( -1.0*(Inhibited_catalysis(kWee2, Cb, Wee, iWee, jiWee)) -1.0*(kWee1 * Cb[k+1]) +1.0*(kCdc25_1 * pCb[k+1]) +1.0*(kCdc25_2 * pCb[k+1] * pCdc25[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        Cb[j, k+1] == Cb[j, k] + ( -1.0*( kWee2 * Cb[j, k+1] * 0.5 *  Wee[j, k+1] - iWee[j] - jiWee + sqrt(*( Wee[j, k+1] + iWee[j] + jiWee, 2) + 4 * jiWee * Wee[j, k+1] ) ) -1.0*( kWee1 * Cb[j, k+1] ) +1.0*( kCdc25_1 * pCb[j, k+1] ) +1.0*( kCdc25_2 * pCb[j, k+1] * pCdc25[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        pCb[j, k+1] == pCb[j, k] + ( +1.0*(Inhibited_catalysis(kWee2, Cb, Wee, iWee, jiWee)) +1.0*(kWee1 * Cb[k+1]) -1.0*(kCdc25_1 * pCb[k+1]) -1.0*(kCdc25_2 * pCb[k+1] * pCdc25[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        pCb[j, k+1] == pCb[j, k] + ( +1.0*( kWee2 * Cb[j, k+1] * 0.5 *  Wee[j, k+1] - iWee[j] - jiWee + sqrt(*( Wee[j, k+1] + iWee[j] + jiWee, 2) + 4 * jiWee * Wee[j, k+1] ) ) +1.0*( kWee1 * Cb[j, k+1] ) -1.0*( kCdc25_1 * pCb[j, k+1] ) -1.0*( kCdc25_2 * pCb[j, k+1] * pCdc25[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        Wee[j, k+1] == Wee[j, k] + ( -1.0*(kPhWee * Cb[k+1] * Wee[k+1]) +1.0*(kDpWee * pWee[k+1] * B55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        Wee[j, k+1] == Wee[j, k] + ( -1.0*( kPhWee * Cb[j, k+1] * Wee[j, k+1] ) +1.0*( kDpWee * pWee[j, k+1] * B55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        pWee[j, k+1] == pWee[j, k] + ( +1.0*(kPhWee * Cb[k+1] * Wee[k+1]) -1.0*(kDpWee * pWee[k+1] * B55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        pWee[j, k+1] == pWee[j, k] + ( +1.0*( kPhWee * Cb[j, k+1] * Wee[j, k+1] ) -1.0*( kDpWee * pWee[j, k+1] * B55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        Cdc25[j, k+1] == Cdc25[j, k] + ( -1.0*(kPhCdc25 * Cb[k+1] * Cdc25[k+1]) +1.0*(kDpCdc25 * pCdc25[k+1] * B55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        Cdc25[j, k+1] == Cdc25[j, k] + ( -1.0*( kPhCdc25 * Cb[j, k+1] * Cdc25[j, k+1] ) +1.0*( kDpCdc25 * pCdc25[j, k+1] * B55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        pCdc25[j, k+1] == pCdc25[j, k] + ( +1.0*(kPhCdc25 * Cb[k+1] * Cdc25[k+1]) -1.0*(kDpCdc25 * pCdc25[k+1] * B55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        pCdc25[j, k+1] == pCdc25[j, k] + ( +1.0*( kPhCdc25 * Cb[j, k+1] * Cdc25[j, k+1] ) -1.0*( kDpCdc25 * pCdc25[j, k+1] * B55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        Gw[j, k+1] == Gw[j, k] + ( -1.0*(kPhGw * Gw[k+1] * Cb[k+1]) +1.0*(kDpGw1 * pGw[k+1]) +1.0*(kDpGw2 * pGw[k+1] * B55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        Gw[j, k+1] == Gw[j, k] + ( -1.0*( kPhGw * Gw[j, k+1] * Cb[j, k+1] ) +1.0*( kDpGw1 * pGw[j, k+1] ) +1.0*( kDpGw2 * pGw[j, k+1] * B55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        pGw[j, k+1] == pGw[j, k] + ( +1.0*(kPhGw * Gw[k+1] * Cb[k+1]) -1.0*(kDpGw1 * pGw[k+1]) -1.0*(kDpGw2 * pGw[k+1] * B55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        pGw[j, k+1] == pGw[j, k] + ( +1.0*( kPhGw * Gw[j, k+1] * Cb[j, k+1] ) -1.0*( kDpGw1 * pGw[j, k+1] ) -1.0*( kDpGw2 * pGw[j, k+1] * B55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        Ensa[j, k+1] == Ensa[j, k] + ( -1.0*(kPhEnsa[j] * Ensa[k+1] * pGw[k+1]) +1.0*(kDpEnsa * pEB55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        Ensa[j, k+1] == Ensa[j, k] + ( -1.0*( kPhEnsa[j] * Ensa[j, k+1] * pGw[j, k+1] ) +1.0*( kDpEnsa * pEB55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        pEnsa[j, k+1] == pEnsa[j, k] + ( +1.0*(kPhEnsa[j] * Ensa[k+1] * pGw[k+1]) -1.0*(kAspEB55 * B55[k+1] * pEnsa[k+1]) +1.0*(kDipEB55 * pEB55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        pEnsa[j, k+1] == pEnsa[j, k] + ( +1.0*( kPhEnsa[j] * Ensa[j, k+1] * pGw[j, k+1] ) -1.0*( kAspEB55 * B55[j, k+1] * pEnsa[j, k+1] ) +1.0*( kDipEB55 * pEB55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        pEB55[j, k+1] == pEB55[j, k] + ( +1.0*(kAspEB55 * B55[k+1] * pEnsa[k+1]) -1.0*(kDipEB55 * pEB55[k+1]) -1.0*(kDpEnsa * pEB55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
+        pEB55[j, k+1] == pEB55[j, k] + ( +1.0*( kAspEB55 * B55[j, k+1] * pEnsa[j, k+1] ) -1.0*( kDipEB55 * pEB55[j, k+1] ) -1.0*( kDpEnsa * pEB55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        B55[j, k+1] == B55[j, k] + ( -1.0*(kAspEB55 * B55[k+1] * pEnsa[k+1]) +1.0*(kDipEB55 * pEB55[k+1]) +1.0*(kDpEnsa * pEB55[k+1])     ) * ( t_sim[k+1] - t_sim[k] ) )
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
-        iWee[j, k+1] == iWee[j, k] + (     ) * ( t_sim[k+1] - t_sim[k] ) )
+        B55[j, k+1] == B55[j, k] + ( -1.0*( kAspEB55 * B55[j, k+1] * pEnsa[j, k+1] ) +1.0*( kDipEB55 * pEB55[j, k+1] ) +1.0*( kDpEnsa * pEB55[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
+    @constraint(m, [j in 1:4], iWee[j] == iWee_0[j])
 
     # Define observables
     println("Defining observables ...")
