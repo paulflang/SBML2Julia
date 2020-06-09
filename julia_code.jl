@@ -6,7 +6,7 @@ using JuMP
 t_ratio = 2 # Setting number of ODE discretisation steps
 
 # Data
-data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv"
+data_path = "tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv"
 df = CSV.read(data_path)
 dfg = groupby(df, :simulationConditionId)
 data = []
@@ -22,8 +22,8 @@ results["objective_val"] = Dict()
 results["x"] = Dict()
 results["states"] = Dict()
 results["observables"] = Dict()
-for i_start in 1:1
-    m = Model(with_optimizer(Ipopt.Optimizer))
+for i_start in 1:4
+    m = Model(with_optimizer(Ipopt.Optimizer,tol=1e-6))
 
     # Define condition-defined parameters
     @variable(m, iWee_0[1:4])
@@ -116,29 +116,29 @@ for i_start in 1:1
     # Define observables
     println("Defining observables ...")
     @variable(m, -0.04513633 <= obs_Cb[j in 1:4, k in 1:length(t_sim)] <= 0.940856055)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Cb[k] == fCb*Cb[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Cb[j,k] == fCb*Cb[j,k])
     @variable(m, 0.09218833600000001 <= obs_Gw[j in 1:4, k in 1:length(t_sim)] <= 1.151301944)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Gw[k] == 2*Gw[k]/2)
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Gw[j,k] == 2*Gw[j,k]/2)
     @variable(m, -0.1170945822 <= obs_pEnsa[j in 1:4, k in 1:length(t_sim)] <= 0.7025674932)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pEnsa[k] == 1+pEnsa[k]-1)
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pEnsa[j,k] == 1+pEnsa[j,k]-1)
     @variable(m, -0.19893025860000002 <= obs_pWee[j in 1:4, k in 1:length(t_sim)] <= 1.1935815516)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pWee[k] == pWee[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pWee[j,k] == pWee[j,k])
     @variable(m, -0.1935815516 <= obs_Cdc25[j in 1:4, k in 1:length(t_sim)] <= 1.1989302586)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Cdc25[k] == Cdc25[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Cdc25[j,k] == Cdc25[j,k])
     @variable(m, -0.0020577524000000014 <= obs_Ensa[j in 1:4, k in 1:length(t_sim)] <= 1.1670096254)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Ensa[k] == Ensa[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Ensa[j,k] == Ensa[j,k])
     @variable(m, -0.15130194400000002 <= obs_pGw[j in 1:4, k in 1:length(t_sim)] <= 0.907811664)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pGw[k] == pGw[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pGw[j,k] == pGw[j,k])
     @variable(m, -0.04991504320000001 <= obs_pEB55[j in 1:4, k in 1:length(t_sim)] <= 0.29949025920000005)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pEB55[k] == pEB55[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pEB55[j,k] == pEB55[j,k])
     @variable(m, -0.1935815516 <= obs_Wee[j in 1:4, k in 1:length(t_sim)] <= 1.1989302586)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Wee[k] == Wee[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Wee[j,k] == Wee[j,k])
     @variable(m, -0.19893025860000002 <= obs_pCdc25[j in 1:4, k in 1:length(t_sim)] <= 1.1935815516)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pCdc25[k] == pCdc25[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pCdc25[j,k] == pCdc25[j,k])
     @variable(m, -0.049490259200000004 <= obs_B55[j in 1:4, k in 1:length(t_sim)] <= 0.2999150432)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_B55[k] == B55[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_B55[j,k] == B55[j,k])
     @variable(m, -0.13909814980000001 <= obs_pCb[j in 1:4, k in 1:length(t_sim)] <= 0.8345888988000001)
-    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pCb[k] == pCb[k])
+    @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pCb[j,k] == pCb[j,k])
 
     # Define objective
     println("Defining objective ...")
