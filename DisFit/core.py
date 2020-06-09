@@ -307,12 +307,9 @@ class DisFitProblem(object):
         # mod = self.petab_problem.sbml_model
         mod = doc.getModel()
 
-        print('IC')
-        # print(mod.variables.getInitialConcentration())
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
             initial_assignments[a.getId()] = a.getMath().getName()
-        print(initial_assignments)
 
         parameter_df = self.petab_problem.parameter_df
         condition_df = self.petab_problem.condition_df
@@ -428,7 +425,6 @@ class DisFitProblem(object):
                         raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
 
                 generated_code.extend(bytes('\n', 'utf8'))
-        print(local_pars)
 
         generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
         for element in parameter_df.index:
@@ -443,38 +439,13 @@ class DisFitProblem(object):
                     generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(str(element), nominal), 'utf8'))
                 else:
                     raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
-
-
         
         reactions = {}
-        # print(mod.getFunctionDefinition('Inhibited_catalysis'))
-        # print(mod.getFunctionDefinition('Inhibited_catalysis').toSBML())
-        # print(mod.getFunctionDefinition('Inhibited_catalysis').toXMLNode())
-        # print(mod.getFunctionDefinition('Inhibited_catalysis').getMath())
-
-        # print(libsbml.formulaToString(mod.getFunctionDefinition('Inhibited_catalysis').toSBML()))
-
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()
-            # print(kinetics.getListOfParameters())
-            # print(kinetics.getListOfParameters())
             kinetic_components = kinetics.getFormula() #.split(' * ')[1:]
-            print(kinetic_components)
             kinetic_components = re.sub('compartment \* ', '', kinetic_components)
-            print(kinetic_components)
-            # print(reaction)
-            # print(kinetics)
-            # print(kinetic_components)
-            # print(kinetics.getMath())
-            # print(libsbml.formulaToString(kinetics.getMath()))
-            # print(libsbml.parseFormula(kinetics.getMath()))
-            # print(libsbml.parseL3Formula(kinetics.getMath()))
-            # print(kinetics.getFormula())
-
-            # for i in range(len(kinetic_components[1:])):
-            #     kinetic_components[i+1] = kinetic_components[i+1] + '[k+1]'
-            # jump_formula = ' * '.join(kinetic_components)
             reactions[reaction.getId()] = kinetic_components #jump_formula
         
         for i in range(mod.getNumReactions()): 
@@ -502,9 +473,6 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Model states\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
         for variable in variables.keys():
-            print('before if loop')
-            print(variables[variable])
-
             if variables[variable]:
                 lb = species_df.loc[variable, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
                 ub = species_df.loc[variable, 'upperBound']
@@ -536,7 +504,6 @@ class DisFitProblem(object):
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else:
-                print('IC')
                 generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(n_conditions, variable, initial_assignments[variable]), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
