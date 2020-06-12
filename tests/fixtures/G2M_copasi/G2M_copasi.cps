@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- generated with COPASI 4.27 (Build 217) (http://www.copasi.org) at 2020-05-31T16:20:11Z -->
+<!-- generated with COPASI 4.27 (Build 217) (http://www.copasi.org) at 2020-06-10T12:21:38Z -->
 <?oxygen RNGSchema="http://www.copasi.org/static/schema/CopasiML.rng" type="xml"?>
 <COPASI xmlns="http://www.copasi.org/static/schema" versionMajor="4" versionMinor="27" versionDevel="217" copasiSourcesModified="0">
   <ListOfFunctions>
@@ -474,15 +474,18 @@ https://www.wolframalpha.com/input/?i=0.5*%281-x-2%2Bsqrt%28%28-1%2Bx%2B2%29%5E2
       </ModelValue>
       <ModelValue key="ModelValue_16" name="iWee_0" simulationType="fixed" addNoise="false">
         <MiriamAnnotation>
-<rdf:RDF xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<rdf:Description rdf:about="#ModelValue_16">
-<dcterms:created>
-<rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:13:49Z</dcterms:W3CDTF>
-</rdf:Description>
-</dcterms:created>
-</rdf:Description>
+<rdf:RDF
+   xmlns:dcterms="http://purl.org/dc/terms/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="#ModelValue_16">
+    <dcterms:created>
+      <rdf:Description>
+        <dcterms:W3CDTF>2020-05-31T16:13:49Z</dcterms:W3CDTF>
+      </rdf:Description>
+    </dcterms:created>
+  </rdf:Description>
 </rdf:RDF>
+
         </MiriamAnnotation>
       </ModelValue>
       <ModelValue key="ModelValue_17" name="Cb_0" simulationType="fixed" addNoise="false">
@@ -501,16 +504,17 @@ https://www.wolframalpha.com/input/?i=0.5*%281-x-2%2Bsqrt%28%28-1%2Bx%2B2%29%5E2
       <ModelValue key="ModelValue_18" name="fB55" simulationType="fixed" addNoise="false">
         <MiriamAnnotation>
 <rdf:RDF
-xmlns:dcterms="http://purl.org/dc/terms/"
-xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-<rdf:Description rdf:about="#ModelValue_18">
-<dcterms:created>
-<rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:20:04Z</dcterms:W3CDTF>
-</rdf:Description>
-</dcterms:created>
-</rdf:Description>
+   xmlns:dcterms="http://purl.org/dc/terms/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="#ModelValue_18">
+    <dcterms:created>
+      <rdf:Description>
+        <dcterms:W3CDTF>2020-06-10T12:21:35Z</dcterms:W3CDTF>
+      </rdf:Description>
+    </dcterms:created>
+  </rdf:Description>
 </rdf:RDF>
+
         </MiriamAnnotation>
       </ModelValue>
     </ListOfModelValues>
@@ -1048,7 +1052,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#ModelParameterSet_1">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:44Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:39Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>
@@ -1801,6 +1805,56 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   </ListOfPlots>
   <GUI>
   </GUI>
+  <SBMLReference file="model_G2M_copasi.xml">
+    <SBMLMap SBMLid="AsB55pEnsa" COPASIkey="Reaction_12"/>
+    <SBMLMap SBMLid="B55" COPASIkey="Metabolite_11"/>
+    <SBMLMap SBMLid="Cb" COPASIkey="Metabolite_0"/>
+    <SBMLMap SBMLid="Cb_0" COPASIkey="ModelValue_17"/>
+    <SBMLMap SBMLid="Cdc25" COPASIkey="Metabolite_4"/>
+    <SBMLMap SBMLid="DipEB55" COPASIkey="Reaction_13"/>
+    <SBMLMap SBMLid="DpCdc25" COPASIkey="Reaction_5"/>
+    <SBMLMap SBMLid="DppCb1" COPASIkey="Reaction_2"/>
+    <SBMLMap SBMLid="DppCb2" COPASIkey="Reaction_3"/>
+    <SBMLMap SBMLid="DppEB55" COPASIkey="Reaction_14"/>
+    <SBMLMap SBMLid="DppGw1" COPASIkey="Reaction_9"/>
+    <SBMLMap SBMLid="DppGw2" COPASIkey="Reaction_10"/>
+    <SBMLMap SBMLid="DppWee" COPASIkey="Reaction_7"/>
+    <SBMLMap SBMLid="Ensa" COPASIkey="Metabolite_8"/>
+    <SBMLMap SBMLid="Gw" COPASIkey="Metabolite_6"/>
+    <SBMLMap SBMLid="Inhibited_catalysis" COPASIkey="Function_40"/>
+    <SBMLMap SBMLid="PhCb1" COPASIkey="Reaction_1"/>
+    <SBMLMap SBMLid="PhCb2" COPASIkey="Reaction_0"/>
+    <SBMLMap SBMLid="PhCdc25" COPASIkey="Reaction_4"/>
+    <SBMLMap SBMLid="PhEnsa" COPASIkey="Reaction_11"/>
+    <SBMLMap SBMLid="PhGw" COPASIkey="Reaction_8"/>
+    <SBMLMap SBMLid="PhWee" COPASIkey="Reaction_6"/>
+    <SBMLMap SBMLid="Wee" COPASIkey="Metabolite_2"/>
+    <SBMLMap SBMLid="compartment" COPASIkey="Compartment_0"/>
+    <SBMLMap SBMLid="iWee" COPASIkey="Metabolite_12"/>
+    <SBMLMap SBMLid="iWee_0" COPASIkey="ModelValue_16"/>
+    <SBMLMap SBMLid="jiWee" COPASIkey="ModelValue_15"/>
+    <SBMLMap SBMLid="kAspEB55" COPASIkey="ModelValue_14"/>
+    <SBMLMap SBMLid="kCdc25_1" COPASIkey="ModelValue_9"/>
+    <SBMLMap SBMLid="kCdc25_2" COPASIkey="ModelValue_10"/>
+    <SBMLMap SBMLid="kDipEB55" COPASIkey="ModelValue_13"/>
+    <SBMLMap SBMLid="kDpCdc25" COPASIkey="ModelValue_12"/>
+    <SBMLMap SBMLid="kDpEnsa" COPASIkey="ModelValue_1"/>
+    <SBMLMap SBMLid="kDpGw1" COPASIkey="ModelValue_3"/>
+    <SBMLMap SBMLid="kDpGw2" COPASIkey="ModelValue_4"/>
+    <SBMLMap SBMLid="kDpWee" COPASIkey="ModelValue_8"/>
+    <SBMLMap SBMLid="kPhCdc25" COPASIkey="ModelValue_11"/>
+    <SBMLMap SBMLid="kPhEnsa" COPASIkey="ModelValue_0"/>
+    <SBMLMap SBMLid="kPhGw" COPASIkey="ModelValue_2"/>
+    <SBMLMap SBMLid="kPhWee" COPASIkey="ModelValue_7"/>
+    <SBMLMap SBMLid="kWee1" COPASIkey="ModelValue_5"/>
+    <SBMLMap SBMLid="kWee2" COPASIkey="ModelValue_6"/>
+    <SBMLMap SBMLid="pCb" COPASIkey="Metabolite_1"/>
+    <SBMLMap SBMLid="pCdc25" COPASIkey="Metabolite_5"/>
+    <SBMLMap SBMLid="pEB55" COPASIkey="Metabolite_10"/>
+    <SBMLMap SBMLid="pEnsa" COPASIkey="Metabolite_9"/>
+    <SBMLMap SBMLid="pGw" COPASIkey="Metabolite_7"/>
+    <SBMLMap SBMLid="pWee" COPASIkey="Metabolite_3"/>
+  </SBMLReference>
   <ListOfUnitDefinitions>
     <UnitDefinition key="Unit_1" name="meter" symbol="m">
       <MiriamAnnotation>
@@ -1810,7 +1864,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#Unit_0">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:43Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:37Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>
@@ -1828,7 +1882,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#Unit_4">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:43Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:37Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>
@@ -1846,7 +1900,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#Unit_12">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:43Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:37Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>
@@ -1864,7 +1918,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#Unit_16">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:43Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:37Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>
@@ -1882,7 +1936,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#Unit_34">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:43Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:37Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>
@@ -1900,7 +1954,7 @@ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about="#Unit_40">
 <dcterms:created>
 <rdf:Description>
-<dcterms:W3CDTF>2020-05-31T16:19:43Z</dcterms:W3CDTF>
+<dcterms:W3CDTF>2020-06-10T00:01:37Z</dcterms:W3CDTF>
 </rdf:Description>
 </dcterms:created>
 </rdf:Description>

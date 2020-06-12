@@ -157,14 +157,43 @@ class DisFitProblem(object):
         self._best_iter = min(out['objective_val'], key=out['objective_val'].get)
         self._results['x'] = {}
         for i_iter in range(1, self._n_starts+1):
-            self._results['x'][str(i_iter)] = {str(k).split()[1].rstrip('>'): v for k, v in out['x'][str(i_iter)].items()}
-        x_best = self.results['x'][self._best_iter]
+            self._results['x'][str(i_iter)] = {k: v for k, v in out['x'][str(i_iter)].items()} # = out['x'][str(i_iter)].items()
+        x_best = self.results['x'][str(self._best_iter)]
 
         x_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
-        x_best_to_x_0_col = [x_best[key] / x_0[str(key)] for key in x_best.keys()]
-        name_col = [str(key) for key in x_best.keys()]
-        x_0_col = [x_0[str(key)] for key in x_best.keys()]
-        x_best_col = [x_best[str(key)] for key in x_best.keys()]
+
+
+
+
+
+        condition_df = self.petab_problem.condition_df
+        local_pars = {}
+        for parameter in condition_df.columns:
+            if str(condition_df[parameter].dtype) == 'object':
+                for i in range(self._n_conditions):
+                    local_pars[condition_df.iloc[i][parameter]] = (parameter, i)
+        print(local_pars)
+
+        x_best_to_x_0_col = []
+        x_best_col = []
+        for key in x_0.keys():
+            if key in x_best.keys():
+                x_best_to_x_0_col.append(x_best[key] / x_0[key])
+                x_best_col.append(x_best[key])
+            else:
+                parameter, i = local_pars[key]
+                x_best_to_x_0_col.append(x_best[parameter][i] / x_0[key])
+                x_best_col.append(x_best[parameter][i])
+
+        print(x_best_to_x_0_col)
+
+
+
+
+        # x_best_to_x_0_col = [x_best[key] / x_0[str(key)] for key in x_best.keys()]
+        name_col = [str(key) for key in x_0.keys()]
+        x_0_col = [x_0[str(key)] for key in x_0.keys()]
+        # x_best_col = [x_best[str(key)] for key in x_best.keys()]
         self._results['x_best'] = pd.DataFrame(list(zip(name_col, x_0_col, x_best_col,
             x_best_to_x_0_col)), columns = ['Name', 'x_0', 'x_best', 'x_best_to_x_0'])
         self._results['x_best'] = self._results['x_best'].sort_values(by=['Name']).reset_index(drop=True)
@@ -172,7 +201,7 @@ class DisFitProblem(object):
         self._optimized = True
         return self.results
 
-    def plot_results(self, path=os.path.join('.', 'plot.pdf'), observables=[], size=(6, 5)):
+    def plot_results(self, condition, path=os.path.join('.', 'plot.pdf'), observables=[], size=(6, 5)):
         """Plot results
         
         Args:
@@ -186,17 +215,22 @@ class DisFitProblem(object):
         # Options
         x_label = 'time'
         y_label = 'Abundance'
-        measurement_df = self.petab_problem.measurement_df.pivot(index='time', columns='observableId')
-        t = list(measurement_df.index)
+        measurement_df = self.petab_problem.measurement_df.set_index(['simulationConditionId', 'time', 'observableId']).unstack().loc[str(condition), :]
+        measurement_df.columns = measurement_df.columns.droplevel()
+        t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
         t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
+        condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
         if not isinstance(observables, list):
             raise ValueError('`observables` must be a list of observables.')
         if not observables:
-            values = pd.DataFrame(self.results['observables'][self._best_iter])
-            exp_data = measurement_df.drop(['simulationConditionId'], axis=1)
-        else:
-            values = pd.DataFrame(self.results['observables'][self._best_iter]).loc[:, observables]
-            exp_data = measurement_df.loc[:, variables]
+            observables = self.petab_problem.observable_df.index
+            # values = {observable: self.results['observables'][self._best_iter][observable][condition2index[str(condition)]] for observable in observables}
+            # values = pd.DataFrame(values, index=t_sim)
+            # exp_data = measurement_df.drop(['simulationConditionId'], axis=1)
+        
+        values = {observable: self.results['observables'][self._best_iter][observable][condition2index[str(condition)]] for observable in observables}
+        values = pd.DataFrame(values, index=t_sim)
+        exp_data = measurement_df[observables]
 
         # Determine the size of the figure
         plt.figure(figsize=size)
@@ -207,7 +241,7 @@ class DisFitProblem(object):
         plt.plot(t, exp_data, 'x')
         a.legend(tuple(values.columns)) # Todo: create a legend for experimental data.
         plt.xlim(np.min(t), np.max(t))
-        plt.ylim(0, 1.1 * max(values.max()))
+        plt.ylim(0, 1.1 * exp_data.max().max())
         plt.xlabel(x_label, fontsize=18)
         plt.ylabel(y_label, fontsize=18)
         plt.title('DisFit time course')
@@ -269,7 +303,7 @@ class DisFitProblem(object):
         Availability: https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828
         """
         #----------------------------------------------------------------------#
-        
+
         # read the SBML from file 
         sbml_filename = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['sbml_files'][0])
         doc = libsbml.readSBMLFromFile(sbml_filename)
@@ -331,16 +365,16 @@ class DisFitProblem(object):
             variables[species.getId()] = []
         self._var_names = list(variables.keys())
 
-        par_values = []
-        par_names = []
-        for i in range(mod.getNumParameters()):
-            element = mod.getParameter(i)
-            par_values.append(element.getValue())
-            par_names.append(element.getId())
-        par_values_string = str(par_values)
-        par_names_string = str(par_names)
-        self._par_values = par_values
-        self._par_names = par_names
+        # par_values = []
+        # par_names = []
+        # for i in range(mod.getNumParameters()):
+        #     element = mod.getParameter(i)
+        #     par_values.append(element.getValue())
+        #     par_names.append(element.getId())
+        # par_values_string = str(par_values)
+        # par_names_string = str(par_names)
+        # self._par_values = par_values
+        # self._par_names = par_names
         
         x_0 = []
         for variable in variables:
@@ -391,32 +425,33 @@ class DisFitProblem(object):
         generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["observables"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
-        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
+        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))\n\n', 'utf8'))
         # i = 0
         
         condition_defined_pars = []
         generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
-        n_conditions = condition_df.shape[0]
+        self._n_conditions = condition_df.shape[0]
         for parameter in condition_df.columns:
-            if str(condition_df[parameter].dtype) in ('float64', 'int16'):
+            if str(condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
                 condition_defined_pars.append(condition_df[parameter])
-                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, n_conditions), 'utf8'))
-                for i in range(1, n_conditions+1):
+                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, self._n_conditions), 'utf8'))
+                for i in range(1, self._n_conditions+1):
                     generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(parameter, i, condition_df.iloc[i-1][parameter]), 'utf8'))
                 generated_code.extend(bytes('\n', 'utf8'))
 
-        local_pars = []
+        local_pars = {}
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
         for parameter in condition_df.columns:
             if str(condition_df[parameter].dtype) == 'object':
-                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, n_conditions), 'utf8'))
-                for i in range(1, n_conditions+1):
-                    local_pars.append(condition_df.iloc[i-1][parameter])
-                    correct_row = (parameter_df.index == condition_df.iloc[i-1][parameter])
-                    lb = parameter_df.iloc[ i-1]['lowerBound']
-                    ub = parameter_df.iloc[i-1]['upperBound']
-                    nominal = parameter_df.iloc[i-1]['nominalValue']
-                    estimate = parameter_df.iloc[i-1]['estimate']
+                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, self._n_conditions), 'utf8'))
+                local_pars[parameter] = []
+                for i in range(1, self._n_conditions+1):
+                    local_pars[parameter].append(condition_df.iloc[i-1][parameter])
+                    par_name = condition_df.iloc[i-1][parameter]
+                    lb = parameter_df.loc[par_name, 'lowerBound']
+                    ub = parameter_df.loc[par_name, 'upperBound']
+                    nominal = parameter_df.loc[par_name, 'nominalValue']
+                    estimate = parameter_df.loc[par_name, 'estimate']
                     if estimate == 1:
                         generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, parameter, i, ub), 'utf8'))
                     elif estimate == 0:
@@ -476,9 +511,9 @@ class DisFitProblem(object):
             if variables[variable]:
                 lb = species_df.loc[variable, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
                 ub = species_df.loc[variable, 'upperBound']
-                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, variable, n_conditions, ub), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, variable, self._n_conditions, ub), 'utf8'))
             else:
-                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(variable, n_conditions), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(variable, self._n_conditions), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
@@ -487,24 +522,24 @@ class DisFitProblem(object):
         patterns = [par+' ' for par in condition_df.columns]
         for variable in variables:
             if variables[variable]:
-                generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(n_conditions), 'utf8'))
+                generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(self._n_conditions), 'utf8'))
                 generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(variable, variable), 'utf8'))
                 for (coef, reaction_name) in variables[variable]:
                     reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
                     for pattern in patterns:
                         reaction_formula = re.sub(pattern, pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
                     for var in self._var_names:
+                        tmp_iterator = '[j]'
                         if variables[var]:
-                            reaction_formula = re.sub('[^a-zA-Z0-9_]'+var+'[^a-zA-Z0-9_]', ' '+var+'[j, k+1] ', reaction_formula)
-                        else:
-                            reaction_formula = re.sub('[^a-zA-Z0-9_]'+var+'[^a-zA-Z0-9_]', ' '+var+'[j] ', reaction_formula)
-                    reaction_formula = re.sub('pow', '*', reaction_formula)
+                            tmp_iterator = '[j, k+1]'
+                        reaction_formula = re.sub('[^a-zA-Z0-9_]'+var+'[^a-zA-Z0-9_]', lambda matchobj: matchobj.group(0)[:-1]+tmp_iterator+matchobj.group(0)[-1:], reaction_formula)
+                    reaction_formula = re.sub('pow', '^', reaction_formula)
                     # for i in range(50):
                     #     reaction_formula = re.sub(', {}\)'.format(i), ')^{} '.format(i), reaction_formula)
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(n_conditions, variable, initial_assignments[variable]), 'utf8'))
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(self._n_conditions, variable, initial_assignments[variable]), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
 
@@ -517,15 +552,15 @@ class DisFitProblem(object):
             diff = max_exp_val - min_exp_val
             lb = min_exp_val - 0.2*diff
             ub = max_exp_val + 0.2*diff
-            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, n_conditions, ub), 'utf8'))
+            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
             formula = observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
                 if formula[i] in self._var_names:
-                    formula[i] = formula[i]+'[k]'
-                elif formula[i] in patterns:
+                    formula[i] = formula[i]+'[j, k]'
+                elif formula[i]+' ' in patterns:
                     formula[i] = formula[i]+'[j]'
             formula = ''.join(formula)
-            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[k] == {})\n'.format(n_conditions,observable, formula), 'utf8'))
+            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Define objective
@@ -534,7 +569,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
         for observable in observableIds:
-            sums_of_squares.append('sum(({0}[j, (k-1)*t_ratio+1]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, n_conditions))
+            sums_of_squares.append('sum(({0}[j, (k-1)*t_ratio+1]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, self._n_conditions))
         generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
@@ -542,12 +577,21 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    optimize!(m)\n\n', 'utf8'))
 
         # Retreiving the solution
+        tmp = [p for k in local_pars.keys() for p in local_pars[k]]
+        global_pars = [elem for elem in parameter_df.index if elem not in tmp]
+        julia_pars = global_pars + list(local_pars.keys())
+
         generated_code.extend(bytes('    println("Retreiving solution...")\n', 'utf8'))
         # generated_code.extend(bytes('    species_to_plot = {}\n'.format(species_to_plot), 'utf8'))
-        generated_code.extend(bytes('    params = ' + str(list(parameter_df.index)).replace('\'', '') + '\n', 'utf8'))
+        # generated_code.extend(bytes('    params = ' + str(list(parameter_df.index)).replace('\'', '') + '\n', 'utf8'))
+        generated_code.extend(bytes('    params = ' + str(julia_pars).replace('\'', '') + '\n', 'utf8'))
         generated_code.extend(bytes('    paramvalues = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('    for param in params\n', 'utf8'))
-        generated_code.extend(bytes('        paramvalues[param] = JuMP.value.(param)\n', 'utf8'))
+        generated_code.extend(bytes('    for p in params\n', 'utf8'))
+        generated_code.extend(bytes('        if occursin("[", string(p))\n', 'utf8'))
+        generated_code.extend(bytes('            paramvalues[split(string(p[1]), "[")[1]] = JuMP.value.(p)\n', 'utf8'))
+        generated_code.extend(bytes('        else\n', 'utf8'))
+        generated_code.extend(bytes('            paramvalues[string(p)] = JuMP.value.(p)\n', 'utf8'))
+        generated_code.extend(bytes('        end\n', 'utf8'))
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
         generated_code.extend(bytes('    variables = [', 'utf8'))
@@ -556,7 +600,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes(']\n', 'utf8'))
         generated_code.extend(bytes('    variablevalues = Dict()\n', 'utf8'))
         generated_code.extend(bytes('    for v in variables\n', 'utf8'))
-        generated_code.extend(bytes('        variablevalues[string(v[1])[1:end-3]] = Vector(JuMP.value.(v))\n', 'utf8')) # Todo: maybe replace `Vector` with `Array`
+        generated_code.extend(bytes('        variablevalues[split(string(v[1]), "[")[1]] = JuMP.value.(v)\n', 'utf8')) # Todo: maybe replace `Vector` with `Array`
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
         generated_code.extend(bytes('    observables = [', 'utf8'))
@@ -565,7 +609,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes(']\n', 'utf8'))
         generated_code.extend(bytes('    observablevalues = Dict()\n', 'utf8'))
         generated_code.extend(bytes('    for o in observables\n', 'utf8'))
-        generated_code.extend(bytes('        observablevalues[string(o[1])[1:end-3]] = Array(JuMP.value.(o))\n', 'utf8'))
+        generated_code.extend(bytes('        observablevalues[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))\n', 'utf8'))
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
         generated_code.extend(bytes('    v = objective_value(m)\n\n', 'utf8'))

@@ -22,7 +22,7 @@ results["objective_val"] = Dict()
 results["x"] = Dict()
 results["states"] = Dict()
 results["observables"] = Dict()
-for i_start in 1:4
+for i_start in 1:1
     m = Model(with_optimizer(Ipopt.Optimizer,tol=1e-6))
 
     # Define condition-defined parameters
@@ -160,26 +160,45 @@ for i_start in 1:4
     optimize!(m)
 
     println("Retreiving solution...")
-    params = [kDpEnsa, kPhGw, kDpGw1, kDpGw2, kWee1, kWee2, kPhWee, kDpWee, kCdc25_1, kCdc25_2, kPhCdc25, kDpCdc25, kDipEB55, kAspEB55, fCb, jiWee, fB55_wt, fB55_iWee, fB55_Cb_low, fB55_pGw_weak, kPhEnsa_wt, kPhEnsa_iWee, kPhEnsa_Cb_low, kPhEnsa_pGw_weak]
+    params = [kDpEnsa, kPhGw, kDpGw1, kDpGw2, kWee1, kWee2, kPhWee, kDpWee, kCdc25_1, kCdc25_2, kPhCdc25, kDpCdc25, kDipEB55, kAspEB55, fCb, jiWee, fB55] #, fB55_wt[1], fB55_iWee, fB55_Cb_low, fB55_pGw_weak, kPhEnsa_wt, kPhEnsa_iWee, kPhEnsa_Cb_low, kPhEnsa_pGw_weak]
     paramvalues = Dict()
-    for param in params
-        paramvalues[param] = JuMP.value.(param)
+    for p in params
+        print(p)
+        if occursin("[", string(p))
+            paramvalues[split(string(p[1]), "[")[1]] = JuMP.value.(p)
+        else
+            paramvalues[string(p)] = JuMP.value.(p)
+        end
     end
 
-    variables = [Cb, pCb, Wee, pWee, Cdc25, pCdc25, Gw, pGw, Ensa, pEnsa, pEB55, B55, iWee, ]
+    println("variables")
+    variables = [Cb, pCb, Wee, pWee, Cdc25, pCdc25, Gw, pGw, Ensa, pEnsa, pEB55, B55, iWee]
     variablevalues = Dict()
+    println("entering for loop")
     for v in variables
-        variablevalues[string(v[1])[1:end-3]] = Vector(JuMP.value.(v))
+        print("\n\n\n1\n")
+        print(v)
+        print("\n\n\n2\n")
+        print(JuMP.value.(v))
+        print("\n\n\n3\n")
+        print(string(v[1]))
+        print("\n\n\n4\n")
+        print(split(string(v[1]), "[")[1])
+        print("\n\n\n5\n")
+        variablevalues[split(string(v[1]), "[")[1]] = JuMP.value.(v)
     end
 
-    observables = [obs_Cb, obs_Gw, obs_pEnsa, obs_pWee, obs_Cdc25, obs_Ensa, obs_pGw, obs_pEB55, obs_Wee, obs_pCdc25, obs_B55, obs_pCb, ]
+    println("observables")
+    observables = [obs_Cb, obs_Gw, obs_pEnsa, obs_pWee, obs_Cdc25, obs_Ensa, obs_pGw, obs_pEB55, obs_Wee, obs_pCdc25, obs_B55, obs_pCb]
     observablevalues = Dict()
     for o in observables
-        observablevalues[string(o[1])[1:end-3]] = Array(JuMP.value.(o))
+        observablevalues[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))
     end
 
+    println("objective")
     v = objective_value(m)
 
+    println("results")
     results["objective_val"][string(i_start)] = v
     results["x"][string(i_start)] = paramvalues
     results["states"][string(i_start)] = variablevalues

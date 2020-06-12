@@ -9,5 +9,5 @@ obs_pGw		pGw	1	lin	normal
 obs_pEB55		pEB55	1	lin	normal
 obs_Wee		Wee	1	lin	normal
 obs_pCdc25		pCdc25	1	lin	normal
-obs_B55		B55	1	lin	normal
+obs_B55		B55 * fB55	1	lin	normal
 obs_pCb		pCb	1	lin	normal
