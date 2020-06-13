@@ -26,11 +26,11 @@ class DisFitProblem(object):
     def __init__(self, petab_yaml, t_ratio=2, n_starts=1):
         """        
         Args:
-            petab_yaml (:obj:`str`): path petab .yaml file
-            t_ratio (:obj:`int`, optional): number of time discretiation steps per time unit.
-            fold_change (:obj:`float`, optional): fold change window of parameter search range wrt sbml parameters
+            petab_yaml (:obj:`str`): path petab yaml file
+            t_ratio (:obj:`int`, optional): number of time discretiation steps per time unit
             n_starts (:obj:`int`): number of multistarts
         """
+        print('Initialising problem...')
         self._initialization = True
         self._optimized = False
         self._files_written = False
@@ -60,7 +60,7 @@ class DisFitProblem(object):
         """Get t_ratio
         
         Returns:
-            :obj:`int`: number of time discretiation steps per time unit.
+            :obj:`int`: number of time discretiation steps per time unit
         """
         return self._t_ratio
 
@@ -69,7 +69,7 @@ class DisFitProblem(object):
         """Set t_ratio
         
         Args:
-            value (:obj:`int`): number of time discretiation steps per time unit.
+            value (:obj:`int`): number of time discretiation steps per time unit
         
         Raises:
             ValueError: if t_ratio is not an integer >= 1
@@ -147,56 +147,45 @@ class DisFitProblem(object):
         """Optimize DisFitProblem
         
         Returns:
-            :obj:`dict`: Results in a dict with keys 'states', 'observables', 'x' and 'x_best'
+            :obj:`dict`: Results in a dict with keys 'species', 'observables', 'parameters' and 'par_best'
         """
-        print('Running optimization problem in julia...')
+        print('Entering Julia for optimization...')
         out = self._jl.eval(self.julia_code)
-        self._results['states'] = out['states']
+        print('Results transferred. Exited Julia.')
+
+        self._results['species'] = out['species']
         self._results['observables'] = out['observables']
-        print('Finished optimization in julia.')
-        self._best_iter = min(out['objective_val'], key=out['objective_val'].get)
-        self._results['x'] = {}
-        for i_iter in range(1, self._n_starts+1):
-            self._results['x'][str(i_iter)] = {k: v for k, v in out['x'][str(i_iter)].items()} # = out['x'][str(i_iter)].items()
-        x_best = self.results['x'][str(self._best_iter)]
+        self._results['parameters'] = out['parameters']
+        self._best_iter = min(out['objective_value'], key=out['objective_value'].get)
+        # for i_iter in range(1, self.n_starts+1):
+        #     self._results['parameters'][str(i_iter)] = {k: v for k, v in out['parameters'][str(i_iter)].items()} # = out['parameters'][str(i_iter)].items()
+        
+        par_best = self.results['parameters'][str(self._best_iter)]
+        par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
 
-        x_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
-
-
-
-
-
-        condition_df = self.petab_problem.condition_df
-        local_pars = {}
-        for parameter in condition_df.columns:
-            if str(condition_df[parameter].dtype) == 'object':
+        local_par_names = {}
+        for par_type in self.petab_problem.condition_df.columns:
+            if str(self.petab_problem.condition_df[par_type].dtype) == 'object':
                 for i in range(self._n_conditions):
-                    local_pars[condition_df.iloc[i][parameter]] = (parameter, i)
-        print(local_pars)
+                    local_par_names[self.petab_problem.condition_df.iloc[i][par_type]] = (par_type, i)
 
-        x_best_to_x_0_col = []
-        x_best_col = []
-        for key in x_0.keys():
-            if key in x_best.keys():
-                x_best_to_x_0_col.append(x_best[key] / x_0[key])
-                x_best_col.append(x_best[key])
+        par_best_to_par_0_col = []
+        par_best_col = []
+        for key in par_0.keys():
+            if key in par_best.keys():
+                par_best_to_par_0_col.append(par_best[key] / par_0[key])
+                par_best_col.append(par_best[key])
             else:
-                parameter, i = local_pars[key]
-                x_best_to_x_0_col.append(x_best[parameter][i] / x_0[key])
-                x_best_col.append(x_best[parameter][i])
+                par_type, i = local_par_names[key]
+                par_best_to_par_0_col.append(par_best[par_type][i] / par_0[key])
+                par_best_col.append(par_best[par_type][i])
 
-        print(x_best_to_x_0_col)
+        name_col = [str(key) for key in par_0.keys()]
+        par_0_col = [par_0[str(key)] for key in par_0.keys()]
 
-
-
-
-        # x_best_to_x_0_col = [x_best[key] / x_0[str(key)] for key in x_best.keys()]
-        name_col = [str(key) for key in x_0.keys()]
-        x_0_col = [x_0[str(key)] for key in x_0.keys()]
-        # x_best_col = [x_best[str(key)] for key in x_best.keys()]
-        self._results['x_best'] = pd.DataFrame(list(zip(name_col, x_0_col, x_best_col,
-            x_best_to_x_0_col)), columns = ['Name', 'x_0', 'x_best', 'x_best_to_x_0'])
-        self._results['x_best'] = self._results['x_best'].sort_values(by=['Name']).reset_index(drop=True)
+        self._results['par_best'] = pd.DataFrame(list(zip(name_col, par_0_col, par_best_col,
+            par_best_to_par_0_col)), columns = ['Name', 'par_0', 'par_best', 'par_best_to_par_0'])
+        self._results['par_best'] = self._results['par_best'].sort_values(by=['Name']).reset_index(drop=True)
 
         self._optimized = True
         return self.results
@@ -205,6 +194,7 @@ class DisFitProblem(object):
         """Plot results
         
         Args:
+            condition (:obj:`str`): experimental condition to plot
             path (:obj:`str`, optional): path to output plot
             observables (:obj:`list`, optional): list of observables to be plotted
             size (:obj:`tuple`, optional): size of image
@@ -255,16 +245,15 @@ class DisFitProblem(object):
             path (:obj:`str`, optional): path of excel file to write results to.
         """
         with pd.ExcelWriter(path) as writer:
-            self.results['x_best'].to_excel(writer, sheet_name='x_best')
+            self.results['par_best'].to_excel(writer, sheet_name='par_best')
             t_max = self.petab_problem.measurement_df['time'].max()
-            print(t_max)
             t_sim = np.linspace(start=0, stop=t_max, num=t_max*self.t_ratio+1)
             for c in self._condition2index.keys():
-                values = {state: self.results['states'][self._best_iter][state][self._condition2index[c]] for state in self.results['states']['1'].keys()}
+                values = {specie: self.results['species'][self._best_iter][specie][self._condition2index[c]] for specie in self.results['species']['1'].keys()}
                 values['time'] = t_sim
                 df = pd.DataFrame(values)
                 df = df.set_index('time')
-                df.to_excel(writer, sheet_name='states_'+c)
+                df.to_excel(writer, sheet_name='species_'+c)
 
             for c in self._condition2index.keys():
                 values = {observable: self.results['observables'][self._best_iter][observable][self._condition2index[c]] for observable in self.petab_problem.observable_df.index}
@@ -277,7 +266,7 @@ class DisFitProblem(object):
         """Converts petab yaml to dict and creates petab.problem.Problem object
         
         Args:
-            petab_yaml (:obj:`str`): path petab .yaml file
+            petab_yaml (:obj:`str`): path petab yaml file
         
         Raises:
             SystemExit: if petab yaml file cannot be loaded.
@@ -291,7 +280,25 @@ class DisFitProblem(object):
                 self._petab_yaml_dict = yaml.safe_load(f)
             except yaml.YAMLError as error:
                 raise SystemExit('Error occured: {}'.format(str(error)))
+
         self._condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
+
+        self._condition_defined_pars = {}
+        self._local_pars = {}
+        self._n_conditions = self.petab_problem.condition_df.shape[0]
+        for parameter in self.petab_problem.condition_df.columns:
+            if str(self.petab_problem.condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
+                self._condition_defined_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
+            elif str(self.petab_problem.condition_df[parameter].dtype) == 'object':
+                self._local_pars[parameter] = [par for par in self.petab_problem.condition_df[parameter]]
+
+        self._global_pars = {}
+        for parameter in self.petab_problem.parameter_df.index:
+            tmp = []
+            for v in self._local_pars.values():
+                tmp = tmp + v
+            if parameter not in tmp:
+                self._global_pars[parameter] = self.petab_problem.parameter_df.loc[parameter, 'estimate']
 
     def _set_julia_code(self):
         """Transform petab.problem.Problem to Julia JuMP model.
@@ -342,228 +349,168 @@ class DisFitProblem(object):
             print('The document could not be converted')
             print(doc.getErrorLog().toString())
 
-        # figure out which species are variable
-        # mod = self.petab_problem.sbml_model
         mod = doc.getModel()
 
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
             initial_assignments[a.getId()] = a.getMath().getName()
 
-        parameter_df = self.petab_problem.parameter_df
-        condition_df = self.petab_problem.condition_df
-        observable_df = self.petab_problem.observable_df
-        measurement_df = self.petab_problem.measurement_df
-
-        species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
-        species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
-
-        observableIds = list(observable_df.index)
-
-        n_params = mod.getNumParameters()
-        
-        variables = {}
-        for i in range(mod.getNumSpecies()): 
-            species = mod.getSpecies(i)
-            if species.getBoundaryCondition() == True or (species.getId() in variables):
-                continue
-            variables[species.getId()] = []
-        self._var_names = list(variables.keys())
-
-        # par_values = []
-        # par_names = []
-        # for i in range(mod.getNumParameters()):
-        #     element = mod.getParameter(i)
-        #     par_values.append(element.getValue())
-        #     par_names.append(element.getId())
-        # par_values_string = str(par_values)
-        # par_names_string = str(par_names)
-        # self._par_values = par_values
-        # self._par_names = par_names
-        
-        x_0 = []
-        for variable in variables:
-            # get initialValue 
-            element = mod.getElementBySId(variable)
-            if element.getTypeCode() == libsbml.SBML_PARAMETER: 
-                x_0.append(element.getValue())
-            elif element.getTypeCode() == libsbml.SBML_SPECIES:
-                if element.isSetInitialConcentration(): 
-                    x_0.append(element.getInitialConcentration())
-                else: 
-                    x_0.append(element.getInitialAmount())
-            else: 
-                x_0.append(element.getSize())
-        n_x_0 = len(x_0)
-        x_0_string = str(x_0)
-
-        # start generating the code by appending to bytearray
-        generated_code = bytearray('', 'utf8')
-        generated_code.extend(bytes('using CSV\n', 'utf8'))
-        generated_code.extend(bytes('using DataFrames\n', 'utf8'))
-        generated_code.extend(bytes('using Ipopt\n', 'utf8'))
-        generated_code.extend(bytes('using JuMP\n', 'utf8'))
-
-        generated_code.extend(bytes('\n', 'utf8'))
-        # generated_code.extend(bytes('fc = {} # Setting parameter search span\n'.format(self.fold_change), 'utf8'))
-        generated_code.extend(bytes('t_ratio = {} # Setting number of ODE discretisation steps\n'.format(self.t_ratio), 'utf8'))
-
-        generated_code.extend(bytes('\n', 'utf8'))  
-        generated_code.extend(bytes('# Data\n', 'utf8'))
-        generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
-        generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
-
-        generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
-        generated_code.extend(bytes('data = []\n', 'utf8'))
-        generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
-        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))\n', 'utf8'))
-        generated_code.extend(bytes('end\n', 'utf8'))
-        generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8'))
-
-
-        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
-
-        generated_code.extend(bytes('results = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["objective_val"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["x"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["states"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["observables"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
-        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))\n\n', 'utf8'))
-        # i = 0
-        
-        condition_defined_pars = []
-        generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
-        self._n_conditions = condition_df.shape[0]
-        for parameter in condition_df.columns:
-            if str(condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
-                condition_defined_pars.append(condition_df[parameter])
-                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, self._n_conditions), 'utf8'))
-                for i in range(1, self._n_conditions+1):
-                    generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(parameter, i, condition_df.iloc[i-1][parameter]), 'utf8'))
-                generated_code.extend(bytes('\n', 'utf8'))
-
-        local_pars = {}
-        generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
-        for parameter in condition_df.columns:
-            if str(condition_df[parameter].dtype) == 'object':
-                generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(parameter, self._n_conditions), 'utf8'))
-                local_pars[parameter] = []
-                for i in range(1, self._n_conditions+1):
-                    local_pars[parameter].append(condition_df.iloc[i-1][parameter])
-                    par_name = condition_df.iloc[i-1][parameter]
-                    lb = parameter_df.loc[par_name, 'lowerBound']
-                    ub = parameter_df.loc[par_name, 'upperBound']
-                    nominal = parameter_df.loc[par_name, 'nominalValue']
-                    estimate = parameter_df.loc[par_name, 'estimate']
-                    if estimate == 1:
-                        generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, parameter, i, ub), 'utf8'))
-                    elif estimate == 0:
-                        generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(parameter, i, nominal), 'utf8'))
-                    else:
-                        raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
-
-                generated_code.extend(bytes('\n', 'utf8'))
-
-        generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
-        for element in parameter_df.index:
-            tmp = []
-            for v in local_pars.values():
-                tmp = tmp + v
-            if element not in tmp:
-                lb = parameter_df.loc[element, 'lowerBound']
-                ub = parameter_df.loc[element, 'upperBound']
-                nominal = parameter_df.loc[element, 'nominalValue']
-                estimate = parameter_df.loc[element, 'estimate']
-                if estimate == 1:
-                    generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, str(element), ub), 'utf8'))
-                elif estimate == 0:
-                    generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(str(element), nominal), 'utf8'))
-                else:
-                    raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
-        
-        reactions = {}
+        reactions = {} # dict of reaction and kinetic formula in JuMP format
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()
             kinetic_components = kinetics.getFormula() #.split(' * ')[1:]
             kinetic_components = re.sub('compartment \* ', '', kinetic_components)
             reactions[reaction.getId()] = kinetic_components #jump_formula
-        
+
+        species = {} # dict of species and stoichiometry-reactionId tuple they are involved in
+        for i in range(mod.getNumSpecies()): 
+            specie = mod.getSpecies(i)
+            if specie.getBoundaryCondition() == True or (specie.getId() in species):
+                continue
+            species[specie.getId()] = []
+
         for i in range(mod.getNumReactions()): 
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()   
             for j in range(reaction.getNumReactants()): 
                 ref = reaction.getReactant(j)
-                species = mod.getSpecies(ref.getSpecies())
+                specie = mod.getSpecies(ref.getSpecies())
                 products = [r.getSpecies() for r in reaction.getListOfProducts()]
-                if (species.getBoundaryCondition() == True) or (species.getName() in products):
+                if (specie.getBoundaryCondition() == True) or (specie.getName() in products):
                     # print('continueing...')
                     continue
-                variables[species.getId()].append(('-'+str(ref.getStoichiometry()), reaction.getId()))
-                # print('added reaction {} to species {}'.format(reaction.getID(), species))
+                species[specie.getId()].append(('-'+str(ref.getStoichiometry()), reaction.getId()))
+                # print('added reaction {} to specie {}'.format(reaction.getID(), specie))
             for j in range(reaction.getNumProducts()): 
                 ref = reaction.getProduct(j)
-                species = mod.getSpecies(ref.getSpecies())
+                specie = mod.getSpecies(ref.getSpecies())
                 reactants = [r.getSpecies() for r in reaction.getListOfReactants()]
-                if (species.getBoundaryCondition() == True) or (species.getName() in reactants): 
+                if (specie.getBoundaryCondition() == True) or (specie.getName() in reactants): 
                     continue
-                variables[species.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
+                species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
+        species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
+        species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
+
+
+#-------start generating the code by appending to bytearray-------#
+        generated_code = bytearray('', 'utf8')
+        generated_code.extend(bytes('using CSV\n', 'utf8'))
+        generated_code.extend(bytes('using DataFrames\n', 'utf8'))
+        generated_code.extend(bytes('using Ipopt\n', 'utf8'))
+        generated_code.extend(bytes('using JuMP\n\n', 'utf8'))
+
+        generated_code.extend(bytes('t_ratio = {} # Setting number of ODE discretisation steps\n\n'.format(self.t_ratio), 'utf8'))
+ 
+        generated_code.extend(bytes('# Data\n', 'utf8'))
+        generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
+        generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
+        generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
+        generated_code.extend(bytes('data = []\n', 'utf8'))
+        generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
+        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))\n', 'utf8'))
+        generated_code.extend(bytes('end\n\n', 'utf8'))
+
+        generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8'))
+        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
+
+        generated_code.extend(bytes('results = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["objective_value"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["parameters"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["species"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["observables"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
+        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))\n\n', 'utf8'))
         
-        generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('    # Model states\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining states ...")\n', 'utf8'))
-        for variable in variables.keys():
-            if variables[variable]:
-                lb = species_df.loc[variable, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
-                ub = species_df.loc[variable, 'upperBound']
-                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, variable, self._n_conditions, ub), 'utf8'))
+        # Write condition-defined parameters
+        generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
+        for k, v in self._condition_defined_pars.items():
+            generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
+            for i, val in enumerate(v):
+                generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(k, i+1, val), 'utf8'))
+            generated_code.extend(bytes('\n', 'utf8'))
+
+        # Write condition-local parameters
+        generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
+        for k, v in self._local_pars.items():
+            generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
+            for i, par in enumerate(v):
+                lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
+                ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
+                nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
+                estimate = self.petab_problem.parameter_df.loc[par, 'estimate']
+                if estimate == 1:
+                    generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
+                elif estimate == 0:
+                    generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))
+                else:
+                    raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
+            generated_code.extend(bytes('\n', 'utf8'))
+
+        # Write global parameters
+        generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
+        for parameter, estimate in self._global_pars.items():
+            lb = self.petab_problem.parameter_df.loc[parameter, 'lowerBound']
+            ub = self.petab_problem.parameter_df.loc[parameter, 'upperBound']
+            nominal = self.petab_problem.parameter_df.loc[parameter, 'nominalValue']
+            if estimate == 1:
+                    generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, parameter, ub), 'utf8'))
+            elif estimate == 0:
+                generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(parameter, nominal), 'utf8'))
             else:
-                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(variable, self._n_conditions), 'utf8'))
+                raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
+        
+        # Write species
+        generated_code.extend(bytes('\n', 'utf8'))
+        generated_code.extend(bytes('    # Model specie\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
+        for specie in species.keys():
+            if species[specie]:
+                lb = species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
+                ub = species_df.loc[specie, 'upperBound']
+                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, specie, self._n_conditions, ub), 'utf8'))
+            else:
+                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(specie, self._n_conditions), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
-
+        # Write ODEs
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining ODEs ...")\n', 'utf8'))
-        patterns = [par+' ' for par in condition_df.columns]
-        for variable in variables:
-            if variables[variable]:
+        generated_code.extend(bytes('    println("Defining ODEs...")\n', 'utf8'))
+        patterns = [par+' ' for par in self.petab_problem.condition_df.columns]
+        for specie in species:
+            if species[specie]:
                 generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(self._n_conditions), 'utf8'))
-                generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(variable, variable), 'utf8'))
-                for (coef, reaction_name) in variables[variable]:
+                generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
+                for (coef, reaction_name) in species[specie]:
                     reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
                     for pattern in patterns:
                         reaction_formula = re.sub(pattern, pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
-                    for var in self._var_names:
+                    for spec in species.keys():
                         tmp_iterator = '[j]'
-                        if variables[var]:
+                        if species[spec]:
                             tmp_iterator = '[j, k+1]'
-                        reaction_formula = re.sub('[^a-zA-Z0-9_]'+var+'[^a-zA-Z0-9_]', lambda matchobj: matchobj.group(0)[:-1]+tmp_iterator+matchobj.group(0)[-1:], reaction_formula)
+                        reaction_formula = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]', lambda matchobj: matchobj.group(0)[:-1]+tmp_iterator+matchobj.group(0)[-1:], reaction_formula)
                     reaction_formula = re.sub('pow', '^', reaction_formula)
-                    # for i in range(50):
-                    #     reaction_formula = re.sub(', {}\)'.format(i), ')^{} '.format(i), reaction_formula)
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(self._n_conditions, variable, initial_assignments[variable]), 'utf8'))
-
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
-        # Define observables
+        # Write observables
         generated_code.extend(bytes('    # Define observables\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining observables ...")\n', 'utf8'))
-        for observable in observableIds:
-            min_exp_val = np.min(measurement_df.loc[measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
-            max_exp_val = np.max(measurement_df.loc[measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
+        generated_code.extend(bytes('    println("Defining observables...")\n', 'utf8'))
+        for observable in self.petab_problem.observable_df.index:
+            min_exp_val = np.min(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
+            max_exp_val = np.max(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             diff = max_exp_val - min_exp_val
             lb = min_exp_val - 0.2*diff
             ub = max_exp_val + 0.2*diff
             generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
-            formula = observable_df.loc[observable, 'observableFormula'].split()
+            formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
-                if formula[i] in self._var_names:
+                if formula[i] in species.keys():
                     formula[i] = formula[i]+'[j, k]'
                 elif formula[i]+' ' in patterns:
                     formula[i] = formula[i]+'[j]'
@@ -571,68 +518,63 @@ class DisFitProblem(object):
             generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
-        # Define objective
+        # Write objective
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining objective ...")\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining objective...\n\n")\n', 'utf8'))
         generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
-        for observable in observableIds:
+        for observable in self.petab_problem.observable_df.index:
             sums_of_squares.append('sum(({0}[j, (k-1)*t_ratio+1]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, self._n_conditions))
         generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
-        generated_code.extend(bytes('    println("Optimizing...")\n', 'utf8'))
+        generated_code.extend(bytes('    println("Optimizing:")\n', 'utf8'))
         generated_code.extend(bytes('    optimize!(m)\n\n', 'utf8'))
 
-        # Retreiving the solution
-        tmp = [p for k in local_pars.keys() for p in local_pars[k]]
-        global_pars = [elem for elem in parameter_df.index if elem not in tmp]
-        julia_pars = global_pars + list(local_pars.keys())
-
-        generated_code.extend(bytes('    println("Retreiving solution...")\n', 'utf8'))
-        # generated_code.extend(bytes('    species_to_plot = {}\n'.format(species_to_plot), 'utf8'))
-        # generated_code.extend(bytes('    params = ' + str(list(parameter_df.index)).replace('\'', '') + '\n', 'utf8'))
-        generated_code.extend(bytes('    params = ' + str(julia_pars).replace('\'', '') + '\n', 'utf8'))
-        generated_code.extend(bytes('    paramvalues = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('    for p in params\n', 'utf8'))
+        # Write code to get the solution
+        julia_pars = list(self._global_pars.keys()) + list(self._local_pars.keys())
+        generated_code.extend(bytes('    println("\n\nTransfering results to Python...")\n', 'utf8'))
+        generated_code.extend(bytes('    parameter_names = ' + str(julia_pars).replace('\'', '') + '\n', 'utf8'))
+        generated_code.extend(bytes('    parameter_values = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    for p in parameter_names\n', 'utf8'))
         generated_code.extend(bytes('        if occursin("[", string(p))\n', 'utf8'))
-        generated_code.extend(bytes('            paramvalues[split(string(p[1]), "[")[1]] = JuMP.value.(p)\n', 'utf8'))
+        generated_code.extend(bytes('            parameter_values[split(string(p[1]), "[")[1]] = JuMP.value.(p)\n', 'utf8'))
         generated_code.extend(bytes('        else\n', 'utf8'))
-        generated_code.extend(bytes('            paramvalues[string(p)] = JuMP.value.(p)\n', 'utf8'))
+        generated_code.extend(bytes('            parameter_values[string(p)] = JuMP.value.(p)\n', 'utf8'))
         generated_code.extend(bytes('        end\n', 'utf8'))
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
-        generated_code.extend(bytes('    variables = [', 'utf8'))
-        for variable in variables:
-            generated_code.extend(bytes(variable+', ', 'utf8'))
+        generated_code.extend(bytes('    species_names = [', 'utf8'))
+        for specie in species:
+            generated_code.extend(bytes(specie+', ', 'utf8'))
         generated_code.extend(bytes(']\n', 'utf8'))
-        generated_code.extend(bytes('    variablevalues = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('    for v in variables\n', 'utf8'))
-        generated_code.extend(bytes('        variablevalues[split(string(v[1]), "[")[1]] = JuMP.value.(v)\n', 'utf8')) # Todo: maybe replace `Vector` with `Array`
+        generated_code.extend(bytes('    species_values = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    for s in species_names\n', 'utf8'))
+        generated_code.extend(bytes('        species_values[split(string(s[1]), "[")[1]] = JuMP.value.(s)\n', 'utf8')) # Todo: maybe replace `Vector` with `Array`
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
-        generated_code.extend(bytes('    observables = [', 'utf8'))
-        for observable in observableIds:
+        generated_code.extend(bytes('    observable_names = [', 'utf8'))
+        for observable in self.petab_problem.observable_df.index:
             generated_code.extend(bytes(observable+', ', 'utf8'))
         generated_code.extend(bytes(']\n', 'utf8'))
-        generated_code.extend(bytes('    observablevalues = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('    for o in observables\n', 'utf8'))
-        generated_code.extend(bytes('        observablevalues[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))\n', 'utf8'))
+        generated_code.extend(bytes('    observable_values = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    for o in observable_names\n', 'utf8'))
+        generated_code.extend(bytes('        observable_values[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))\n', 'utf8'))
         generated_code.extend(bytes('    end\n\n', 'utf8'))
 
-        generated_code.extend(bytes('    v = objective_value(m)\n\n', 'utf8'))
-        generated_code.extend(bytes('    results["objective_val"][string(i_start)] = v\n', 'utf8'))
-        generated_code.extend(bytes('    results["x"][string(i_start)] = paramvalues\n', 'utf8'))
-        generated_code.extend(bytes('    results["states"][string(i_start)] = variablevalues\n', 'utf8'))
-        generated_code.extend(bytes('    results["observables"][string(i_start)] = observablevalues\n\n', 'utf8'))
+        generated_code.extend(bytes('    objective_val = objective_value(m)\n\n', 'utf8'))
+        generated_code.extend(bytes('    results["objective_value"][string(i_start)] = objective_val\n', 'utf8'))
+        generated_code.extend(bytes('    results["parameters"][string(i_start)] = parameter_values\n', 'utf8'))
+        generated_code.extend(bytes('    results["species"][string(i_start)] = species_values\n', 'utf8'))
+        generated_code.extend(bytes('    results["observables"][string(i_start)] = observable_values\n\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('results', 'utf8'))
 
+
+        # Updating self and files
         code = generated_code.decode()
-        self._julia_code = code
-        
-        # Updating self and files if needed
+        self._julia_code = code        
         if self._optimized == True:
             self.optimize()
         if self._files_written == True:

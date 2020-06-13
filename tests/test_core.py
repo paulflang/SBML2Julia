@@ -64,31 +64,34 @@ class DisFitProblemTestCase(unittest.TestCase):
         # test_optimize()
         problem = core.DisFitProblem(PETAB_YAML)
         problem.optimize()
+        results = problem.results
 
         with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
             results_gold = pickle.load(f)
 
-        self.assertEqual(problem.results, results_gold) # Todo: for some reason the output is none even if it shouldn't be)
-        self.assertEqual(set(results.keys()), set(['x', 'x_best', 'states', 'observables']))
-        self.assertEqual(results['x'].keys(), results_gold['x'].keys())
-        for i_iter in results_gold['x'].keys():
-            self.assertEqual(results['x'][i_iter].keys(), results_gold['x'][i_iter].keys())
-            for param in results_gold['x'][i_iter].keys():
-                self.assertAlmostEqual(results['x'][i_iter][param], results_gold['x'][i_iter][param])
+        # self.assertEqual(problem.results, results_gold) # Todo: for some reason the output is none even if it shouldn't be)
+        self.assertEqual(set(results.keys()), set(['parameters', 'par_best', 'species', 'observables']))
+        self.assertEqual(results['parameters'].keys(), results_gold['parameters'].keys())
+        for i_iter in results_gold['parameters'].keys():
+            self.assertEqual(results['parameters'][i_iter].keys(), results_gold['parameters'][i_iter].keys())
+            for param in results_gold['parameters'][i_iter].keys():
+                assert_allclose(results['parameters'][i_iter][param], results_gold['parameters'][i_iter][param])
 
-        self.assertEqual(results['states'].keys(), results_gold['states'].keys())
-        for i_iter in results_gold['states'].keys():
-            self.assertEqual(results['states'][i_iter].keys(), results_gold['states'][i_iter].keys())
-            for state in results_gold['states'][i_iter].keys():
-                assert_allclose(results['states'][i_iter][state], results_gold['states'][i_iter][state])
+        self.assertEqual(results['species'].keys(), results_gold['species'].keys())
+        for i_iter in results_gold['species'].keys():
+            self.assertEqual(results['species'][i_iter].keys(), results_gold['species'][i_iter].keys())
+            for specie in results_gold['species'][i_iter].keys():
+                assert_allclose(results['species'][i_iter][specie],
+                    results_gold['species'][i_iter][specie], rtol=1e-05, atol=1e-08)
 
         self.assertEqual(results['observables'].keys(), results_gold['observables'].keys())
         for i_iter in results_gold['observables'].keys():
             self.assertEqual(results['observables'][i_iter].keys(), results_gold['observables'][i_iter].keys())
             for observable in results_gold['observables'][i_iter].keys():
-                assert_allclose(results['observables'][i_iter][observable], results_gold['observables'][i_iter][observable])
+                assert_allclose(results['observables'][i_iter][observable],
+                    results_gold['observables'][i_iter][observable], rtol=1e-05, atol=1e-08)
         
-        assert_frame_equal(results['x_best'], results_gold['x_best'])
+        assert_frame_equal(results['par_best'], results_gold['par_best'])
 
         problem.write_results(path=os.path.join(self.dirname, 'results.xlsx'))
         self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results.xlsx')))
@@ -126,3 +129,5 @@ class DisFitProblemTestCase(unittest.TestCase):
 # problem.write_jl_file(path='jl_code_20200611.jl')
 # problem.optimize()
 # problem.plot_results('wt', path='plot.pdf')
+# problem.write_results()
+# problem.results['par_best']

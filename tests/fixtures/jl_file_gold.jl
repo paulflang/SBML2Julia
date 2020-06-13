@@ -18,9 +18,9 @@ t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])
 t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)
 
 results = Dict()
-results["objective_val"] = Dict()
-results["x"] = Dict()
-results["states"] = Dict()
+results["objective_value"] = Dict()
+results["parameters"] = Dict()
+results["species"] = Dict()
 results["observables"] = Dict()
 for i_start in 1:1
     m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))
@@ -40,37 +40,37 @@ for i_start in 1:1
 
     # Define condition-local parameters
     @variable(m, fB55[1:4])
-    @constraint(m, fB55[1] == 1.0)
-    @constraint(m, fB55[2] == 0.9)
-    @constraint(m, fB55[3] == 1.1)
-    @constraint(m, fB55[4] == 1.0)
+    @constraint(m, 0.5 <= fB55[1] <= 2.0)
+    @constraint(m, 0.45 <= fB55[2] <= 1.8)
+    @constraint(m, 0.55 <= fB55[3] <= 2.2)
+    @constraint(m, 0.5 <= fB55[4] <= 2.0)
 
     @variable(m, kPhEnsa[1:4])
-    @constraint(m, kPhEnsa[1] == 0.1)
-    @constraint(m, kPhEnsa[2] == 0.1)
-    @constraint(m, kPhEnsa[3] == 0.1)
-    @constraint(m, kPhEnsa[4] == 0.09)
+    @constraint(m, 0.05 <= kPhEnsa[1] <= 0.2)
+    @constraint(m, 0.05 <= kPhEnsa[2] <= 0.2)
+    @constraint(m, 0.05 <= kPhEnsa[3] <= 0.2)
+    @constraint(m, 0.045 <= kPhEnsa[4] <= 0.18)
 
     # Define global parameters
-    @variable(m, kDpEnsa == 0.05)
-    @variable(m, kPhGw == 1.0)
-    @variable(m, kDpGw1 == 0.25)
-    @variable(m, kDpGw2 == 10.0)
-    @variable(m, kWee1 == 0.01)
-    @variable(m, kWee2 == 0.99)
-    @variable(m, kPhWee == 1.0)
-    @variable(m, kDpWee == 10.0)
-    @variable(m, kCdc25_1 == 0.1)
-    @variable(m, kCdc25_2 == 0.9)
-    @variable(m, kPhCdc25 == 1.0)
-    @variable(m, kDpCdc25 == 10.0)
-    @variable(m, kDipEB55 == 0.0068)
-    @variable(m, kAspEB55 == 57.0)
-    @variable(m, fCb == 2.0)
-    @variable(m, jiWee == 0.1)
+    @variable(m, 0.025 <= kDpEnsa <= 0.1, start=0.025+(0.1-0.025)*rand(Float64))
+    @variable(m, 0.5 <= kPhGw <= 2.0, start=0.5+(2.0-0.5)*rand(Float64))
+    @variable(m, 0.125 <= kDpGw1 <= 0.5, start=0.125+(0.5-0.125)*rand(Float64))
+    @variable(m, 5.0 <= kDpGw2 <= 20.0, start=5.0+(20.0-5.0)*rand(Float64))
+    @variable(m, 0.005 <= kWee1 <= 0.02, start=0.005+(0.02-0.005)*rand(Float64))
+    @variable(m, 0.495 <= kWee2 <= 1.98, start=0.495+(1.98-0.495)*rand(Float64))
+    @variable(m, 0.5 <= kPhWee <= 2.0, start=0.5+(2.0-0.5)*rand(Float64))
+    @variable(m, 5.0 <= kDpWee <= 20.0, start=5.0+(20.0-5.0)*rand(Float64))
+    @variable(m, 0.05 <= kCdc25_1 <= 0.2, start=0.05+(0.2-0.05)*rand(Float64))
+    @variable(m, 0.45 <= kCdc25_2 <= 1.8, start=0.45+(1.8-0.45)*rand(Float64))
+    @variable(m, 0.5 <= kPhCdc25 <= 2.0, start=0.5+(2.0-0.5)*rand(Float64))
+    @variable(m, 5.0 <= kDpCdc25 <= 20.0, start=5.0+(20.0-5.0)*rand(Float64))
+    @variable(m, 0.0034 <= kDipEB55 <= 0.0136, start=0.0034+(0.0136-0.0034)*rand(Float64))
+    @variable(m, 28.5 <= kAspEB55 <= 114.0, start=28.5+(114.0-28.5)*rand(Float64))
+    @variable(m, 1.0 <= fCb <= 4.0, start=1.0+(4.0-1.0)*rand(Float64))
+    @variable(m, 0.05 <= jiWee <= 0.2, start=0.05+(0.2-0.05)*rand(Float64))
 
-    # Model states
-    println("Defining states ...")
+    # Model specie
+    println("Defining species...")
     @variable(m, 0 <= Cb[j in 1:4, k in 1:length(t_sim)] <= 1.1)
     @variable(m, 0 <= pCb[j in 1:4, k in 1:length(t_sim)] <= 1.1)
     @variable(m, 0 <= Wee[j in 1:4, k in 1:length(t_sim)] <= 1.1)
@@ -86,7 +86,7 @@ for i_start in 1:1
     @variable(m, iWee[j in 1:4])
 
     # Model ODEs
-    println("Defining ODEs ...")
+    println("Defining ODEs...")
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
         Cb[j, k+1] == Cb[j, k] + ( -1.0*( kWee2 * Cb[j, k+1] * 0.5 * (Wee[j, k+1] - iWee[j] - jiWee + sqrt(^(-Wee[j, k+1] + iWee[j] + jiWee, 2) + 4 * jiWee * Wee[j, k+1])) ) -1.0*( kWee1 * Cb[j, k+1] ) +1.0*( kCdc25_1 * pCb[j, k+1] ) +1.0*( kCdc25_2 * pCb[j, k+1] * pCdc25[j, k+1] )     ) * ( t_sim[k+1] - t_sim[k] ) )
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)-1],
@@ -114,7 +114,7 @@ for i_start in 1:1
     @constraint(m, [j in 1:4], iWee[j] == iWee_0[j])
 
     # Define observables
-    println("Defining observables ...")
+    println("Defining observables...")
     @variable(m, -0.09027266 <= obs_Cb[j in 1:4, k in 1:length(t_sim)] <= 1.88171211)
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_Cb[j, k] == fCb*Cb[j, k])
     @variable(m, 0.09218833600000001 <= obs_Gw[j in 1:4, k in 1:length(t_sim)] <= 1.151301944)
@@ -141,7 +141,9 @@ for i_start in 1:1
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pCb[j, k] == pCb[j, k])
 
     # Define objective
-    println("Defining objective ...")
+    println("Defining objective...
+
+")
     @NLobjective(m, Min,sum((obs_Cb[j, (k-1)*t_ratio+1]-data[j][k, :obs_Cb])^2 for j in 1:4 for k in 1:length(t_exp))
         + sum((obs_Gw[j, (k-1)*t_ratio+1]-data[j][k, :obs_Gw])^2 for j in 1:4 for k in 1:length(t_exp))
         + sum((obs_pEnsa[j, (k-1)*t_ratio+1]-data[j][k, :obs_pEnsa])^2 for j in 1:4 for k in 1:length(t_exp))
@@ -156,38 +158,40 @@ for i_start in 1:1
         + sum((obs_pCb[j, (k-1)*t_ratio+1]-data[j][k, :obs_pCb])^2 for j in 1:4 for k in 1:length(t_exp))
         )
 
-    println("Optimizing...")
+    println("Optimizing:")
     optimize!(m)
 
-    println("Retreiving solution...")
-    params = [kDpEnsa, kPhGw, kDpGw1, kDpGw2, kWee1, kWee2, kPhWee, kDpWee, kCdc25_1, kCdc25_2, kPhCdc25, kDpCdc25, kDipEB55, kAspEB55, fCb, jiWee, fB55, kPhEnsa]
-    paramvalues = Dict()
-    for p in params
+    println("
+
+Transfering results to Python...")
+    parameter_names = [kDpEnsa, kPhGw, kDpGw1, kDpGw2, kWee1, kWee2, kPhWee, kDpWee, kCdc25_1, kCdc25_2, kPhCdc25, kDpCdc25, kDipEB55, kAspEB55, fCb, jiWee, fB55, kPhEnsa]
+    parameter_values = Dict()
+    for p in parameter_names
         if occursin("[", string(p))
-            paramvalues[split(string(p[1]), "[")[1]] = JuMP.value.(p)
+            parameter_values[split(string(p[1]), "[")[1]] = JuMP.value.(p)
         else
-            paramvalues[string(p)] = JuMP.value.(p)
+            parameter_values[string(p)] = JuMP.value.(p)
         end
     end
 
-    variables = [Cb, pCb, Wee, pWee, Cdc25, pCdc25, Gw, pGw, Ensa, pEnsa, pEB55, B55, iWee, ]
-    variablevalues = Dict()
-    for v in variables
-        variablevalues[split(string(v[1]), "[")[1]] = JuMP.value.(v)
+    species_names = [Cb, pCb, Wee, pWee, Cdc25, pCdc25, Gw, pGw, Ensa, pEnsa, pEB55, B55, iWee, ]
+    species_values = Dict()
+    for s in species_names
+        species_values[split(string(s[1]), "[")[1]] = JuMP.value.(s)
     end
 
-    observables = [obs_Cb, obs_Gw, obs_pEnsa, obs_pWee, obs_Cdc25, obs_Ensa, obs_pGw, obs_pEB55, obs_Wee, obs_pCdc25, obs_B55, obs_pCb, ]
-    observablevalues = Dict()
-    for o in observables
-        observablevalues[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))
+    observable_names = [obs_Cb, obs_Gw, obs_pEnsa, obs_pWee, obs_Cdc25, obs_Ensa, obs_pGw, obs_pEB55, obs_Wee, obs_pCdc25, obs_B55, obs_pCb, ]
+    observable_values = Dict()
+    for o in observable_names
+        observable_values[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))
     end
 
-    v = objective_value(m)
+    objective_val = objective_value(m)
 
-    results["objective_val"][string(i_start)] = v
-    results["x"][string(i_start)] = paramvalues
-    results["states"][string(i_start)] = variablevalues
-    results["observables"][string(i_start)] = observablevalues
+    results["objective_value"][string(i_start)] = objective_val
+    results["parameters"][string(i_start)] = parameter_values
+    results["species"][string(i_start)] = species_values
+    results["observables"][string(i_start)] = observable_values
 
 end
 

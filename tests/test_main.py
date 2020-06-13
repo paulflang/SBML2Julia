@@ -17,8 +17,7 @@ import unittest
 from DisFit import __main__
 
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
-SBML_PATH = os.path.join(FIXTURES, 'G2M_copasi.xml')
-DATA_PATH = os.path.join(FIXTURES, 'G2M_copasi.csv')
+YAML_PATH = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
 jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(jl_file_gold, 'r') as f:
     JL_CODE_GOLD = f.read()
@@ -67,24 +66,23 @@ class CliTestCase(unittest.TestCase):
                 app.run()
 
     def test_optimize(self):
-        with __main__.App(argv=['optimize', SBML_PATH, DATA_PATH,
-            '-t', '2', '-f', '2', '-n', '1', '-o',
-            self.tempdir_1, '-p', '[Cb, pCb]']) as app:
+        with __main__.App(argv=['optimize', YAML_PATH, '-t', '2', '-n', '1',
+            '-o', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
             app.run()
 
             # test that the CLI produced the correct output
             with open(os.path.join(self.tempdir_1, 'julia_code.jl'), 'r') as f:
                 jl_code = f.read()
             self.assertEqual(jl_code, JL_CODE_GOLD)
-            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plot.pdf')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plots', 'plot_wt.pdf')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
 
-        with __main__.App(argv=['optimize', SBML_PATH, DATA_PATH,
-            '-t', '3', '-f', '3.2', '-n', '2', '-o', self.tempdir_2, '-p', '[a, b]']) as app:
+        with __main__.App(argv=['optimize', YAML_PATH, '-t', '3', '-n', '2',
+            '-o', self.tempdir_2, '-p', '[a, b]']) as app:
             app.run()
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
 
-        with __main__.App(argv=['optimize', 'a', DATA_PATH,
-            '-t', '3', '-f', '3.2', '-n', '2', '-o', self.tempdir_1, '-p', '[Cb, pCb]']) as app:
+        with __main__.App(argv=['optimize', 'a', '-t', '3', '-n', '2',
+            '-o', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
             with self.assertRaises(SystemExit):
                 app.run()
