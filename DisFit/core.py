@@ -219,16 +219,12 @@ class DisFitProblem(object):
         measurement_df.columns = measurement_df.columns.droplevel()
         t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
         t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
-        condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
         if not isinstance(observables, list):
             raise ValueError('`observables` must be a list of observables.')
         if not observables:
             observables = self.petab_problem.observable_df.index
-            # values = {observable: self.results['observables'][self._best_iter][observable][condition2index[str(condition)]] for observable in observables}
-            # values = pd.DataFrame(values, index=t_sim)
-            # exp_data = measurement_df.drop(['simulationConditionId'], axis=1)
         
-        values = {observable: self.results['observables'][self._best_iter][observable][condition2index[str(condition)]] for observable in observables}
+        values = {observable: self.results['observables'][self._best_iter][observable][self._condition2index[str(condition)]] for observable in observables}
         values = pd.DataFrame(values, index=t_sim)
         exp_data = measurement_df[observables]
 
@@ -258,16 +254,24 @@ class DisFitProblem(object):
         Args:
             path (:obj:`str`, optional): path of excel file to write results to.
         """
-        with pd.ExcelWriter(path) as writer:  
+        with pd.ExcelWriter(path) as writer:
             self.results['x_best'].to_excel(writer, sheet_name='x_best')
+            t_max = self.petab_problem.measurement_df['time'].max()
+            print(t_max)
+            t_sim = np.linspace(start=0, stop=t_max, num=t_max*self.t_ratio+1)
+            for c in self._condition2index.keys():
+                values = {state: self.results['states'][self._best_iter][state][self._condition2index[c]] for state in self.results['states']['1'].keys()}
+                values['time'] = t_sim
+                df = pd.DataFrame(values)
+                df = df.set_index('time')
+                df.to_excel(writer, sheet_name='states_'+c)
 
-            df = pd.DataFrame(self.results['states'][self._best_iter])
-            df.axes[0].names = ['time']
-            df.to_excel(writer, sheet_name='states')
-            
-            df = pd.DataFrame(self.results['observables'][self._best_iter])
-            df.axes[0].names = ['time']
-            df.to_excel(writer, sheet_name='observables')
+            for c in self._condition2index.keys():
+                values = {observable: self.results['observables'][self._best_iter][observable][self._condition2index[c]] for observable in self.petab_problem.observable_df.index}
+                values['time'] = t_sim
+                df = pd.DataFrame(values) # , index=t_sim)
+                df = df.set_index('time')
+                df.to_excel(writer, sheet_name='observables_'+c)
 
     def _set_petab_problem(self, petab_yaml):
         """Converts petab yaml to dict and creates petab.problem.Problem object
@@ -287,6 +291,7 @@ class DisFitProblem(object):
                 self._petab_yaml_dict = yaml.safe_load(f)
             except yaml.YAMLError as error:
                 raise SystemExit('Error occured: {}'.format(str(error)))
+        self._condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
 
     def _set_julia_code(self):
         """Transform petab.problem.Problem to Julia JuMP model.
@@ -463,7 +468,10 @@ class DisFitProblem(object):
 
         generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
         for element in parameter_df.index:
-            if element not in local_pars:
+            tmp = []
+            for v in local_pars.values():
+                tmp = tmp + v
+            if element not in tmp:
                 lb = parameter_df.loc[element, 'lowerBound']
                 ub = parameter_df.loc[element, 'upperBound']
                 nominal = parameter_df.loc[element, 'nominalValue']
