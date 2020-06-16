@@ -15,7 +15,12 @@ for condition in keys(dfg)
 end
 
 t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])
-t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)
+t_sim = range(0, stop=t_exp[end], length=Int64(ceil(t_exp[end]*t_ratio+1)))
+t_sim_to_exp = []
+for i in 1:length(t_exp)
+    idx = argmin(abs.(t_exp[i] .- t_sim))
+    append!(t_sim_to_exp, idx)
+end
 
 results = Dict()
 results["objective_value"] = Dict()
@@ -141,29 +146,25 @@ for i_start in 1:1
     @NLconstraint(m, [j in 1:4, k in 1:length(t_sim)], obs_pCb[j, k] == pCb[j, k])
 
     # Define objective
-    println("Defining objective...
-
-")
-    @NLobjective(m, Min,sum((obs_Cb[j, (k-1)*t_ratio+1]-data[j][k, :obs_Cb])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_Gw[j, (k-1)*t_ratio+1]-data[j][k, :obs_Gw])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_pEnsa[j, (k-1)*t_ratio+1]-data[j][k, :obs_pEnsa])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_pWee[j, (k-1)*t_ratio+1]-data[j][k, :obs_pWee])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_Cdc25[j, (k-1)*t_ratio+1]-data[j][k, :obs_Cdc25])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_Ensa[j, (k-1)*t_ratio+1]-data[j][k, :obs_Ensa])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_pGw[j, (k-1)*t_ratio+1]-data[j][k, :obs_pGw])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_pEB55[j, (k-1)*t_ratio+1]-data[j][k, :obs_pEB55])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_Wee[j, (k-1)*t_ratio+1]-data[j][k, :obs_Wee])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_pCdc25[j, (k-1)*t_ratio+1]-data[j][k, :obs_pCdc25])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_B55[j, (k-1)*t_ratio+1]-data[j][k, :obs_B55])^2 for j in 1:4 for k in 1:length(t_exp))
-        + sum((obs_pCb[j, (k-1)*t_ratio+1]-data[j][k, :obs_pCb])^2 for j in 1:4 for k in 1:length(t_exp))
+    println("Defining objective...")
+    @NLobjective(m, Min,sum((obs_Cb[j, t_sim_to_exp[k]]-data[j][k, :obs_Cb])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_Gw[j, t_sim_to_exp[k]]-data[j][k, :obs_Gw])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_pEnsa[j, t_sim_to_exp[k]]-data[j][k, :obs_pEnsa])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_pWee[j, t_sim_to_exp[k]]-data[j][k, :obs_pWee])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_Cdc25[j, t_sim_to_exp[k]]-data[j][k, :obs_Cdc25])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_Ensa[j, t_sim_to_exp[k]]-data[j][k, :obs_Ensa])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_pGw[j, t_sim_to_exp[k]]-data[j][k, :obs_pGw])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_pEB55[j, t_sim_to_exp[k]]-data[j][k, :obs_pEB55])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_Wee[j, t_sim_to_exp[k]]-data[j][k, :obs_Wee])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_pCdc25[j, t_sim_to_exp[k]]-data[j][k, :obs_pCdc25])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_B55[j, t_sim_to_exp[k]]-data[j][k, :obs_B55])^2 for j in 1:4 for k in 1:length(t_exp))
+        + sum((obs_pCb[j, t_sim_to_exp[k]]-data[j][k, :obs_pCb])^2 for j in 1:4 for k in 1:length(t_exp))
         )
 
     println("Optimizing:")
     optimize!(m)
 
-    println("
-
-Transfering results to Python...")
+    println("Transfering results to Python...")
     parameter_names = [kDpEnsa, kPhGw, kDpGw1, kDpGw2, kWee1, kWee2, kPhWee, kDpWee, kCdc25_1, kCdc25_2, kPhCdc25, kDpCdc25, kDipEB55, kAspEB55, fCb, jiWee, fB55, kPhEnsa]
     parameter_values = Dict()
     for p in parameter_names

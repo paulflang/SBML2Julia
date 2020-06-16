@@ -38,6 +38,17 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_constructor(self):
         problem = core.DisFitProblem(PETAB_YAML)
 
+    def test_t_ratio_setter(self):
+        problem = core.DisFitProblem(PETAB_YAML)
+        self.assertEqual(problem.t_ratio, 2)
+        with self.assertRaises(ValueError):
+            problem.t_ratio = -1
+        with self.assertRaises(ValueError):
+            problem.t_ratio = 'a'
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        problem.t_ratio = 1
+        self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
+
     def test_n_starts_setter(self):
         problem = core.DisFitProblem(PETAB_YAML)
         self.assertEqual(problem.n_starts, 1)
@@ -62,7 +73,7 @@ class DisFitProblemTestCase(unittest.TestCase):
 
     def test_optimize_results_plot(self):
         # test_optimize()
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.DisFitProblem(PETAB_YAML, t_ratio=1.99999)
         problem.optimize()
         results = problem.results
 

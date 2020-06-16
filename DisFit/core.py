@@ -27,7 +27,7 @@ class DisFitProblem(object):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
-            t_ratio (:obj:`int`, optional): number of time discretiation steps per time unit
+            t_ratio (:obj:`int` or `float`, optional): number of time discretiation steps per time unit
             n_starts (:obj:`int`): number of multistarts
         """
         print('Initialising problem...')
@@ -60,7 +60,7 @@ class DisFitProblem(object):
         """Get t_ratio
         
         Returns:
-            :obj:`int`: number of time discretiation steps per time unit
+            :obj:`int` or `float`: number of time discretiation steps per time unit
         """
         return self._t_ratio
 
@@ -69,13 +69,13 @@ class DisFitProblem(object):
         """Set t_ratio
         
         Args:
-            value (:obj:`int`): number of time discretiation steps per time unit
+            value (:obj:`int` or `float`): number of time discretiation steps per time unit
         
         Raises:
-            ValueError: if t_ratio is not an integer >= 1
+            ValueError: if t_ratio is not a positive real number.
         """
-        if not isinstance(value, int) or (value < 1):
-            raise ValueError('`t_ratio` must be an integer >= 1.')
+        if not (isinstance(value, int) or isinstance(value, float)) or (value <= 0):
+            raise ValueError('`t_ratio` must be a positive real number.')
         self._t_ratio = value
         if not self._initialization:
             self._set_julia_code()
@@ -208,7 +208,7 @@ class DisFitProblem(object):
         measurement_df = self.petab_problem.measurement_df.set_index(['simulationConditionId', 'time', 'observableId']).unstack().loc[str(condition), :]
         measurement_df.columns = measurement_df.columns.droplevel()
         t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
-        t_sim = np.linspace(start=0, stop=t[-1], num=t[-1]*self.t_ratio+1)
+        t_sim = np.linspace(start=0, stop=t[-1], num=np.int(np.ceil(t[-1]*self.t_ratio+1)))
         if not isinstance(observables, list):
             raise ValueError('`observables` must be a list of observables.')
         if not observables:
@@ -247,7 +247,7 @@ class DisFitProblem(object):
         with pd.ExcelWriter(path) as writer:
             self.results['par_best'].to_excel(writer, sheet_name='par_best')
             t_max = self.petab_problem.measurement_df['time'].max()
-            t_sim = np.linspace(start=0, stop=t_max, num=t_max*self.t_ratio+1)
+            t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
             for c in self._condition2index.keys():
                 values = {specie: self.results['species'][self._best_iter][specie][self._condition2index[c]] for specie in self.results['species']['1'].keys()}
                 values['time'] = t_sim
@@ -413,7 +413,12 @@ class DisFitProblem(object):
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8'))
-        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)\n\n', 'utf8'))
+        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=Int64(ceil(t_exp[end]*t_ratio+1)))\n', 'utf8'))
+        generated_code.extend(bytes('t_sim_to_exp = []\n', 'utf8'))
+        generated_code.extend(bytes('for i in 1:length(t_exp)\n', 'utf8'))
+        generated_code.extend(bytes('    idx = argmin(abs.(t_exp[i] .- t_sim))\n', 'utf8'))
+        generated_code.extend(bytes('    append!(t_sim_to_exp, idx)\n', 'utf8'))
+        generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('results = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["objective_value"] = Dict()\n', 'utf8'))
@@ -520,11 +525,11 @@ class DisFitProblem(object):
 
         # Write objective
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining objective...\n\n")\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining objective...")\n', 'utf8'))
         generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
         for observable in self.petab_problem.observable_df.index:
-            sums_of_squares.append('sum(({0}[j, (k-1)*t_ratio+1]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, self._n_conditions))
+            sums_of_squares.append('sum(({0}[j, t_sim_to_exp[k]]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, self._n_conditions))
         generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
@@ -533,7 +538,7 @@ class DisFitProblem(object):
 
         # Write code to get the solution
         julia_pars = list(self._global_pars.keys()) + list(self._local_pars.keys())
-        generated_code.extend(bytes('    println("\n\nTransfering results to Python...")\n', 'utf8'))
+        generated_code.extend(bytes('    println("Transfering results to Python...")\n', 'utf8'))
         generated_code.extend(bytes('    parameter_names = ' + str(julia_pars).replace('\'', '') + '\n', 'utf8'))
         generated_code.extend(bytes('    parameter_values = Dict()\n', 'utf8'))
         generated_code.extend(bytes('    for p in parameter_names\n', 'utf8'))
