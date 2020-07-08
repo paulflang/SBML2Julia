@@ -199,12 +199,16 @@ class DisFitProblem(object):
         
         # Determine the size of the figure
         plt.figure(figsize=size)
-
         axes = plt.axes([0.1, 0.1, 0.8, 0.8])
-        axes.plot(t_sim, values, linewidth=3)
-        axes.legend(tuple(values.columns))
-        plt.plot(t, exp_data, 'x')
-        axes.legend(tuple(values.columns)) # Todo: create a legend for experimental data.
+        
+        sim_lines = axes.plot(t_sim, values, linewidth=3)
+        axes.set_prop_cycle(None) # reset the color cycle
+        exp_points = plt.plot(t, exp_data, 'x')
+        
+        sim_legend = axes.legend(sim_lines, observables, frameon=True, title='Simulation', loc='upper right')
+        axes.legend(exp_points, observables, frameon=True, title='Experiment', loc='upper left')
+        axes.add_artist(sim_legend)
+        
         plt.xlim(np.min(t), np.max(t_sim))
         plt.ylim(0, 1.1 * exp_data.max().max())
         plt.xlabel(x_label, fontsize=18)
@@ -237,11 +241,12 @@ class DisFitProblem(object):
                         df = df.get_group(condition)
                         df = df.set_index(['time', Id])
                         df = df.unstack()
-                        df.to_excel(writer, sheet_name=var_type+'_'+condition, index=False)
+                        df = df.loc[:, 'simulation']
+                        df.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
             else:
                 for var_type in ['species', 'observables']:
                     df = self.results[var_type]
-                    df.to_excel(writer, sheet_name=var_type, index=False)
+                    df.to_excel(writer, sheet_name=var_type, index=True)
 
     def _get_param_ratios(self, par_dict):
         

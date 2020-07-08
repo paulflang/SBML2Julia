@@ -113,32 +113,32 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'plot.pdf')))
 
 
-# import os
-# import pandas as pd
-# import pickle
-# import pkg_resources
-# import re
-# import shutil
-# import tempfile
-# import unittest
-# from DisFit import core
-# importlib.reload(core)
-# from numpy.testing import assert_allclose
-# from pandas.testing import assert_frame_equal
+import os
+import pandas as pd
+import pickle
+import pkg_resources
+import re
+import shutil
+import tempfile
+import unittest
+from DisFit import core
+importlib.reload(core)
+from numpy.testing import assert_allclose
+from pandas.testing import assert_frame_equal
 
-# #Todo: write resimulations test
+#Todo: write resimulations test
 
-# FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
-# PETAB_YAML = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
-# jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
-# with open(jl_file_gold, 'r') as f:
-#     JL_CODE_GOLD = f.read()
-# JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
-#     FIXTURES, JL_CODE_GOLD)
+FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
+PETAB_YAML = os.path.join(FIXTURES, 'petab_suite_0001', '_0001.yaml')
+jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
+with open(jl_file_gold, 'r') as f:
+    JL_CODE_GOLD = f.read()
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+    FIXTURES, JL_CODE_GOLD)
 
-# problem = core.DisFitProblem(PETAB_YAML)
-# problem.write_jl_file(path='jl_code_20200611.jl')
-# problem.optimize()
-# problem.plot_results('wt', path='plot.pdf')
-# problem.write_results()
+problem = core.DisFitProblem(PETAB_YAML)
+problem.write_jl_file(path='jl_code_20200708.jl')
+problem.optimize()
+problem.plot_results('wt', path='plot.pdf')
+problem.write_results()
 # problem.results['par_best']
