@@ -31,7 +31,9 @@ class DisFitProblem(object):
             t_ratio (:obj:`int` or `float`, optional): number of time discretiation steps per time unit
             n_starts (:obj:`int`): number of multistarts
         """
+
         print('Initialising problem...')
+        self._calling_function = sys._getframe(1).f_code.co_name
         self._initialization = True
         self._optimized = False
         self._files_written = False
@@ -286,7 +288,7 @@ class DisFitProblem(object):
 
         t_max = self.petab_problem.measurement_df['time'].max()
         t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
-        res_dict = {'simulationConditionId': [], variable_type: [], 'time': [], 'simulation': []}
+        res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
         for c in self._condition2index.keys():
             for variable in simulation_dict[self._best_iter].keys():
                 # for value in simulation_dict[self._best_iter][variable][self._condition2index[c], :]:
@@ -352,6 +354,9 @@ class DisFitProblem(object):
         """
         #----------------------------------------------------------------------#
 
+        if self._calling_function == '_execute_case':
+            warnings.warn('Problem is called from PEtab test suite. Simulating with nominal parameter values.')
+
         # read the SBML from file 
         sbml_filename = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['sbml_files'][0])
         doc = libsbml.readSBMLFromFile(sbml_filename)
@@ -390,7 +395,8 @@ class DisFitProblem(object):
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
             initial_assignments[a.getId()] = a.getMath().getName()
-
+        print('initial_assignments:')
+        print(initial_assignments)
         reactions = {} # dict of reaction and kinetic formula in JuMP format
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
@@ -426,8 +432,15 @@ class DisFitProblem(object):
                     continue
                 species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
-        species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
-        species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
+        try:
+            species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
+            species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
+        except:
+            ub = 2 * self.petab_problem.measurement_df.loc[:, 'measurement'].max()
+            warnings.warn('Could not find `species_files` that specify lower and upper species boundaries in {}. Setting lower species boundaries to zero and upper species boundaries to {}.'.format(self._petab_dirname, ub))
+            species_df = pd.DataFrame({'speciesId': list(species.keys()), 'lowerBound': np.zeros(len(species)),
+                'upperBound': ub * np.ones(len(species))}).set_index('speciesId')
+        print(species_df)
 
 
 #-------start generating the code by appending to bytearray-------#
@@ -473,6 +486,8 @@ class DisFitProblem(object):
             generated_code.extend(bytes('\n', 'utf8'))
 
         # Write condition-local parameters
+
+        print('name1')
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
         for k, v in self._local_pars.items():
             generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
@@ -481,6 +496,8 @@ class DisFitProblem(object):
                 ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
                 nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
                 estimate = self.petab_problem.parameter_df.loc[par, 'estimate']
+                if self._calling_function == '_execute_case':
+                    estimate = 0
                 if estimate == 1:
                     generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
                 elif estimate == 0:
@@ -495,6 +512,8 @@ class DisFitProblem(object):
             lb = self.petab_problem.parameter_df.loc[parameter, 'lowerBound']
             ub = self.petab_problem.parameter_df.loc[parameter, 'upperBound']
             nominal = self.petab_problem.parameter_df.loc[parameter, 'nominalValue']
+            if self._calling_function == '_execute_case':
+                estimate = 0
             if estimate == 1:
                     generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, parameter, ub), 'utf8'))
             elif estimate == 0:
@@ -504,7 +523,7 @@ class DisFitProblem(object):
         
         # Write species
         generated_code.extend(bytes('\n', 'utf8'))
-        generated_code.extend(bytes('    # Model specie\n', 'utf8'))
+        generated_code.extend(bytes('    # Model species\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
         for specie in species.keys():
             if species[specie]:
@@ -514,6 +533,15 @@ class DisFitProblem(object):
             else:
                 generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(specie, self._n_conditions), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
+
+        # Write initial assignments
+        generated_code.extend(bytes('    # Model initial assignments\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining initial assignments...")\n', 'utf8'))
+        for specie in species.keys():
+            if specie in initial_assignments.keys():
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
 
         # Write ODEs
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
@@ -546,8 +574,8 @@ class DisFitProblem(object):
             min_exp_val = np.min(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             max_exp_val = np.max(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             diff = max_exp_val - min_exp_val
-            lb = min_exp_val - 0.2*diff
-            ub = max_exp_val + 0.2*diff
+            lb = min_exp_val - 1*diff
+            ub = max_exp_val + 1*diff
             generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
