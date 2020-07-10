@@ -23,7 +23,7 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        if case != '0001':
+        if case != '0002':
             continue
         # try:
         execute_case(case)
@@ -95,37 +95,35 @@ def _execute_case(case):
     # extract results
     results = problem.results # rdatas = ret['rdatas']
     # chi2 = sum(rdata['chi2'] for rdata in rdatas)
-    # llh = - ret['fval']
+
     # simulation_df = amici.petab_objective.rdatas_to_measurement_df(
     #     rdatas, model, importer.petab_problem.measurement_df)
-    simulation_df = results['observables'].rename(columns={'simulation': 'measurement'})
+    simulation_df = problem.petab_problem.simulation_df #results['observables'].rename(columns={'simulation': 'measurement'})
     print(simulation_df)
-    print(problem.petab_problem.observable_df)
-    petab.check_measurement_df(
-        simulation_df, problem.petab_problem.observable_df)
-    simulation_df = simulation_df.rename(
-        columns={petab.MEASUREMENT: petab.SIMULATION})
-    print('renamed simulation_df:')
-    print(simulation_df)
+    # petab.check_measurement_df(
+    #     simulation_df, problem.petab_problem.observable_df)
+    # simulation_df = simulation_df.rename(
+    #     columns={petab.MEASUREMENT: petab.SIMULATION})
 
-    t_sim_to_gt_sim = []
-    idx = -1
-    for i in range(len(gt_simulation_dfs[0].index)): # Todo: expand this for all dataframes in gt_simulation_dfs
-        print(idx)
-        print()
-        idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
-            - gt_simulation_dfs[0].loc[:, 'time'].iloc[i])) + idx+1
-        t_sim_to_gt_sim.append(idx)
-        print(t_sim_to_gt_sim)
-    simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
+    # t_sim_to_gt_sim = []
+    # idx = -1
+    # for i in range(len(gt_simulation_dfs[0].index)): # Todo: expand this for all dataframes in gt_simulation_dfs
+    #     print(idx)
+    #     print()
+    #     idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
+    #         - gt_simulation_dfs[0].loc[:, 'time'].iloc[i])) + idx+1
+    #     t_sim_to_gt_sim.append(idx)
+    #     print(t_sim_to_gt_sim)
+    # simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
+    # simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
 
-    simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
-    print('int simulation_df')
-    print(simulation_df)
+    chi2 = results['chi2'] # petab.calculate_chi2(problem.petab_problem.measurement_df, simulation_df,
+        #problem.petab_problem.observable_df, problem.petab_problem.parameter_df)
+    llh = - results['fval']
 
     # check if matches
-    # chi2s_match = petabtests.evaluate_chi2(chi2, gt_chi2, tol_chi2)
-    # llhs_match = petabtests.evaluate_llh(llh, gt_llh, tol_llh)
+    chi2s_match = petabtests.evaluate_chi2(chi2, gt_chi2, tol_chi2)
+    llhs_match = petabtests.evaluate_llh(llh, gt_llh, tol_llh)
     print('frames:')
     print([simulation_df])
     print(gt_simulation_dfs[0])
@@ -133,6 +131,8 @@ def _execute_case(case):
     simulations_match = petabtests.evaluate_simulations(
         [simulation_df], gt_simulation_dfs, tol_simulations)
     print(simulations_match)
+    print(llhs_match)
+    print(chi2s_match)
 
     # log matches
     # logger.log(logging.INFO if chi2s_match else logging.ERROR,

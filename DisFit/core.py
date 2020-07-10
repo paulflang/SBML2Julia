@@ -163,6 +163,10 @@ class DisFitProblem(object):
         self._results['par_best'] = self._get_param_ratios(self._results_all['parameters'])
         self._results['species'] = self._results_to_frame(self._results_all['species'], variable_type='speciesId')
         self._results['observables'] = self._results_to_frame(self._results_all['observables'], variable_type='observableId')
+        self._set_simulation_df()
+        self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df,
+            self.petab_problem.simulation_df, self.petab_problem.observable_df,
+            self.petab_problem.parameter_df)
 
         self._optimized = True
         return self.results
@@ -283,6 +287,25 @@ class DisFitProblem(object):
         df = df.sort_values(by=['Name']).reset_index(drop=True)
 
         return df
+
+    def _set_simulation_df(self):
+        print('observables')
+        print(self.results['observables'])
+        simulation_df = self.results['observables']
+        print(simulation_df)
+        # petab.check_measurement_df(simulation_df, self.petab_problem.observable_df)
+        # simulation_df = simulation_df.rename(columns={petab.MEASUREMENT: petab.SIMULATION})
+
+        t_sim_to_gt_sim = []
+        idx = -1
+        for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
+            idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
+                - self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])) + idx+1
+            t_sim_to_gt_sim.append(idx)
+        simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
+        simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
+        print(simulation_df)
+        self.petab_problem.simulation_df = simulation_df
 
     def _results_to_frame(self, simulation_dict, variable_type='observableId'):
 
@@ -595,7 +618,8 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
         sums_of_squares = []
         for observable in self.petab_problem.observable_df.index:
-            sums_of_squares.append('sum(({0}[j, t_sim_to_exp[k]]-data[j][k, :{0}])^2 for j in 1:{1} for k in 1:length(t_exp))\n'.format(observable, self._n_conditions))
+            sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
+            sums_of_squares.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
         generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
