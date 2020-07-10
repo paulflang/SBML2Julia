@@ -537,9 +537,11 @@ class DisFitProblem(object):
         # Write initial assignments
         generated_code.extend(bytes('    # Model initial assignments\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining initial assignments...")\n', 'utf8'))
-        for specie in species.keys():
-            if specie in initial_assignments.keys():
+        for specie, par in initial_assignments.items():
+            if par in self._global_pars:
                 generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+            else:        
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
