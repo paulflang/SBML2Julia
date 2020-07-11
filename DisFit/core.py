@@ -159,14 +159,18 @@ class DisFitProblem(object):
         self._best_iter = min(self._results_all['objective_value'], key=self._results_all['objective_value'].get)
 
         self._results = {}
-        self._results['fval'] = self._results_all['objective_value'][self._best_iter]
         self._results['par_best'] = self._get_param_ratios(self._results_all['parameters'])
-        self._results['species'] = self._results_to_frame(self._results_all['species'], variable_type='speciesId')
-        self._results['observables'] = self._results_to_frame(self._results_all['observables'], variable_type='observableId')
+        df = self._results_to_frame(self._results_all['species'], variable_type='speciesId')
+        self._results['species'] = df.sort_values(['speciesId', 'simulationConditionId', 'time'])
+        df = self._results_to_frame(self._results_all['observables'], variable_type='observableId')
+        self._results['observables'] = df.sort_values(['observableId', 'simulationConditionId', 'time'])
         self._set_simulation_df()
+        self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df,
+            self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
+            self.petab_problem.observable_df, self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
         self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df,
-            self.petab_problem.simulation_df, self.petab_problem.observable_df,
-            self.petab_problem.parameter_df)
+            self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
+            self.petab_problem.observable_df, self.petab_problem.parameter_df)
 
         self._optimized = True
         return self.results
@@ -305,15 +309,19 @@ class DisFitProblem(object):
         simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
         simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
         print(simulation_df)
-        self.petab_problem.simulation_df = simulation_df
+        self.petab_problem.simulation_df = simulation_df.rename(columns={'simulation': 'measurement'})
 
     def _results_to_frame(self, simulation_dict, variable_type='observableId'):
 
         t_max = self.petab_problem.measurement_df['time'].max()
         t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
-        for c in self._condition2index.keys():
-            for variable in simulation_dict[self._best_iter].keys():
+        print(simulation_dict[self._best_iter].keys())
+        print(simulation_dict[self._best_iter])
+        for variable in simulation_dict[self._best_iter].keys():
+            for c in self._condition2index.keys():
+                print('variable_1:')
+                print(variable)
                 # for value in simulation_dict[self._best_iter][variable][self._condition2index[c], :]:
                 value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
                 res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
@@ -457,13 +465,13 @@ class DisFitProblem(object):
 
         try:
             species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
-            species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
+            self.petab_problem.species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
         except:
             ub = 2 * self.petab_problem.measurement_df.loc[:, 'measurement'].max()
             warnings.warn('Could not find `species_files` that specify lower and upper species boundaries in {}. Setting lower species boundaries to zero and upper species boundaries to {}.'.format(self._petab_dirname, ub))
-            species_df = pd.DataFrame({'speciesId': list(species.keys()), 'lowerBound': np.zeros(len(species)),
+            self.petab_problem.species_df = pd.DataFrame({'speciesId': list(species.keys()), 'lowerBound': np.zeros(len(species)),
                 'upperBound': ub * np.ones(len(species))}).set_index('speciesId')
-        print(species_df)
+        print(self.petab_problem.species_df)
 
 
 #-------start generating the code by appending to bytearray-------#
@@ -550,8 +558,8 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
         for specie in species.keys():
             if species[specie]:
-                lb = species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == species_df.index
-                ub = species_df.loc[specie, 'upperBound']
+                lb = self.petab_problem.species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == self.petab_problem.species_df.index
+                ub = self.petab_problem.species_df.loc[specie, 'upperBound']
                 generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, specie, self._n_conditions, ub), 'utf8'))
             else:
                 generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(specie, self._n_conditions), 'utf8'))
@@ -601,6 +609,9 @@ class DisFitProblem(object):
             diff = max_exp_val - min_exp_val
             lb = min_exp_val - 1*diff
             ub = max_exp_val + 1*diff
+            if self._calling_function == '_execute_case':
+                lb = 0
+                ub = 3
             generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
