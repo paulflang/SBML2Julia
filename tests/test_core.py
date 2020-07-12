@@ -139,6 +139,6 @@ JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_so
 problem = core.DisFitProblem(PETAB_YAML)
 problem.write_jl_file(path='jl_code_20200708.jl')
 problem.optimize()
-problem.plot_results('wt', path='plot.pdf')
+problem.plot_results('c0', path='plot.pdf')
 problem.write_results()
 # problem.results['par_best']

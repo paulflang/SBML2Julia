@@ -99,6 +99,10 @@ def _execute_case(case):
     # simulation_df = amici.petab_objective.rdatas_to_measurement_df(
     #     rdatas, model, importer.petab_problem.measurement_df)
     simulation_df = problem.petab_problem.simulation_df #results['observables'].rename(columns={'simulation': 'measurement'})
+    print('simulation_df')
+    print(simulation_df)
+    print(gt_simulation_dfs)
+
     print('observable_df')
     print(problem.petab_problem.observable_df)
     # petab.check_measurement_df(

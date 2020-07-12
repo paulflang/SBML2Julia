@@ -562,7 +562,7 @@ class DisFitProblem(object):
                 ub = self.petab_problem.species_df.loc[specie, 'upperBound']
                 generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, specie, self._n_conditions, ub), 'utf8'))
             else:
-                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}])\n'.format(specie, self._n_conditions), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}, k in 1:length(t_sim)])\n'.format(specie, self._n_conditions), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Write initial assignments
@@ -597,7 +597,7 @@ class DisFitProblem(object):
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)-1], {}[j, k] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Write observables
@@ -611,7 +611,7 @@ class DisFitProblem(object):
             ub = max_exp_val + 1*diff
             if self._calling_function == '_execute_case':
                 lb = 0
-                ub = 3
+                ub = 4
             generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
