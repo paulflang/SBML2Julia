@@ -24,7 +24,7 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, petab_yaml, t_ratio=2, n_starts=1):
+    def __init__(self, petab_yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=True):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
@@ -46,6 +46,7 @@ class DisFitProblem(object):
         self._set_petab_problem(petab_yaml)
         self.t_ratio = t_ratio
         self.n_starts = n_starts
+        self.infer_ic_from_sbml = infer_ic_from_sbml
         self._set_julia_code()
         self._initialization = False
 
@@ -105,6 +106,31 @@ class DisFitProblem(object):
         if not isinstance(value, int) or not (value > 0):
             raise ValueError('`n_starts` must be a positive integer')
         self._n_starts = value
+        if not self._initialization:
+            self._set_julia_code()
+
+    @property
+    def infer_ic_from_sbml(self):
+        """Get infer_ic_from_sbml
+        
+        Returns:
+            :obj:`bool`: if missing initial conditions shall be infered from SBML model
+        """
+        return self._infer_ic_from_sbml
+
+    @n_starts.setter
+    def infer_ic_from_sbml(self, value):
+        """Set infer_ic_from_sbml
+        
+        Args:
+            value (:obj:`bool): if missing initial conditions shall be infered from SBML model
+        
+        Raises:
+            ValueError: if infer_ic_from_sbml is not boolean
+        """
+        if not isinstance(value, bool):
+            raise ValueError('`infer_ic_from_sbml` must be boolean')
+        self._infer_ic_from_sbml = value
         if not self._initialization:
             self._set_julia_code()
 
@@ -463,11 +489,16 @@ class DisFitProblem(object):
                     continue
                 species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
+        parameters = {}
+        for i in range(mod.getNumParameters()):
+            par = mod.getParameter(i)
+            parameters[par.getId()] = par.getValue()
+
         try:
             species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
             self.petab_problem.species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
         except:
-            ub = 2 * self.petab_problem.measurement_df.loc[:, 'measurement'].max()
+            ub = 3 * self.petab_problem.measurement_df.loc[:, 'measurement'].max()
             warnings.warn('Could not find `species_files` that specify lower and upper species boundaries in {}. Setting lower species boundaries to zero and upper species boundaries to {}.'.format(self._petab_dirname, ub))
             self.petab_problem.species_df = pd.DataFrame({'speciesId': list(species.keys()), 'lowerBound': np.zeros(len(species)),
                 'upperBound': ub * np.ones(len(species))}).set_index('speciesId')
@@ -510,7 +541,11 @@ class DisFitProblem(object):
         
         # Write condition-defined parameters
         generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
+        species_interpreted_as_ic = []
         for k, v in self._condition_defined_pars.items():
+            if k in species.keys():
+                species_interpreted_as_ic.append(k)
+                k = k+'_0'
             generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
             for i, val in enumerate(v):
                 generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(k, i+1, val), 'utf8'))
@@ -571,15 +606,24 @@ class DisFitProblem(object):
         for specie, par in initial_assignments.items():
             if par in self._global_pars:
                 generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
-            else:        
+            elif par in list(self._local_pars.keys())+list(self._condition_defined_pars.keys()):
                 generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+            elif self.infer_ic_from_sbml:
+                formula = par.split()
+                for i in range(len(formula)):
+                    if (formula[i] in parameters.keys()) and (formula[i] not in
+                        list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
+                        generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+        for specie in species_interpreted_as_ic:
+            generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, specie+'_0'), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
         # Write ODEs
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining ODEs...")\n', 'utf8'))
-        patterns = [par+' ' for par in self.petab_problem.condition_df.columns]
+        patterns = [par+' ' for par in self.petab_problem.condition_df.columns if par not in species.keys()]
         for specie in species:
             if species[specie]:
                 generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(self._n_conditions), 'utf8'))
