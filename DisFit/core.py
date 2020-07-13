@@ -230,7 +230,7 @@ class DisFitProblem(object):
         df = df.set_index(['time', 'observableId'])
         df = df.unstack()
         t_sim = [df.index[i] for i in range(len(df.index))]
-        values = df.loc[:, 'simulation'].reset_index(drop=True, inplace=False)
+        values = df.loc[:, 'simulation'].reset_index(drop=True, inplace=False)[observables]
         exp_data = measurement_df[observables]
         
         # Determine the size of the figure
@@ -239,9 +239,9 @@ class DisFitProblem(object):
         
         sim_lines = axes.plot(t_sim, values, linewidth=3)
         axes.set_prop_cycle(None) # reset the color cycle
-        exp_points = plt.plot(t, exp_data, 'x')
-        
+        exp_points = axes.plot(t, exp_data, 'x')
         sim_legend = axes.legend(sim_lines, observables, frameon=True, title='Simulation', loc='upper right')
+        # axes.set_prop_cycle(None)
         axes.legend(exp_points, observables, frameon=True, title='Experiment', loc='upper left')
         axes.add_artist(sim_legend)
         
@@ -319,13 +319,8 @@ class DisFitProblem(object):
         return df
 
     def _set_simulation_df(self):
-        print('observables')
-        print(self.results['observables'])
-        simulation_df = self.results['observables']
-        print(simulation_df)
-        # petab.check_measurement_df(simulation_df, self.petab_problem.observable_df)
-        # simulation_df = simulation_df.rename(columns={petab.MEASUREMENT: petab.SIMULATION})
 
+        simulation_df = self.results['observables']
         t_sim_to_gt_sim = []
         idx = -1
         for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
@@ -334,7 +329,6 @@ class DisFitProblem(object):
             t_sim_to_gt_sim.append(idx)
         simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
         simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
-        print(simulation_df)
         self.petab_problem.simulation_df = simulation_df.rename(columns={'simulation': 'measurement'})
 
     def _results_to_frame(self, simulation_dict, variable_type='observableId'):
@@ -342,13 +336,8 @@ class DisFitProblem(object):
         t_max = self.petab_problem.measurement_df['time'].max()
         t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
-        print(simulation_dict[self._best_iter].keys())
-        print(simulation_dict[self._best_iter])
         for variable in simulation_dict[self._best_iter].keys():
             for c in self._condition2index.keys():
-                print('variable_1:')
-                print(variable)
-                # for value in simulation_dict[self._best_iter][variable][self._condition2index[c], :]:
                 value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
                 res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
                 res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
