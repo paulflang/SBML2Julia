@@ -23,7 +23,7 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        if case != '0007':
+        if case != '0001_observablePrior':
             continue
         # try:
         execute_case(case)
@@ -82,7 +82,7 @@ def _execute_case(case):
     # import and create objective function
     # importer = pypesto.PetabImporter.from_yaml(
         # yaml_file, output_folder=output_folder)
-    problem = core.DisFitProblem(yaml_file) # model = importer.create_model()
+    problem = core.DisFitProblem(yaml_file, t_ratio=4) # model = importer.create_model()
     # obj = importer.create_objective(model=model)
 
     # the scaled parameters
@@ -118,6 +118,8 @@ def _execute_case(case):
     # check if matches
     chi2s_match = petabtests.evaluate_chi2(chi2, gt_chi2, tol_chi2)
     print(chi2s_match)
+    print(chi2)
+    print(gt_chi2)
     llhs_match = petabtests.evaluate_llh(llh, gt_llh, tol_llh)
     print(llhs_match)
     simulations_match = petabtests.evaluate_simulations(

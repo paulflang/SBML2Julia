@@ -400,6 +400,11 @@ class DisFitProblem(object):
         """
         #----------------------------------------------------------------------#
 
+        NEG_LLH_DICT = {'normal': '0.5 * (log(2*pi*{2}^2) + {2}^(-2) * ({0}{3}-{1})^2)',
+            'laplace': 'log(2*{2}) + abs({0}{3}-{1})/{2}',
+            'logNormal': 'log({0}{3}*{2}*sqrt(2*pi)) + (log({0}{3}) - {1})^2/(2*{2}^2)',
+            'logLaplace': 'log({2}) + log(sqrt(2)) + abs({0}{3} - {1}) * sqrt(2)/{2}'}
+
         if self._calling_function == '_execute_case':
             warnings.warn('Problem is called from PEtab test suite. Simulating with nominal parameter values.')
 
@@ -487,7 +492,7 @@ class DisFitProblem(object):
             species_file = os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['species_files'][0])
             self.petab_problem.species_df = pd.read_csv(species_file, sep='\t', index_col='speciesId')
         except:
-            ub = 3 * self.petab_problem.measurement_df.loc[:, 'measurement'].max()
+            ub = 11 * self.petab_problem.measurement_df.loc[:, 'measurement'].max()
             warnings.warn('Could not find `species_files` that specify lower and upper species boundaries in {}. Setting lower species boundaries to zero and upper species boundaries to {}.'.format(self._petab_dirname, ub))
             self.petab_problem.species_df = pd.DataFrame({'speciesId': list(species.keys()), 'lowerBound': np.zeros(len(species)),
                 'upperBound': ub * np.ones(len(species))}).set_index('speciesId')
@@ -545,13 +550,16 @@ class DisFitProblem(object):
         print('name1')
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
         for k, v in self._local_pars.items():
+            if k in species.keys():
+                species_interpreted_as_ic.append(k)
+                k = k+'_0'
             generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
             for i, par in enumerate(v):
                 lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
                 ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
                 nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
                 estimate = self.petab_problem.parameter_df.loc[par, 'estimate']
-                if self._calling_function == '_execute_case':
+                if self._calling_function == '_execute_case': # The test cases always simulate from the nominal value
                     estimate = 0
                 if estimate == 1:
                     generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
@@ -659,12 +667,36 @@ class DisFitProblem(object):
         # Write objective
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining objective...")\n', 'utf8'))
-        generated_code.extend(bytes('    @NLobjective(m, Min,', 'utf8'))
-        sums_of_squares = []
+        generated_code.extend(bytes('    @NLobjective(m, Min, ', 'utf8'))
+        sums_of_llhs = []
+        # prior_formulas = petab.get_priors_from_df(self.petab_problem.parameter_df, mode='objective')
+        # print('prior_formulas:')
+        # print(prior_formulas)
         for observable in self.petab_problem.observable_df.index:
             sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
-            sums_of_squares.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
-        generated_code.extend(bytes('        + '.join(sums_of_squares), 'utf8'))
+            noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
+            if noise_distribution == 'laplace':
+                sums_of_llhs.append('sum(log(2*{0}) + abs({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+            elif noise_distribution != 'normal':
+                warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`. Defaulting to `normal`.'.format(noise_distribution))
+            if noise_distribution != 'laplace':
+                sums_of_llhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+
+        priors = []
+        for index, row in self._petab_problem.parameter_df.iterrows():
+            prior_type = row['objectivePriorType']
+            prior_parameters = [par.strip() for par in row['objectivePriorParameters'].split(';')]
+            print(prior_type)
+            print(prior_parameters)
+            print(type(prior_parameters))
+            print(index)
+            if index in self._global_pars.keys():
+                priors.append(str(self._n_conditions)+' * '+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '')+'\n')
+            else:
+                priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
+
+
+        generated_code.extend(bytes('        + '.join(sums_of_llhs+priors), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
         generated_code.extend(bytes('    println("Optimizing:")\n', 'utf8'))
