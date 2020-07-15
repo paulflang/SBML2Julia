@@ -129,12 +129,14 @@ from pandas.testing import assert_frame_equal
 #Todo: write resimulations test
 
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
-PETAB_YAML = os.path.join(FIXTURES, 'petab_suite_0001', '_0001.yaml')
-jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
-with open(jl_file_gold, 'r') as f:
-    JL_CODE_GOLD = f.read()
-JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
-    FIXTURES, JL_CODE_GOLD)
+FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
+    'petab_test_suite', 'cases')
+PETAB_YAML = os.path.join(FIXTURES, '0001_observablePrior', '_0001_observablePrior.yaml')
+# jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
+# with open(jl_file_gold, 'r') as f:
+#     JL_CODE_GOLD = f.read()
+# JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+#     FIXTURES, JL_CODE_GOLD)
 
 problem = core.DisFitProblem(PETAB_YAML)
 problem.write_jl_file(path='jl_code_20200708.jl')

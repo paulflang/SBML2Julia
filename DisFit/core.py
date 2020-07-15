@@ -246,7 +246,7 @@ class DisFitProblem(object):
         axes.add_artist(sim_legend)
         
         plt.xlim(np.min(t), np.max(t_sim))
-        plt.ylim(0, 1.1 * exp_data.max().max())
+        plt.ylim(0, 1.05 * max(values.max().max(), exp_data.max().max()))
         plt.xlabel(x_label, fontsize=18)
         plt.ylabel(y_label, fontsize=18)
         plt.title('DisFit time course')
@@ -400,10 +400,11 @@ class DisFitProblem(object):
         """
         #----------------------------------------------------------------------#
 
-        NEG_LLH_DICT = {'normal': '0.5 * (log(2*pi*{2}^2) + {2}^(-2) * ({0}{3}-{1})^2)',
-            'laplace': 'log(2*{2}) + abs({0}{3}-{1})/{2}',
+        NEG_LLH_DICT = {'normal': '0.5 * (log(2*pi*{2}^2) + {2}^(-2) * ({0}{3} - {1})^2)',
+            'laplace': 'log(2*{2}) + abs({0}{3} - {1})/{2}',
             'logNormal': 'log({0}{3}*{2}*sqrt(2*pi)) + (log({0}{3}) - {1})^2/(2*{2}^2)',
-            'logLaplace': 'log({2}) + log(sqrt(2)) + abs({0}{3} - {1}) * sqrt(2)/{2}'}
+            # 'logLaplace': '{1} + log(sqrt(2)*{2}) - min((sqrt(2)/{2} - {1})*(log({0}{3}) - {1}) , (sqrt(2)/{2} + {1})*(-log({0}{3}) + {1}))'
+            } # Todo: ask Sungho to get logLaplace working
 
         if self._calling_function == '_execute_case':
             warnings.warn('Problem is called from PEtab test suite. Simulating with nominal parameter values.')
@@ -446,8 +447,6 @@ class DisFitProblem(object):
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
             initial_assignments[a.getId()] = a.getMath().getName()
-        print('initial_assignments:')
-        print(initial_assignments)
         reactions = {} # dict of reaction and kinetic formula in JuMP format
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
@@ -496,7 +495,6 @@ class DisFitProblem(object):
             warnings.warn('Could not find `species_files` that specify lower and upper species boundaries in {}. Setting lower species boundaries to zero and upper species boundaries to {}.'.format(self._petab_dirname, ub))
             self.petab_problem.species_df = pd.DataFrame({'speciesId': list(species.keys()), 'lowerBound': np.zeros(len(species)),
                 'upperBound': ub * np.ones(len(species))}).set_index('speciesId')
-        print(self.petab_problem.species_df)
 
 
 #-------start generating the code by appending to bytearray-------#
@@ -547,7 +545,6 @@ class DisFitProblem(object):
 
         # Write condition-local parameters
 
-        print('name1')
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
         for k, v in self._local_pars.items():
             if k in species.keys():
@@ -669,31 +666,29 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    println("Defining objective...")\n', 'utf8'))
         generated_code.extend(bytes('    @NLobjective(m, Min, ', 'utf8'))
         sums_of_llhs = []
-        # prior_formulas = petab.get_priors_from_df(self.petab_problem.parameter_df, mode='objective')
-        # print('prior_formulas:')
-        # print(prior_formulas)
         for observable in self.petab_problem.observable_df.index:
             sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
-            noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
+            if 'noiseDistribution' in self.petab_problem.observable_df.columns:
+                noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseDistribution']
+            else:
+                noise_distribution = 'normal'
+            if noise_distribution not in ['normal', 'laplace']:
+                warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`. Defaulting to `normal`.'.format(noise_distribution))
             if noise_distribution == 'laplace':
                 sums_of_llhs.append('sum(log(2*{0}) + abs({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
-            elif noise_distribution != 'normal':
-                warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`. Defaulting to `normal`.'.format(noise_distribution))
-            if noise_distribution != 'laplace':
+            else:
                 sums_of_llhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
 
         priors = []
-        for index, row in self._petab_problem.parameter_df.iterrows():
-            prior_type = row['objectivePriorType']
-            prior_parameters = [par.strip() for par in row['objectivePriorParameters'].split(';')]
-            print(prior_type)
-            print(prior_parameters)
-            print(type(prior_parameters))
-            print(index)
-            if index in self._global_pars.keys():
-                priors.append(str(self._n_conditions)+' * '+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '')+'\n')
-            else:
-                priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
+        if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
+            or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
+            for index, row in self.petab_problem.parameter_df.iterrows():
+                prior_type = row['objectivePriorType']
+                prior_parameters = [par.strip() for par in row['objectivePriorParameters'].split(';')]
+                if index in self._global_pars.keys():
+                    priors.append(str(self._n_conditions)+' * '+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '')+'\n')
+                else:
+                    priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
 
 
         generated_code.extend(bytes('        + '.join(sums_of_llhs+priors), 'utf8'))
