@@ -47,9 +47,8 @@ def execute_case(case):
                 or "UndefVarError: observableParameter1_obs_a not defined" in str(e) \
                 or "BoundsError: attempt to access 2×2 DataFrame" in str(e) \
                 or "BoundsError: attempt to access 1-element Array{Any,1} at index [2]" in str(e) \
-                or "Compartments are not implemented" in str(e) \
                 or "UndefVarError: noiseParameter1_obs_a not defined" in str(e):
-                # cases (0003, 0006), (0008), (0009, 0010), (13), (0014, 0015)
+                # cases (0003, 0006), (0008), (0009, 0010), (0014, 0015)
             print('-------------------------------------------------------')
             logger.info(
                 f"Case {case} expectedly failed. Required functionality is "
@@ -111,10 +110,6 @@ def _execute_case(case):
         logger.error(f"Case {case} failed.")
         raise AssertionError(f"Case {case}: Test results do not match "
                              "expectations")
-
-    if case == '0013':
-        logger.error(f"Case {case} failed.")
-        raise AssertionError(f"Case {case}: Compartments are not implemented.")
 
     logger.info(f"Case {case} passed.")
 

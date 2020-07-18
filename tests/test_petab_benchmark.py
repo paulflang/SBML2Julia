@@ -47,7 +47,7 @@ def execute_case(case):
         _execute_case(case)
     except Exception as e:
         if isinstance(e, NotImplementedError) \
-                or "Unrecognized function "piecewise" used in nonlinear expression." in str(e): \
+                or 'Unrecognized function "piecewise" used in nonlinear expression.' in str(e): \
                 # or "BoundsError: attempt to access 2×2 DataFrame" in str(e) \
                 # or "BoundsError: attempt to access 1-element Array{Any,1} at index [2]" in str(e) \
                 # or "Compartments are not implemented" in str(e) \
@@ -81,7 +81,7 @@ def _execute_case(case):
     yaml_file = os.path.join(case_dir, f'{case}.yaml')
 
     # simulate
-    problem = core.DisFitProblem(yaml_file, t_ratio=4, infer_ic_from_sbml=True)
+    problem = core.DisFitProblem(yaml_file, t_ratio=4, infer_ic_from_sbml=False)
     problem.write_jl_file()
     problem.optimize()
 

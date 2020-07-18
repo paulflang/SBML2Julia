@@ -118,7 +118,7 @@ class DisFitProblem(object):
         """
         return self._infer_ic_from_sbml
 
-    @n_starts.setter
+    @infer_ic_from_sbml.setter
     def infer_ic_from_sbml(self, value):
         """Set infer_ic_from_sbml
         
@@ -371,10 +371,11 @@ class DisFitProblem(object):
         self._local_pars = {}
         self._n_conditions = self.petab_problem.condition_df.shape[0]
         for parameter in self.petab_problem.condition_df.columns:
-            if str(self.petab_problem.condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
-                self._condition_defined_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
-            elif str(self.petab_problem.condition_df[parameter].dtype) == 'object':
-                self._local_pars[parameter] = [par for par in self.petab_problem.condition_df[parameter]]
+            if parameter != 'conditionName':
+                if str(self.petab_problem.condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
+                    self._condition_defined_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
+                elif str(self.petab_problem.condition_df[parameter].dtype) == 'object':
+                    self._local_pars[parameter] = [par for par in self.petab_problem.condition_df[parameter]]
 
         self._global_pars = {}
         for parameter in self.petab_problem.parameter_df.index:
@@ -446,7 +447,7 @@ class DisFitProblem(object):
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()
             kinetic_components = kinetics.getFormula() #.split(' * ')[1:]
-            kinetic_components = re.sub('compartment \* ', '', kinetic_components)
+            # kinetic_components = re.sub('compartment \* ', '', kinetic_components)
             reactions[reaction.getId()] = kinetic_components #jump_formula
 
         species = {} # dict of species and stoichiometry-reactionId tuple they are involved in
@@ -563,7 +564,6 @@ class DisFitProblem(object):
             generated_code.extend(bytes('\n', 'utf8'))
 
         # Write condition-local parameters
-
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
         for k, v in self._local_pars.items():
             if k in species.keys():
@@ -600,6 +600,16 @@ class DisFitProblem(object):
             else:
                 raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
         
+        # write out compartment values 
+        generated_code.extend(bytes('\n', 'utf8'))
+        generated_code.extend(bytes('    # Model compartments\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining compartments...")\n', 'utf8'))
+        for i in range(mod.getNumCompartments()):
+            element = mod.getCompartment(i)
+            if element.getId() not in self.petab_problem.condition_df.columns:
+                generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(element.getId(), element.getSize()), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
         # Write species
         generated_code.extend(bytes('\n', 'utf8'))
         generated_code.extend(bytes('    # Model species\n', 'utf8'))
@@ -617,17 +627,18 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Model initial assignments\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining initial assignments...")\n', 'utf8'))
         for specie, par in initial_assignments.items():
-            if par in self._global_pars:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
-            elif par in list(self._local_pars.keys())+list(self._condition_defined_pars.keys()):
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
-            elif self.infer_ic_from_sbml:
-                formula = str(par).split() # par can sometimes be a float, which would cause an error when splitting
-                for i in range(len(formula)):
-                    if (formula[i] in parameters.keys()) and (formula[i] not in
-                        list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
-                        generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+            if specie not in species_interpreted_as_ic:
+                if par in self._global_pars:
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                elif par in list(self._local_pars.keys())+list(self._condition_defined_pars.keys()):
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                elif self.infer_ic_from_sbml:
+                    formula = str(par).split() # par can sometimes be a float, which would cause an error when splitting
+                    for i in range(len(formula)):
+                        if (formula[i] in parameters.keys()) and (formula[i] not in
+                            list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
+                            generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
         for specie in species_interpreted_as_ic:
             generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, specie+'_0'), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
