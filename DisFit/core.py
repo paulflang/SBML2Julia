@@ -335,14 +335,21 @@ class DisFitProblem(object):
 
         t_max = self.petab_problem.measurement_df['time'].max()
         t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
+        t_exp = sorted(set(self.petab_problem.measurement_df['time']))
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
         for variable in simulation_dict[self._best_iter].keys():
             for c in self._condition2index.keys():
                 value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
                 res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
                 res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
-                res_dict['time'] = res_dict['time'] + list(t_sim)
+                if variable_type == 'speciesId':
+                    res_dict['time'] = res_dict['time'] + list(t_sim)
+                elif variable_type == 'observableId':
+                    res_dict['time'] = res_dict['time'] + list(t_exp)
                 res_dict['simulation'] = res_dict['simulation'] + list(value)
+
+        print(t_exp)
+        print(value)
                 
         return pd.DataFrame(res_dict)
 
@@ -645,18 +652,21 @@ class DisFitProblem(object):
 
 
         # Write ODEs
+
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining ODEs...")\n', 'utf8'))
-        patterns = [par for par in self.petab_problem.condition_df.columns if par not in species.keys()]
+        patterns = [par for par in self.petab_problem.condition_df.columns if par not in species.keys()]       
         for specie in species: # For every species
             if species[specie]:
+                generated_code.extend(bytes('    println("{}")\n'.format(specie), 'utf8'))
                 generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(self._n_conditions), 'utf8'))
                 generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
                 for (coef, reaction_name) in species[specie]: # For every reaction
                     reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
                     for pattern in patterns: # Add iterator `j` to condition-defined and local parameters
-                        reaction_formula = re.sub(pattern+' ', pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
-                        reaction_formula = re.sub(pattern+',', pattern.rstrip(',')+'[j], ', reaction_formula)
+                        reaction_formula = re.sub('[( ]'+pattern+'[, )]', lambda matchobj: matchobj.group(0)[:-1]+'[j]'+matchobj.group(0)[-1:], reaction_formula) # The matchobject starts with a `(` or ` ` and ends with a `,` ` ` or `)`. I insert `[j]` just before the ending of the matchobject. 
+                        # reaction_formula = re.sub(' '+pattern+' ', ' '+pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
+                        # reaction_formula = re.sub(' '+pattern+',', ' '+pattern.rstrip(',')+'[j], ', reaction_formula) # Todo: I think the rstrip is superfluous in the last two lines.
                     for spec in species.keys():
                         tmp_iterator = '[j]'
                         if species[spec]:
@@ -679,17 +689,17 @@ class DisFitProblem(object):
             lb = min_exp_val - 1*diff
             ub = max_exp_val + 1*diff
             if self._calling_function == '_execute_case':
-                lb = 0
-                ub = 4
-            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
+                lb = min(0, lb)
+                ub = max(4, ub)
+            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_exp)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             for i in range(len(formula)):
                 if formula[i] in species.keys():
-                    formula[i] = formula[i]+'[j, k]'
+                    formula[i] = formula[i]+'[j, t_sim_to_exp[k]]'
                 elif formula[i] in patterns:
                     formula[i] = formula[i]+'[j]'
             formula = ''.join(formula)
-            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
+            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_exp)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Write objective
@@ -706,9 +716,9 @@ class DisFitProblem(object):
             if noise_distribution not in ['normal', 'laplace']:
                 warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`. Defaulting to `normal`.'.format(noise_distribution))
             if noise_distribution == 'laplace':
-                sums_of_llhs.append('sum(log(2*{0}) + abs({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+                sums_of_llhs.append('sum(log(2*{0}) + abs({1}[j, k]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
             else:
-                sums_of_llhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, t_sim_to_exp[k]]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+                sums_of_llhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, k]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
 
         priors = []
         if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
