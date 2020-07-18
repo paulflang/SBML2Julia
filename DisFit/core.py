@@ -24,7 +24,7 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, petab_yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=True):
+    def __init__(self, petab_yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
@@ -274,11 +274,11 @@ class DisFitProblem(object):
                 for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
                     df = self.results[var_type].groupby('simulationConditionId')
                     for condition in self._condition2index.keys():
-                        df = df.get_group(condition)
-                        df = df.set_index(['time', Id])
-                        df = df.unstack()
-                        df = df.loc[:, 'simulation']
-                        df.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
+                        dfg = df.get_group(condition)
+                        dfg = dfg.set_index(['time', Id])
+                        dfg = dfg.unstack()
+                        dfg = dfg.loc[:, 'simulation']
+                        dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
             else:
                 for var_type in ['species', 'observables']:
                     df = self.results[var_type]
@@ -428,13 +428,6 @@ class DisFitProblem(object):
             print('The document could not be converted')
             print(doc.getErrorLog().toString())
 
-        # props = libsbml.ConversionProperties()
-        # props.addOption("expandInitialAssignments", True)
-
-        # if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
-        #     print('The document could not be converted')
-        #     print(doc.getErrorLog().toString())
-
         props = libsbml.ConversionProperties()
         props.addOption("expandFunctionDefinitions", True) # Todo: ask PEtab developers set this to `True` when creating `petab.problem.Problem()`
 
@@ -447,6 +440,7 @@ class DisFitProblem(object):
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
             initial_assignments[a.getId()] = a.getMath().getName()
+
         reactions = {} # dict of reaction and kinetic formula in JuMP format
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
@@ -461,6 +455,31 @@ class DisFitProblem(object):
             if specie.getBoundaryCondition() == True or (specie.getId() in species):
                 continue
             species[specie.getId()] = []
+
+        # if self.infer_ic_from_sbml: # This is to import ini
+        #     props = libsbml.ConversionProperties()
+        #     props.addOption("expandInitialAssignments", True)
+
+        #     if doc.convert(props) != libsbml.LIBSBML_OPERATION_SUCCESS: 
+        #         print('The document could not be converted')
+        #         print(doc.getErrorLog().toString())
+
+        #     mod_numeric_ic = doc.getModel()
+        #     for key in species.keys():
+        #         if key not in self.petab_problem.condition_df.columns:
+        #             if key not in initial_assignments.keys() or initial_assignments[key] == None:
+        #                 if key in initial_assignments.keys() and initial_assignments[key] == None:
+        #                     warnings.warn(f'Could not parse initial assignment for {key}. Overwriting with its numerical value. This may overwrite parameters that should have been fitted.')
+        #                 # get initialValue
+        #                 element = mod_numeric_ic.getElementBySId(key)
+        #                 if element.getTypeCode() == libsbml.SBML_SPECIES: 
+        #                     if element.isSetInitialConcentration(): 
+        #                         initial_assignments[key] = element.getInitialConcentration()
+        #                     else: 
+        #                         initial_assignments[key] = element.getInitialAmount()
+        #                 else: 
+        #                     initial_assignments[key] = element.getSize()
+
 
         for i in range(mod.getNumReactions()): 
             reaction = mod.getReaction(i)
@@ -603,7 +622,7 @@ class DisFitProblem(object):
             elif par in list(self._local_pars.keys())+list(self._condition_defined_pars.keys()):
                 generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
             elif self.infer_ic_from_sbml:
-                formula = par.split()
+                formula = str(par).split() # par can sometimes be a float, which would cause an error when splitting
                 for i in range(len(formula)):
                     if (formula[i] in parameters.keys()) and (formula[i] not in
                         list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
@@ -617,15 +636,16 @@ class DisFitProblem(object):
         # Write ODEs
         generated_code.extend(bytes('    # Model ODEs\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining ODEs...")\n', 'utf8'))
-        patterns = [par+' ' for par in self.petab_problem.condition_df.columns if par not in species.keys()]
-        for specie in species:
+        patterns = [par for par in self.petab_problem.condition_df.columns if par not in species.keys()]
+        for specie in species: # For every species
             if species[specie]:
                 generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(self._n_conditions), 'utf8'))
                 generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
-                for (coef, reaction_name) in species[specie]:
+                for (coef, reaction_name) in species[specie]: # For every reaction
                     reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
-                    for pattern in patterns:
-                        reaction_formula = re.sub(pattern, pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
+                    for pattern in patterns: # Add iterator `j` to condition-defined and local parameters
+                        reaction_formula = re.sub(pattern+' ', pattern.rstrip()+'[j] ', reaction_formula) # Todo: not sure if the tailing whitespace is always in the pattern.
+                        reaction_formula = re.sub(pattern+',', pattern.rstrip(',')+'[j], ', reaction_formula)
                     for spec in species.keys():
                         tmp_iterator = '[j]'
                         if species[spec]:
@@ -655,7 +675,7 @@ class DisFitProblem(object):
             for i in range(len(formula)):
                 if formula[i] in species.keys():
                     formula[i] = formula[i]+'[j, k]'
-                elif formula[i]+' ' in patterns:
+                elif formula[i] in patterns:
                     formula[i] = formula[i]+'[j]'
             formula = ''.join(formula)
             generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
