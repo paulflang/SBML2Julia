@@ -624,23 +624,29 @@ class DisFitProblem(object):
             for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
                 observable_params[obs] = {}
                 for cond, data_2 in data_1.groupby('simulationConditionId'):
-                    # if len(set(data_2['observableParameters'])) <= 1:
-                    #     observable_params[obs][cond] = data_2['observableParameters'].values[0]
-                    # else:
-                    observable_params[obs][cond] = data_2['observableParameters'].values
+                    if len(set(data_2['observableParameters'])) <= 1:
+                        observable_params[obs][cond] = [data_2['observableParameters'].values[0]]
+                    else:
+                        observable_params[obs][cond] = data_2['observableParameters'].values
+            print(observable_params)
 
             generated_code.extend(bytes('    # Define observable overrides\n', 'utf8'))
             for obs, data_1 in observable_params.items():
                 n_par = len(str(next(iter(data_1.values()))[0]).split(';'))
+                str_1 = ', k in 1:length(t_exp)'
+                str_2 = ', k'
+                if len(data_1.values()) <= 1:
+                    str_1 = ''
+                    str_2 = ''
                 for i in range(n_par):
-                    generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}, k in 1:length(t_exp)])\n'.format(i+1, obs, self._n_conditions), 'utf8'))
-                    set_of_observable_params.add(f'observableParameter{i+1}_{obs}')
+                    generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
+                    set_of_observable_params.add((f'observableParameter{i+1}_{obs}', str_2))
                 print(observable_params[obs][cond])
                 for cond, values in data_1.items():
-                    for k, params in enumerate(values):
+                    for params in values:
                         pars = [par.strip() for par in str(params).split(';')]
                         for n, par in enumerate(pars):
-                            generated_code.extend(bytes(f'    @constraint(m, observableParameter{n+1}_{obs}[{self._condition2index[cond]+1}, {k+1}] == {par})\n', 'utf8'))
+                            generated_code.extend(bytes(f'    @constraint(m, observableParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_2}] == {par})\n', 'utf8'))
             generated_code.extend(bytes('\n', 'utf8'))
         
         # Write out compartment values 
@@ -733,7 +739,10 @@ class DisFitProblem(object):
                     formula[i] = formula[i]+'[j]'
             formula = ''.join(formula)
             for obs_par_name in set_of_observable_params:
-                formula = re.sub(obs_par_name, obs_par_name+'[j, k]', formula)
+                print(obs_par_name)
+                print(obs_par_name[1])
+                print(type(obs_par_name[1]))
+                formula = re.sub(obs_par_name[0], obs_par_name[0]+f'[j{obs_par_name[1]}]', formula)
             generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_exp)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
