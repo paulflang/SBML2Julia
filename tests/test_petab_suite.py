@@ -23,7 +23,7 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        # if case != '0013':
+        # if case != '0003':
         #     continue
         try:
             execute_case(case)
@@ -44,11 +44,10 @@ def execute_case(case):
         _execute_case(case)
     except Exception as e:
         if isinstance(e, NotImplementedError) \
-                or "UndefVarError: observableParameter1_obs_a not defined" in str(e) \
                 or "BoundsError: attempt to access 2×2 DataFrame" in str(e) \
-                or "BoundsError: attempt to access 1-element Array{Any,1} at index [2]" in str(e) \
+                or "NotImplementedError: Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration)." in str(e) \
                 or "UndefVarError: noiseParameter1_obs_a not defined" in str(e):
-                # cases (0003, 0006), (0008), (0009, 0010), (0014, 0015)
+                # cases (0008), (0009, 0010), (0014, 0015)
             print('-------------------------------------------------------')
             logger.info(
                 f"Case {case} expectedly failed. Required functionality is "

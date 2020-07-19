@@ -133,7 +133,7 @@ from pandas.testing import assert_frame_equal
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
     'petab_test_suite', 'cases')
-PETAB_YAML = os.path.join(FIXTURES, '0001_observablePrior', '_0001_observablePrior.yaml')
+PETAB_YAML = os.path.join(FIXTURES, '0003', '_0003.yaml')
 # jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
 # with open(jl_file_gold, 'r') as f:
 #     JL_CODE_GOLD = f.read()
@@ -141,8 +141,8 @@ PETAB_YAML = os.path.join(FIXTURES, '0001_observablePrior', '_0001_observablePri
 #     FIXTURES, JL_CODE_GOLD)
 
 problem = core.DisFitProblem(PETAB_YAML)
-problem.write_jl_file(path='jl_code_20200708.jl')
+problem.write_jl_file()
 problem.optimize()
-problem.plot_results('wt', path='plot.pdf')
+problem.plot_results('c0', path='plot.pdf')
 problem.write_results()
 # problem.results['par_best']
