@@ -198,13 +198,14 @@ class DisFitProblem(object):
                 self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
                 self.petab_problem.observable_df, self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
             if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
-                warnings.warn(f"Optimization algorithm may not have used correct objective (Julia llh: {self._results_all['objective_value'][self._best_iter]}; PEtab llh: {self._results['fval']}).")
+                warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results[self._results_all['objective_value'][self._best_iter], 'fval']))
             self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
                 self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
                 self.petab_problem.observable_df, self.petab_problem.parameter_df)
         except:
             warnings.warn('Could not calculate llh and/or chi2 using PEtab. Using llh from Julia instead.')
             self._results['fval'] = self._results_all['objective_value'][self._best_iter]
+            self._results['chi2'] = np.nan
 
         self._optimized = True
         return self.results
@@ -795,21 +796,53 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining objective...")\n', 'utf8'))
         generated_code.extend(bytes('    @NLobjective(m, Min, ', 'utf8'))
-        sums_of_llhs = []
+        sums_of_nllhs = []
         for observable in self.petab_problem.observable_df.index:
+            
             sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
             for noise_par_name in set_of_noise_params:
                 sigma = '( '+re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)+' )'
+
+            scale = 'lin'
+            if 'observableTransformation' in self.petab_problem.observable_df.columns:
+                scale = self.petab_problem.observable_df.loc[observable, 'observableTransformation']
+                        
+            noise_distribution = 'normal'
             if 'noiseDistribution' in self.petab_problem.observable_df.columns:
                 noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseDistribution']
-            else:
-                noise_distribution = 'normal'
+
             if noise_distribution not in ['normal', 'laplace']:
-                warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`. Defaulting to `normal`.'.format(noise_distribution))
-            if noise_distribution == 'laplace':
-                sums_of_llhs.append('sum(log(2*{0}) + abs({1}[j, k]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
-            else:
-                sums_of_llhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, k]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+                warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`.'.format(noise_distribution))
+            if scale not in ['lin', 'log', 'log10']:
+                warnings.warn('`scale is {}, but must be either `lin`, `log` or `log10`.'.format(scale_distribution))
+            
+            # if noise_distribution == 'laplace':
+            #     sums_of_nllhs.append('sum(log(2*{0}) + abs({1}[j, k]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+            # else:
+            #     sums_of_nllhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, k]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
+
+            if noise_distribution == 'normal' and scale == 'lin':
+                # nllh = 0.5*log(2*pi*sigma**2) + 0.5*((s-m)/sigma)**2
+                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k]-data[j][k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+            elif noise_distribution == 'normal' and scale == 'log':
+                # nllh = 0.5*log(2*pi*sigma**2*m**2) + 0.5*((log(s)-log(m))/sigma)**2
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data[j][k, :{0}])^2) + 0.5*((log({0}[j, k])-log(data[j][k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+            elif noise_distribution == 'normal' and scale == 'log10':
+                # nllh = 0.5*log(2*pi*sigma**2*m**2*log(10)**2) + \
+                    # 0.5*((log10(s)-log10(m))/sigma)**2
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data[j][k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k])-log10(data[j][k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+            elif noise_distribution == 'laplace' and scale == 'lin':
+                # nllh = log(2*sigma) + abs((s-m)/sigma)
+                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k]-data[j][k, :{0}])/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+            elif noise_distribution == 'laplace' and scale == 'log':
+                # nllh = log(2*sigma*m) + abs((log(s)-log(m))/sigma)
+                sums_of_nllhs.append('sum(log(2*{1}*data[j][k, :{0}]) + abs(log({0}[j, k])-log(data[j][k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+            elif noise_distribution == 'laplace' and scale == 'log10':
+                # nllh = log(2*sigma*m*log(10)) + abs((log10(s)-log10(m))/sigma)
+                sums_of_nllhs.append('sum(log(2*{1}*data[j][k, :{0}]*log(10)) + abs(log10({0}[j, k])-log10(data[j][k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))                
+
+
+
 
         priors = []
         if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
@@ -823,7 +856,7 @@ class DisFitProblem(object):
                     priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
 
 
-        generated_code.extend(bytes('        + '.join(sums_of_llhs+priors), 'utf8'))
+        generated_code.extend(bytes('        + '.join(sums_of_nllhs+priors), 'utf8'))
         generated_code.extend(bytes('        )\n\n', 'utf8'))
 
         generated_code.extend(bytes('    println("Optimizing:")\n', 'utf8'))
