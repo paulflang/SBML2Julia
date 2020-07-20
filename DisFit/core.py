@@ -192,10 +192,11 @@ class DisFitProblem(object):
         self._results['observables'] = df.sort_values(['observableId', 'simulationConditionId', 'time'])
         self._set_simulation_df()
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
-        self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, self.petab_problem.measurement_df.columns != 'observableParameters'],
+        cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
+        self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
             self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
             self.petab_problem.observable_df, self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
-        self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, self.petab_problem.measurement_df.columns != 'observableParameters'],
+        self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
             self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
             self.petab_problem.observable_df, self.petab_problem.parameter_df)
 
@@ -649,6 +650,39 @@ class DisFitProblem(object):
                             generated_code.extend(bytes(f'    @constraint(m, observableParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_2}] == {par})\n', 'utf8'))
             generated_code.extend(bytes('\n', 'utf8'))
         
+        # Write noise overrides:
+        set_of_noise_params = set()
+        if 'noiseParameters' in self.petab_problem.measurement_df.columns:
+            noise_params = {}
+            for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
+                noise_params[obs] = {}
+                for cond, data_2 in data_1.groupby('simulationConditionId'):
+                    if len(set(data_2['noiseParameters'])) <= 1:
+                        noise_params[obs][cond] = [data_2['noiseParameters'].values[0]]
+                    else:
+                        noise_params[obs][cond] = data_2['noiseParameters'].values
+            print(noise_params)
+
+            generated_code.extend(bytes('    # Define noise overrides\n', 'utf8'))
+            for obs, data_1 in noise_params.items():
+                n_par = len(str(next(iter(data_1.values()))[0]).split(';'))
+                str_1 = ', k in 1:length(t_exp)'
+                str_2 = ', k'
+                if len(data_1.values()) <= 1:
+                    str_1 = ''
+                    str_2 = ''
+                for i in range(n_par):
+                    generated_code.extend(bytes('    @variable(m, noiseParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
+                    set_of_noise_params.add((f'noiseParameter{i+1}_{obs}', str_2))
+                print(noise_params[obs][cond])
+                for cond, values in data_1.items():
+                    for params in values:
+                        pars = [par.strip() for par in str(params).split(';')]
+                        for n, par in enumerate(pars):
+                            generated_code.extend(bytes(f'    @constraint(m, noiseParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_2}] == {par})\n', 'utf8'))
+            generated_code.extend(bytes('\n', 'utf8'))
+
+
         # Write out compartment values 
         generated_code.extend(bytes('    # Model compartments\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining compartments...")\n', 'utf8'))
@@ -739,9 +773,6 @@ class DisFitProblem(object):
                     formula[i] = formula[i]+'[j]'
             formula = ''.join(formula)
             for obs_par_name in set_of_observable_params:
-                print(obs_par_name)
-                print(obs_par_name[1])
-                print(type(obs_par_name[1]))
                 formula = re.sub(obs_par_name[0], obs_par_name[0]+f'[j{obs_par_name[1]}]', formula)
             generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_exp)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
@@ -753,6 +784,8 @@ class DisFitProblem(object):
         sums_of_llhs = []
         for observable in self.petab_problem.observable_df.index:
             sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
+            for noise_par_name in set_of_noise_params:
+                sigma = re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)
             if 'noiseDistribution' in self.petab_problem.observable_df.columns:
                 noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseDistribution']
             else:
