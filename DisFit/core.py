@@ -193,12 +193,18 @@ class DisFitProblem(object):
         self._set_simulation_df()
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
-        self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
-            self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
-            self.petab_problem.observable_df, self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
-        self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
-            self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
-            self.petab_problem.observable_df, self.petab_problem.parameter_df)
+        try:
+            self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
+                self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
+                self.petab_problem.observable_df, self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
+            if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
+                warnings.warn(f"Optimization algorithm may not have used correct objective (Julia llh: {self._results_all['objective_value'][self._best_iter]}; PEtab llh: {self._results['fval']}).")
+            self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
+                self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
+                self.petab_problem.observable_df, self.petab_problem.parameter_df)
+        except:
+            warnings.warn('Could not calculate llh and/or chi2 using PEtab. Using llh from Julia instead.')
+            self._results['fval'] = self._results_all['objective_value'][self._best_iter]
 
         self._optimized = True
         return self.results
@@ -218,9 +224,9 @@ class DisFitProblem(object):
         # Options
         x_label = 'time'
         y_label = 'Abundance'
+        cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters', 'noiseParameters'])]
         measurement_df = self.petab_problem.measurement_df\
-            .loc[:, self.petab_problem.measurement_df.columns != 'observableParameters']\
-            .set_index(['simulationConditionId', 'time', 'observableId'])\
+            .loc[:, cols].set_index(['simulationConditionId', 'time', 'observableId'])\
             .unstack().loc[str(condition), :]
         measurement_df.columns = measurement_df.columns.droplevel()
         t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
@@ -626,8 +632,10 @@ class DisFitProblem(object):
                 observable_params[obs] = {}
                 for cond, data_2 in data_1.groupby('simulationConditionId'):
                     if len(set(data_2['observableParameters'])) <= 1:
+                        print('one')
                         observable_params[obs][cond] = [data_2['observableParameters'].values[0]]
                     else:
+                        print('two')
                         observable_params[obs][cond] = data_2['observableParameters'].values
             print(observable_params)
 
@@ -636,7 +644,7 @@ class DisFitProblem(object):
                 n_par = len(str(next(iter(data_1.values()))[0]).split(';'))
                 str_1 = ', k in 1:length(t_exp)'
                 str_2 = ', k'
-                if len(data_1.values()) <= 1:
+                if len(next(iter(data_1.values()))) <= 1:
                     str_1 = ''
                     str_2 = ''
                 for i in range(n_par):
@@ -644,10 +652,13 @@ class DisFitProblem(object):
                     set_of_observable_params.add((f'observableParameter{i+1}_{obs}', str_2))
                 print(observable_params[obs][cond])
                 for cond, values in data_1.items():
-                    for params in values:
+                    for k, params in enumerate(values):
+                        str_3 = f', {k+1}'
+                        if len(next(iter(data_1.values()))) <= 1:
+                            str_3 = ''
                         pars = [par.strip() for par in str(params).split(';')]
                         for n, par in enumerate(pars):
-                            generated_code.extend(bytes(f'    @constraint(m, observableParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_2}] == {par})\n', 'utf8'))
+                            generated_code.extend(bytes(f'    @constraint(m, observableParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_3}] == {par})\n', 'utf8'))
             generated_code.extend(bytes('\n', 'utf8'))
         
         # Write noise overrides:
@@ -676,10 +687,13 @@ class DisFitProblem(object):
                     set_of_noise_params.add((f'noiseParameter{i+1}_{obs}', str_2))
                 print(noise_params[obs][cond])
                 for cond, values in data_1.items():
-                    for params in values:
+                    for k, params in enumerate(values):
+                        str_3 = f', {k+1}'
+                        if len(next(iter(data_1.values()))) <= 1:
+                            str_3 = ''
                         pars = [par.strip() for par in str(params).split(';')]
                         for n, par in enumerate(pars):
-                            generated_code.extend(bytes(f'    @constraint(m, noiseParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_2}] == {par})\n', 'utf8'))
+                            generated_code.extend(bytes(f'    @constraint(m, noiseParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_3}] == {par})\n', 'utf8'))
             generated_code.extend(bytes('\n', 'utf8'))
 
 
@@ -785,7 +799,7 @@ class DisFitProblem(object):
         for observable in self.petab_problem.observable_df.index:
             sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
             for noise_par_name in set_of_noise_params:
-                sigma = re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)
+                sigma = '( '+re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)+' )'
             if 'noiseDistribution' in self.petab_problem.observable_df.columns:
                 noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseDistribution']
             else:
