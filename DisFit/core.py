@@ -389,23 +389,25 @@ class DisFitProblem(object):
 
         self._condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
 
-        self._condition_defined_pars = {}
-        self._local_pars = {}
+        # self._condition_defined_pars = {}
+        # self._local_pars = {}
+        self._condition_specific_pars = {}
         self._n_conditions = self.petab_problem.condition_df.shape[0]
         for parameter in self.petab_problem.condition_df.columns:
             if parameter != 'conditionName':
-                if str(self.petab_problem.condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
-                    self._condition_defined_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
-                elif str(self.petab_problem.condition_df[parameter].dtype) == 'object':
-                    self._local_pars[parameter] = [par for par in self.petab_problem.condition_df[parameter]]
+                # if str(self.petab_problem.condition_df[parameter].dtype) in ('float64', 'int16', 'int64'):
+                #     self._condition_defined_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
+                # elif str(self.petab_problem.condition_df[parameter].dtype) == 'object':
+                #     self._local_pars[parameter] = [par for par in self.petab_problem.condition_df[parameter]]
+                self._condition_specific_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
 
         self._global_pars = {}
         for parameter in self.petab_problem.parameter_df.index:
-            tmp = []
-            for v in self._local_pars.values():
-                tmp = tmp + v
-            if parameter not in tmp:
-                self._global_pars[parameter] = self.petab_problem.parameter_df.loc[parameter, 'estimate']
+            # tmp = []
+            # for v in self._local_pars.values():
+            #     tmp = tmp + v
+            # if parameter not in tmp:
+            self._global_pars[parameter] = self.petab_problem.parameter_df.loc[parameter, 'estimate']
 
     def _set_julia_code(self):
         """Transform petab.problem.Problem to Julia JuMP model.
@@ -580,41 +582,41 @@ class DisFitProblem(object):
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
         generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))\n\n', 'utf8'))
         
-        # Write condition-defined parameters
-        generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining condition-defined parameters...")\n', 'utf8'))
-        species_interpreted_as_ic = []
-        for k, v in self._condition_defined_pars.items():
-            if k in species.keys():
-                species_interpreted_as_ic.append(k)
-                k = k+'_0'
-            generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
-            for i, val in enumerate(v):
-                generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(k, i+1, val), 'utf8'))
-            generated_code.extend(bytes('\n', 'utf8'))
+        # # Write condition-defined parameters
+        # generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
+        # generated_code.extend(bytes('    println("Defining condition-defined parameters...")\n', 'utf8'))
+        # species_interpreted_as_ic = []
+        # for k, v in self._condition_defined_pars.items():
+        #     if k in species.keys():
+        #         species_interpreted_as_ic.append(k)
+        #         k = k+'_0'
+        #     generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
+        #     for i, val in enumerate(v):
+        #         generated_code.extend(bytes('    @constraint(m, {0}[{1}] == {2})\n'.format(k, i+1, val), 'utf8'))
+        #     generated_code.extend(bytes('\n', 'utf8'))
 
-        # Write condition-local parameters
-        generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining condition-local parameters...")\n', 'utf8'))
-        for k, v in self._local_pars.items():
-            if k in species.keys():
-                species_interpreted_as_ic.append(k)
-                k = k+'_0'
-            generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
-            for i, par in enumerate(v):
-                lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
-                ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
-                nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
-                estimate = self.petab_problem.parameter_df.loc[par, 'estimate']
-                if self._calling_function == '_execute_case': # The test cases always simulate from the nominal value
-                    estimate = 0
-                if estimate == 1:
-                    generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
-                elif estimate == 0:
-                    generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))
-                else:
-                    raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
-            generated_code.extend(bytes('\n', 'utf8'))
+        # # Write condition-local parameters
+        # generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
+        # generated_code.extend(bytes('    println("Defining condition-local parameters...")\n', 'utf8'))
+        # for k, v in self._local_pars.items():
+        #     if k in species.keys():
+        #         species_interpreted_as_ic.append(k)
+        #         k = k+'_0'
+        #     generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
+        #     for i, par in enumerate(v):
+        #         lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
+        #         ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
+        #         nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
+        #         estimate = self.petab_problem.parameter_df.loc[par, 'estimate']
+        #         if self._calling_function == '_execute_case': # The test cases always simulate from the nominal value
+        #             estimate = 0
+        #         if estimate == 1:
+        #             generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
+        #         elif estimate == 0:
+        #             generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))
+        #         else:
+        #             raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
+        #     generated_code.extend(bytes('\n', 'utf8'))
 
         # Write global parameters
         generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
@@ -632,6 +634,37 @@ class DisFitProblem(object):
             else:
                 raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
         generated_code.extend(bytes('\n', 'utf8'))
+
+
+        # Write condition-local parameters
+        print('clp')
+        print(self._condition_specific_pars)
+        generated_code.extend(bytes('    # Define condition-specific parameters\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining condition-specific parameters...")\n', 'utf8'))
+        species_interpreted_as_ic = []
+        for k, v in self._condition_specific_pars.items():
+            if k in species.keys():
+                species_interpreted_as_ic.append(k)
+                k = k+'_0'
+            generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
+            for i, par in enumerate(v):
+                if isinstance(par, str):
+                    lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
+                    ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
+                    nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
+                    estimate = self.petab_problem.parameter_df.loc[par, 'estimate']
+                    if self._calling_function == '_execute_case': # The test cases always simulate from the nominal value
+                        estimate = 0
+                    if estimate == 1:
+                        generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
+                    elif estimate  == 0:
+                        generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))    
+                else:
+                    generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
+                # else:
+                #     raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
+            generated_code.extend(bytes('\n', 'utf8'))
+
 
         # Write observables overrides:
         set_of_observable_params = set()
@@ -734,13 +767,15 @@ class DisFitProblem(object):
             if specie not in species_interpreted_as_ic:
                 if par in self._global_pars:
                     generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
-                elif par in list(self._local_pars.keys())+list(self._condition_defined_pars.keys()):
+                # elif par in list(self._local_pars.keys())+list(self._condition_defined_pars.keys()):
+                elif par in self._condition_specific_pars.keys():
                     generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
                 elif self.infer_ic_from_sbml:
                     formula = str(par).split() # par can sometimes be a float, which would cause an error when splitting
                     for i in range(len(formula)):
                         if (formula[i] in parameters.keys()) and (formula[i] not in
-                            list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
+                            list(self._condition_specific_pars)+list(self._global_pars)):
+                            # list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
                             generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
                     generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
         for specie in species_interpreted_as_ic:
@@ -891,7 +926,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    optimize!(m)\n\n', 'utf8'))
 
         # Write code to get the solution
-        julia_pars = list(self._global_pars.keys()) + list(self._local_pars.keys())
+        julia_pars = list(self._global_pars.keys()) # + list(self._local_pars.keys())
         generated_code.extend(bytes('    println("Transfering results to Python...")\n', 'utf8'))
         generated_code.extend(bytes('    parameter_names = ' + str(julia_pars).replace('\'', '') + '\n', 'utf8'))
         generated_code.extend(bytes('    parameter_values = Dict()\n', 'utf8'))
