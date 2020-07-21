@@ -243,9 +243,6 @@ class DisFitProblem(object):
         df = df.unstack()
         t_sim = [df.index[i] for i in range(len(df.index))]
         values = df.loc[:, 'simulation'].reset_index(drop=True, inplace=False)[observables]
-        print('measureent_df')
-        print(measurement_df)
-        print(self.petab_problem.measurement_df)
         exp_data = measurement_df[observables]
         
         # Determine the size of the figure
@@ -362,9 +359,6 @@ class DisFitProblem(object):
                 elif variable_type == 'observableId':
                     res_dict['time'] = res_dict['time'] + list(t_exp)
                 res_dict['simulation'] = res_dict['simulation'] + list(value)
-
-        print(t_exp)
-        print(value)
                 
         return pd.DataFrame(res_dict)
 
@@ -386,8 +380,8 @@ class DisFitProblem(object):
                 self._petab_yaml_dict = yaml.safe_load(f)
             except yaml.YAMLError as error:
                 raise SystemExit('Error occured: {}'.format(str(error)))
-        if 'preequilibrationConditionId' in self._petab_problem.measurement_df.columns:
-            raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+        # if 'preequilibrationConditionId' in self._petab_problem.measurement_df.columns:
+        #     raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
 
         self._condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
 
@@ -577,6 +571,7 @@ class DisFitProblem(object):
         
         # Write condition-defined parameters
         generated_code.extend(bytes('    # Define condition-defined parameters\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining condition-defined parameters...")\n', 'utf8'))
         species_interpreted_as_ic = []
         for k, v in self._condition_defined_pars.items():
             if k in species.keys():
@@ -589,6 +584,7 @@ class DisFitProblem(object):
 
         # Write condition-local parameters
         generated_code.extend(bytes('    # Define condition-local parameters\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining condition-local parameters...")\n', 'utf8'))
         for k, v in self._local_pars.items():
             if k in species.keys():
                 species_interpreted_as_ic.append(k)
@@ -611,6 +607,7 @@ class DisFitProblem(object):
 
         # Write global parameters
         generated_code.extend(bytes('    # Define global parameters\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining global parameters...")\n', 'utf8'))
         for parameter, estimate in self._global_pars.items():
             lb = self.petab_problem.parameter_df.loc[parameter, 'lowerBound']
             ub = self.petab_problem.parameter_df.loc[parameter, 'upperBound']
@@ -633,16 +630,14 @@ class DisFitProblem(object):
                 observable_params[obs] = {}
                 for cond, data_2 in data_1.groupby('simulationConditionId'):
                     if len(set(data_2['observableParameters'])) <= 1:
-                        print('one')
                         observable_params[obs][cond] = [data_2['observableParameters'].values[0]]
                     else:
-                        print('two')
                         observable_params[obs][cond] = data_2['observableParameters'].values
-            print(observable_params)
 
             generated_code.extend(bytes('    # Define observable overrides\n', 'utf8'))
-            for obs, data_1 in observable_params.items():
-                n_par = len(str(next(iter(data_1.values()))[0]).split(';'))
+            generated_code.extend(bytes('    println("Defining observableParameter overrides...")\n', 'utf8'))
+            for obs, data_1 in observable_params.items(): # data_1 is a dictinary: {condition_1: ['par1t1; par2t1;', ..., 'par1tn; par2tn;']}
+                n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
                 str_1 = ', k in 1:length(t_exp)'
                 str_2 = ', k'
                 if len(next(iter(data_1.values()))) <= 1:
@@ -651,16 +646,17 @@ class DisFitProblem(object):
                 for i in range(n_par):
                     generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
                     set_of_observable_params.add((f'observableParameter{i+1}_{obs}', str_2))
-                print(observable_params[obs][cond])
-                for cond, values in data_1.items():
-                    for k, params in enumerate(values):
+                for cond, arr in data_1.items():
+                    for k, params in enumerate(arr):
                         str_3 = f', {k+1}'
                         if len(next(iter(data_1.values()))) <= 1:
                             str_3 = ''
-                        pars = [par.strip() for par in str(params).split(';')]
+                        pars = [par.strip() for par in str(params).rstrip(';').split(';')]
                         for n, par in enumerate(pars):
+                            if par == 'nan':
+                                par = 'NaN'
                             generated_code.extend(bytes(f'    @constraint(m, observableParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_3}] == {par})\n', 'utf8'))
-            generated_code.extend(bytes('\n', 'utf8'))
+                generated_code.extend(bytes('\n', 'utf8'))
         
         # Write noise overrides:
         set_of_noise_params = set()
@@ -673,29 +669,30 @@ class DisFitProblem(object):
                         noise_params[obs][cond] = [data_2['noiseParameters'].values[0]]
                     else:
                         noise_params[obs][cond] = data_2['noiseParameters'].values
-            print(noise_params)
 
             generated_code.extend(bytes('    # Define noise overrides\n', 'utf8'))
+            generated_code.extend(bytes('    println("Defining noiseParameter overrides...")\n', 'utf8'))
             for obs, data_1 in noise_params.items():
-                n_par = len(str(next(iter(data_1.values()))[0]).split(';'))
+                n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
                 str_1 = ', k in 1:length(t_exp)'
                 str_2 = ', k'
-                if len(data_1.values()) <= 1:
+                if len(next(iter(data_1.values()))) <= 1:
                     str_1 = ''
                     str_2 = ''
                 for i in range(n_par):
                     generated_code.extend(bytes('    @variable(m, noiseParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
                     set_of_noise_params.add((f'noiseParameter{i+1}_{obs}', str_2))
-                print(noise_params[obs][cond])
-                for cond, values in data_1.items():
-                    for k, params in enumerate(values):
+                for cond, arr in data_1.items():
+                    for k, params in enumerate(arr):
                         str_3 = f', {k+1}'
                         if len(next(iter(data_1.values()))) <= 1:
                             str_3 = ''
-                        pars = [par.strip() for par in str(params).split(';')]
+                        pars = [par.strip() for par in str(params).rstrip(';').split(';')]
                         for n, par in enumerate(pars):
+                            if par == 'nan':
+                                par = 'NaN'
                             generated_code.extend(bytes(f'    @constraint(m, noiseParameter{n+1}_{obs}[{self._condition2index[cond]+1}{str_3}] == {par})\n', 'utf8'))
-            generated_code.extend(bytes('\n', 'utf8'))
+                generated_code.extend(bytes('\n', 'utf8'))
 
 
         # Write out compartment values 
@@ -781,14 +778,26 @@ class DisFitProblem(object):
                 ub = max(16, ub)
             generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_exp)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
-            for i in range(len(formula)):
-                if formula[i] in species.keys():
-                    formula[i] = formula[i]+'[j, t_sim_to_exp[k]]'
-                elif formula[i] in patterns:
-                    formula[i] = formula[i]+'[j]'
-            formula = ''.join(formula)
+            # for i in range(len(formula)):
+            #     if formula[i] in species.keys():
+            #         formula[i] = formula[i]+'[j, t_sim_to_exp[k]]'
+            #     elif formula[i] in patterns:
+            #         formula[i] = formula[i]+'[j]'
+            formula = ' '+''.join(formula)+' '
+            for spec in species.keys():
+                formula = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]',
+                    lambda matchobj: matchobj.group(0)[:-1]+'[j, t_sim_to_exp[k]]'+matchobj.group(0)[-1:],
+                    formula)
+            for pat in patterns:
+                formula = re.sub('[^a-zA-Z0-9_]'+pat+'[^a-zA-Z0-9_]',
+                    lambda matchobj: matchobj.group(0)[:-1]+'[j]'+matchobj.group(0)[-1:],
+                    formula)
             for obs_par_name in set_of_observable_params:
-                formula = re.sub(obs_par_name[0], obs_par_name[0]+f'[j{obs_par_name[1]}]', formula)
+                formula = re.sub('[^a-zA-Z0-9_]'+obs_par_name[0]+'[^a-zA-Z0-9_]',
+                    lambda matchobj: matchobj.group(0)[:-1]+f'[j{obs_par_name[1]}]'+matchobj.group(0)[-1:],
+                    formula)
+            formula = formula.strip()
+                
             generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_exp)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
@@ -799,9 +808,17 @@ class DisFitProblem(object):
         sums_of_nllhs = []
         for observable in self.petab_problem.observable_df.index:
             
-            sigma = self.petab_problem.observable_df.loc[observable, 'noiseFormula']
+            sigma = '( '+self.petab_problem.observable_df.loc[observable, 'noiseFormula']+' )'
             for noise_par_name in set_of_noise_params:
-                sigma = '( '+re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)+' )'
+                # sigma = re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)
+                sigma = re.sub('[^a-zA-Z0-9_]'+noise_par_name[0]+'[^a-zA-Z0-9_]',
+                    lambda matchobj: matchobj.group(0)[:-1]+f'[j{noise_par_name[1]}]'+matchobj.group(0)[-1:],
+                    sigma)
+            
+            for spec in species.keys():
+                sigma = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]',
+                    lambda matchobj: matchobj.group(0)[:-1]+'[j, t_sim_to_exp[k]]'+matchobj.group(0)[-1:],
+                    sigma)
 
             scale = 'lin'
             if 'observableTransformation' in self.petab_problem.observable_df.columns:
