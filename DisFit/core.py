@@ -193,19 +193,23 @@ class DisFitProblem(object):
         self._set_simulation_df()
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
-        try:
-            self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
-                self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
-                self.petab_problem.observable_df, self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
-            if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
-                warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results[self._results_all['objective_value'][self._best_iter], 'fval']))
-            self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
-                self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}),
-                self.petab_problem.observable_df, self.petab_problem.parameter_df)
-        except:
-            warnings.warn('Could not calculate llh and/or chi2 using PEtab. Using llh from Julia instead.')
-            self._results['fval'] = self._results_all['objective_value'][self._best_iter]
-            self._results['chi2'] = np.nan
+        ndf = pd.DataFrame()
+        if 'noiseParameters' in self.petab_problem.measurement_df.columns:
+            ndf = self.petab_problem.measurement_df['noiseParameters']
+    # try:
+        self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
+            pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
+            self.petab_problem.observable_df,
+            self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
+        if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
+            warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results[self._results_all['objective_value'][self._best_iter], 'fval']))
+        self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
+            pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
+            self.petab_problem.observable_df, self.petab_problem.parameter_df)
+    # except:
+    #     warnings.warn('Could not calculate llh and/or chi2 using PEtab. Using llh from Julia instead.')
+    #     self._results['fval'] = self._results_all['objective_value'][self._best_iter]
+    #     self._results['chi2'] = np.nan
 
         self._optimized = True
         return self.results
@@ -456,6 +460,12 @@ class DisFitProblem(object):
 
         mod = doc.getModel()
 
+        # assignments = {}
+        # for a in mod.getListOfRules():
+        #     assignments[a.getId()] = a.getMath().getName()
+        # print('assignments')
+        # print(assignments)
+
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
             initial_assignments[a.getId()] = a.getMath().getName()
@@ -545,6 +555,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('t_ratio = {} # Setting number of ODE discretisation steps\n\n'.format(self.t_ratio), 'utf8'))
  
         generated_code.extend(bytes('# Data\n', 'utf8'))
+        generated_code.extend(bytes('println("Reading measurement data...")\n', 'utf8'))
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
         generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
@@ -808,7 +819,7 @@ class DisFitProblem(object):
         sums_of_nllhs = []
         for observable in self.petab_problem.observable_df.index:
             
-            sigma = '( '+self.petab_problem.observable_df.loc[observable, 'noiseFormula']+' )'
+            sigma = '( '+str(self.petab_problem.observable_df.loc[observable, 'noiseFormula'])+' )'
             for noise_par_name in set_of_noise_params:
                 # sigma = re.sub(noise_par_name[0], noise_par_name[0]+f'[j{noise_par_name[1]}]', sigma)
                 sigma = re.sub('[^a-zA-Z0-9_]'+noise_par_name[0]+'[^a-zA-Z0-9_]',

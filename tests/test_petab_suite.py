@@ -23,7 +23,7 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        if case != '0001_objectivePrior':
+        if case != '0001':
             continue
         try:
             execute_case(case)
