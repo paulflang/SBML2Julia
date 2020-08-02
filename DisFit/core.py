@@ -355,7 +355,10 @@ class DisFitProblem(object):
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
         for variable in simulation_dict[self._best_iter].keys():
             for c in self._condition2index.keys():
-                value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
+                try:
+                    value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
+                except IndexError:
+                    continue
                 res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
                 res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
                 if variable_type == 'speciesId':
@@ -384,8 +387,8 @@ class DisFitProblem(object):
                 self._petab_yaml_dict = yaml.safe_load(f)
             except yaml.YAMLError as error:
                 raise SystemExit('Error occured: {}'.format(str(error)))
-        # if 'preequilibrationConditionId' in self._petab_problem.measurement_df.columns:
-        #     raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+        if 'preequilibrationConditionId' in self._petab_problem.measurement_df.columns:
+            raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
 
         self._condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
 
@@ -637,8 +640,6 @@ class DisFitProblem(object):
 
 
         # Write condition-local parameters
-        print('clp')
-        print(self._condition_specific_pars)
         generated_code.extend(bytes('    # Define condition-specific parameters\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining condition-specific parameters...")\n', 'utf8'))
         species_interpreted_as_ic = []
@@ -648,7 +649,9 @@ class DisFitProblem(object):
                 k = k+'_0'
             generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
             for i, par in enumerate(v):
-                if isinstance(par, str):
+                if str(par).replace('.','',1).isdigit():
+                    generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
+                else:
                     lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
                     ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
                     nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']
@@ -659,16 +662,20 @@ class DisFitProblem(object):
                         generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
                     elif estimate  == 0:
                         generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))    
-                else:
-                    generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
+                    
                 # else:
                 #     raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
             generated_code.extend(bytes('\n', 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
 
 
         # Write observables overrides:
+        obs_to_conditions = {}
+        for observable in self.petab_problem.observable_df.index:
+            obs_in_condition = [j+1 for c, j in self._condition2index.items() if c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
+            obs_to_conditions[observable] = obs_in_condition
         set_of_observable_params = set()
-        if 'observableParameters' in self.petab_problem.measurement_df.columns:
+        if 'observableParameters' in self.petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['observableParameters'].empty:
             observable_params = {}
             for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
                 observable_params[obs] = {}
@@ -688,9 +695,11 @@ class DisFitProblem(object):
                     str_1 = ''
                     str_2 = ''
                 for i in range(n_par):
-                    generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
+                    generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, len(obs_to_conditions[observable]), str_1), 'utf8'))
                     set_of_observable_params.add((f'observableParameter{i+1}_{obs}', str_2))
                 for cond, arr in data_1.items():
+                    if self._condition2index[cond] not in np.array(obs_to_conditions[observable])-1:
+                        continue
                     for k, params in enumerate(arr):
                         str_3 = f', {k+1}'
                         if len(next(iter(data_1.values()))) <= 1:
@@ -724,7 +733,7 @@ class DisFitProblem(object):
                     str_1 = ''
                     str_2 = ''
                 for i in range(n_par):
-                    generated_code.extend(bytes('    @variable(m, noiseParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
+                    generated_code.extend(bytes('    @variable(m, noiseParameter{}_{}[j in 1:{}{}], start=1.)\n'.format(i+1, obs, self._n_conditions, str_1), 'utf8'))
                     set_of_noise_params.add((f'noiseParameter{i+1}_{obs}', str_2))
                 for cond, arr in data_1.items():
                     for k, params in enumerate(arr):
@@ -813,6 +822,11 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Define observables\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining observables...")\n', 'utf8'))
         for observable in self.petab_problem.observable_df.index:
+            obs_in_condition = [j+1 for c, j in self._condition2index.items() if c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
+            
+            # if len(obs_to_conditions[observable]) == self._n_conditions:
+            #     obs_to_conditions[observable] = f'1:{self._n_conditions}'
+
             min_exp_val = np.min(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             max_exp_val = np.max(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             diff = max_exp_val - min_exp_val
@@ -822,7 +836,11 @@ class DisFitProblem(object):
             if self._calling_function == '_execute_case':
                 lb = min(0, lb)
                 ub = max(16, ub)
-            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_exp)] <= {})\n'.format(lb, observable, self._n_conditions, ub), 'utf8'))
+            if np.isnan(lb):
+                lb = 'NaN'
+            if np.isnan(ub):
+                ub = 'NaN'
+            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_exp)] <= {})\n'.format(lb, observable, len(obs_to_conditions[observable]), ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             # for i in range(len(formula)):
             #     if formula[i] in species.keys():
@@ -844,7 +862,7 @@ class DisFitProblem(object):
                     formula)
             formula = formula.strip()
                 
-            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_exp)], {}[j, k] == {})\n'.format(self._n_conditions,observable, formula), 'utf8'))
+            generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_exp)], {}[j, k] == {})\n'.format(len(obs_to_conditions[observable]), observable, formula), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Write objective
@@ -869,40 +887,51 @@ class DisFitProblem(object):
             scale = 'lin'
             if 'observableTransformation' in self.petab_problem.observable_df.columns:
                 scale = self.petab_problem.observable_df.loc[observable, 'observableTransformation']
-                        
+            if isinstance(scale, float) and np.isnan(scale):
+                scale = 'lin'
+            if scale not in ['lin', 'log', 'log10']:
+                raise ValueError(f'`scale` must be `lin`, `log`, or `log10` but is {scale}.')
+                # warnings.warn('`scale is {}, but must be either `lin`, `log` or `log10`.'.format(scale))                       
+            
             noise_distribution = 'normal'
             if 'noiseDistribution' in self.petab_problem.observable_df.columns:
                 noise_distribution = self.petab_problem.observable_df.loc[observable, 'noiseDistribution']
-
+            if isinstance(noise_distribution, float) and np.isnan(noise_distribution):
+                noise_distribution = 'normal'
             if noise_distribution not in ['normal', 'laplace']:
-                warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`.'.format(noise_distribution))
-            if scale not in ['lin', 'log', 'log10']:
-                warnings.warn('`scale is {}, but must be either `lin`, `log` or `log10`.'.format(scale_distribution))
+                raise ValueError(f'`noiseDistribution` must be `normal` or `laplace` but is {noise_distribution}.')
+                # warnings.warn('`noiseDistribution is {}, but must be either `laplace` or `normal`.'.format(noise_distribution))
+            
             
             # if noise_distribution == 'laplace':
             #     sums_of_nllhs.append('sum(log(2*{0}) + abs({1}[j, k]-data[j][k, :{1}])/{0}) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
             # else:
             #     sums_of_nllhs.append('sum(0.5 * (log(2*pi) + log({0}^2) + {0}^(-2) * ({1}[j, k]-data[j][k, :{1}])^2) for j in 1:{2} for k in 1:length(t_exp))\n'.format(sigma, observable, self._n_conditions))
 
+            condition_idx_string = '[j]'
+            if len(obs_to_conditions[observable]) < self._n_conditions:
+                condition_idx_string = f'[{obs_to_conditions[observable]}[j]]'
+
+
             if noise_distribution == 'normal' and scale == 'lin':
                 # nllh = 0.5*log(2*pi*sigma**2) + 0.5*((s-m)/sigma)**2
-                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k]-data[j][k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k]-data{3}[k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'normal' and scale == 'log':
                 # nllh = 0.5*log(2*pi*sigma**2*m**2) + 0.5*((log(s)-log(m))/sigma)**2
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data[j][k, :{0}])^2) + 0.5*((log({0}[j, k])-log(data[j][k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2) + 0.5*((log({0}[j, k])-log(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'normal' and scale == 'log10':
                 # nllh = 0.5*log(2*pi*sigma**2*m**2*log(10)**2) + \
                     # 0.5*((log10(s)-log10(m))/sigma)**2
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data[j][k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k])-log10(data[j][k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k])-log10(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'lin':
                 # nllh = log(2*sigma) + abs((s-m)/sigma)
-                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k]-data[j][k, :{0}])/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k]-data{3}[k, :{0}])/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log':
                 # nllh = log(2*sigma*m) + abs((log(s)-log(m))/sigma)
-                sums_of_nllhs.append('sum(log(2*{1}*data[j][k, :{0}]) + abs(log({0}[j, k])-log(data[j][k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))
+                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]) + abs(log({0}[j, k])-log(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log10':
                 # nllh = log(2*sigma*m*log(10)) + abs((log10(s)-log10(m))/sigma)
-                sums_of_nllhs.append('sum(log(2*{1}*data[j][k, :{0}]*log(10)) + abs(log10({0}[j, k])-log10(data[j][k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, self._n_conditions))                
+                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))               
 
 
 
@@ -975,3 +1004,11 @@ class DisFitProblem(object):
             self.write_jl_file(self._julia_file)
         if self._plotted == True:
             self.plot_results(self._plot_file)
+
+
+# println(o)
+# println("arr")
+# println(Array(JuMP.value.(o)))
+# println("str")
+# print(string(o))
+# observable_values[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))

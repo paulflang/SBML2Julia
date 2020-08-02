@@ -27,7 +27,7 @@ def test_petab_benchmark():
     i = 0
     for case in os.listdir(CASES_DIR):
         i += 1
-        if i != 2:
+        if i != 8:
             continue
         print(case)
         try:

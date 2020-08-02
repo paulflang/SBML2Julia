@@ -23,8 +23,8 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        # if case != '0001':
-        #     continue
+        if case != '0003':
+            continue
         try:
             execute_case(case)
             n_success += 1
