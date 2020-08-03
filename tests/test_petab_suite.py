@@ -23,8 +23,8 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        if case != '0003':
-            continue
+        # if case != '0001':
+        #     continue
         try:
             execute_case(case)
             n_success += 1
@@ -47,7 +47,7 @@ def execute_case(case):
                 or "BoundsError: attempt to access 2×2 DataFrame" in str(e) \
                 or "NotImplementedError: Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration)." in str(e) \
                 or "CHI2: simulated: nan, expected: 0.7918379836848569, match = False" in str(e):
-                # cases (0008), (0009, 0010), (0014, 0015)
+                # cases (0008), (0009, 0010)
             print('-------------------------------------------------------')
             logger.info(
                 f"Case {case} expectedly failed. Required functionality is "
