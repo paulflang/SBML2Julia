@@ -381,7 +381,15 @@ class DisFitProblem(object):
         problem = petab.problem.Problem()                                                                                                                                                                          
         problem = problem.from_yaml(petab_yaml)
         petab.lint.lint_problem(problem) # Returns `False` if no error occured and raises exception otherwise.
+        t_conds = []
+        for obs, data_1 in problem.measurement_df.groupby('observableId'):
+            t_conds.append(data_1.shape[0])
+        # if len(set(t_conds)) != 1:
+        #     raise NotImplementedError('The number of time points differs between conditions. This is not implemented.')
+        if np.inf in list(problem.measurement_df['time']):
+            raise NotImplementedError('Fitting steady state problems is not possible (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
         self._petab_problem = problem
+
         with open(petab_yaml, 'r') as f:
             try:
                 self._petab_yaml_dict = yaml.safe_load(f)
@@ -467,11 +475,11 @@ class DisFitProblem(object):
 
         mod = doc.getModel()
 
-        # assignments = {}
-        # for a in mod.getListOfRules():
-        #     assignments[a.getId()] = a.getMath().getName()
-        # print('assignments')
-        # print(assignments)
+        assignments = {}
+        for a in mod.getListOfRules():
+            # if a.getMath().getName() == None:
+            #     raise NotImplementedError('Assignment rules are not implemented.')
+            assignments[a.getId()] = a.getMath().getName()
 
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
@@ -651,7 +659,7 @@ class DisFitProblem(object):
                 k = k+'_0'
             generated_code.extend(bytes('    @variable(m, {0}[1:{1}])\n'.format(k, self._n_conditions), 'utf8'))
             for i, par in enumerate(v):
-                if str(par).replace('.','',1).isdigit():
+                if str(par).replace('.','',1).replace('e-','',1).replace('e','',1).isdigit():
                     generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
                 else:
                     lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
@@ -676,15 +684,18 @@ class DisFitProblem(object):
         for observable in self.petab_problem.observable_df.index:
             obs_in_condition = [j+1 for c, j in self._condition2index.items() if c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
             obs_to_conditions[observable] = obs_in_condition
-        print('obs_to_conditions')
-        print(obs_to_conditions)
+
         set_of_observable_params = set()
         if 'observableParameters' in self.petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['observableParameters'].empty:
             observable_params = {}
             for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
                 observable_params[obs] = {}
+                same_par_for_all_t = True
                 for cond, data_2 in data_1.groupby('simulationConditionId'):
-                    if len(set(data_2['observableParameters'])) <= 1:
+                    if len(set(data_2['observableParameters'])) > 1:
+                        same_par_for_all_t = False
+                for cond, data_2 in data_1.groupby('simulationConditionId'):
+                    if same_par_for_all_t:
                         observable_params[obs][cond] = [data_2['observableParameters'].values[0]]
                     else:
                         observable_params[obs][cond] = data_2['observableParameters'].values
@@ -695,28 +706,52 @@ class DisFitProblem(object):
             
             print('observable_params')
             print(observable_params)
+            str_3 = ''
+            for data_1 in iter(observable_params.values()):
+                for element in data_1.values():
+                    if len(set(element)) > 1:
+                        str_3 = True
+            str_1 = ''
+            str_2 = ''
+            if str_3:
+                str_1 = ', k in 1:length(t_exp)'
+                str_2 = ', k'
             for obs, obs_in_condition in obs_to_conditions.items():
                 if not obs_to_conditions[obs]:
                     continue
                 data_1 = observable_params[obs]
                 n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
-                str_1 = ', k in 1:length(t_exp)'
-                str_2 = ', k'
-                if len(next(iter(data_1.values()))) <= 1:
-                    str_1 = ''
-                    str_2 = ''
+                # str_1 = ', k in 1:length(t_exp)'
+                # str_2 = ', k'
+                # if len(next(iter(data_1.values()))) <= 1:
+                #     str_1 = ''
+                #     str_2 = ''
+                # for element in iter(data_1.values()):
+                    # if len(element) > 1:
+                    #     str_1 = ', k in 1:length(t_exp)'
+                    #     str_2 = ', k'
+
                 for i in range(n_par):
                     generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, len(obs_in_condition), str_1), 'utf8'))
                     set_of_observable_params.add((f'observableParameter{i+1}_{obs}', str_2))
+                # str_3 = ''
+                # for element in iter(data_1.values()):
+                #     if len(element) > 1:
+                #         str_3 = True
                 j = 0
                 for cond, arr in data_1.items():
                     # if self._condition2index[cond] not in np.array(obs_to_conditions[observable])-1:
                     #     continue
                     j += 1
                     for k, params in enumerate(arr):
-                        str_3 = f', {k+1}'
-                        if len(next(iter(data_1.values()))) <= 1:
-                            str_3 = ''
+                        # str_3 = f', {k+1}'
+                        # if len(next(iter(data_1.values()))) <= 1:
+                        #     str_3 = ''
+                        if str_3:
+                            str_3 = f', {k+1}'
+                        for element in iter(data_1.values()):
+                            if len(element) > 1:
+                                str_3 = f', {k+1}'
                         pars = [par.strip() for par in str(params).rstrip(';').split(';')]
                         for n, par in enumerate(pars):
                             if par != 'nan':
@@ -730,15 +765,38 @@ class DisFitProblem(object):
             noise_params = {}
             for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
                 noise_params[obs] = {}
+
+                same_par_for_all_t = True
                 for cond, data_2 in data_1.groupby('simulationConditionId'):
-                    if len(set(data_2['noiseParameters'])) <= 1:
+                    if len(set(data_2['noiseParameters'])) > 1:
+                        same_par_for_all_t = False
+                for cond, data_2 in data_1.groupby('simulationConditionId'):
+                    if same_par_for_all_t:
                         noise_params[obs][cond] = [data_2['noiseParameters'].values[0]]
                     else:
                         noise_params[obs][cond] = data_2['noiseParameters'].values
 
+                for cond, data_2 in data_1.groupby('simulationConditionId'):
+                    # if len(set(data_2['noiseParameters'])) <= 1:
+                    #     noise_params[obs][cond] = [data_2['noiseParameters'].values[0]]
+                    # else:
+                    noise_params[obs][cond] = data_2['noiseParameters'].values
+
             generated_code.extend(bytes('    # Define noise overrides\n', 'utf8'))
             generated_code.extend(bytes('    println("Defining noiseParameter overrides...")\n', 'utf8'))
 
+            str_3 = ''
+            print('noise_params')
+            print(noise_params)
+            for data_1 in iter(noise_params.values()):
+                for element in data_1.values():
+                    if len(set(element)) > 1:
+                        str_3 = True
+            str_1 = ''
+            str_2 = ''
+            if str_3:
+                str_1 = ', k in 1:length(t_exp)'
+                str_2 = ', k'
             for obs, obs_in_condition in obs_to_conditions.items():
                 if not obs_to_conditions[obs]:
                     continue
@@ -746,21 +804,30 @@ class DisFitProblem(object):
 
             # for obs, data_1 in noise_params.items():
                 n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
-                str_1 = ', k in 1:length(t_exp)'
-                str_2 = ', k'
-                if len(next(iter(data_1.values()))) <= 1:
-                    str_1 = ''
-                    str_2 = ''
+                # str_1 = ', k in 1:length(t_exp)'
+                # str_2 = ', k'
+
+                # for element in iter(data_1.values()):
+                    # if len(element) > 1:
+                
+                # if len(next(iter(data_1.values()))) <= 1:
+                #     str_1 = ''
+                #     str_2 = ''
                 for i in range(n_par):
                     generated_code.extend(bytes('    @variable(m, noiseParameter{}_{}[j in 1:{}{}], start=1.)\n'.format(i+1, obs, len(obs_in_condition), str_1), 'utf8'))
                     set_of_noise_params.add((f'noiseParameter{i+1}_{obs}', str_2))
+                # str_3 = ''
+                # for element in iter(data_1.values()):
+                #     if len(element) > 1:
+                #         str_3 = True
                 j = 0
                 for cond, arr in data_1.items():
                     j += 1
                     for k, params in enumerate(arr):
-                        str_3 = f', {k+1}'
-                        if len(next(iter(data_1.values()))) <= 1:
-                            str_3 = ''
+                        if str_3:
+                            str_3 = f', {k+1}'
+                        # if len(next(iter(data_1.values()))) <= 1:
+                        #     str_3 = ''
                         pars = [par.strip() for par in str(params).rstrip(';').split(';')]
                         for n, par in enumerate(pars):
                             if par == 'nan':
@@ -833,6 +900,8 @@ class DisFitProblem(object):
                             tmp_iterator = '[j, k+1]'
                         reaction_formula = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]', lambda matchobj: matchobj.group(0)[:-1]+tmp_iterator+matchobj.group(0)[-1:], reaction_formula)
                     reaction_formula = re.sub('pow', '^', reaction_formula)
+                    if 'piecewise(' in reaction_formula:
+                        raise NotImplementedError('`libsbml` model contains `piecewise` conditition in rate law. This is not implemented.')
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else:
@@ -861,7 +930,7 @@ class DisFitProblem(object):
                 lb = 'NaN'
             if np.isnan(ub):
                 ub = 'NaN'
-            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_exp)] <= {})\n'.format(lb, observable, len(obs_to_conditions[observable]), ub), 'utf8'))
+            generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_exp)] <= {}, start=1.)\n'.format(lb, observable, len(obs_to_conditions[observable]), ub), 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             # for i in range(len(formula)):
             #     if formula[i] in species.keys():
