@@ -388,6 +388,16 @@ class DisFitProblem(object):
         #     raise NotImplementedError('The number of time points differs between conditions. This is not implemented.')
         if np.inf in list(problem.measurement_df['time']):
             raise NotImplementedError('Fitting steady state problems is not possible (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+        idx = np.empty(len(problem.condition_df.index))
+        for i, cond in enumerate(problem.measurement_df['simulationConditionId'].drop_duplicates()):
+            for j, c in enumerate(problem.condition_df.index):
+                if c == cond:
+                    idx[j] = i
+        problem.condition_df['sorting'] = idx
+        problem.condition_df = problem.condition_df.sort_values(by='sorting').drop(columns=['sorting'])
+        print(problem.condition_df)
+
+
         self._petab_problem = problem
 
         with open(petab_yaml, 'r') as f:
@@ -643,7 +653,7 @@ class DisFitProblem(object):
             if estimate == 1:
                     generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-{0})*rand(Float64))\n'.format(lb, parameter, ub), 'utf8'))
             elif estimate == 0:
-                generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(parameter, nominal), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {0} == {1}, start={1})\n'.format(parameter, nominal), 'utf8'))
             else:
                 raise ValueError('Column `estimate` in parameter table must contain only `0` or `1`.')
         generated_code.extend(bytes('\n', 'utf8'))
@@ -706,13 +716,13 @@ class DisFitProblem(object):
             
             print('observable_params')
             print(observable_params)
+            str_1 = ''
+            str_2 = ''
             str_3 = ''
             for data_1 in iter(observable_params.values()):
                 for element in data_1.values():
                     if len(set(element)) > 1:
                         str_3 = True
-            str_1 = ''
-            str_2 = ''
             if str_3:
                 str_1 = ', k in 1:length(t_exp)'
                 str_2 = ', k'
@@ -732,7 +742,7 @@ class DisFitProblem(object):
                     #     str_2 = ', k'
 
                 for i in range(n_par):
-                    generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}])\n'.format(i+1, obs, len(obs_in_condition), str_1), 'utf8'))
+                    generated_code.extend(bytes('    @variable(m, observableParameter{}_{}[j in 1:{}{}], start=1.)\n'.format(i+1, obs, len(obs_in_condition), str_1), 'utf8'))
                     set_of_observable_params.add((f'observableParameter{i+1}_{obs}', str_2))
                 # str_3 = ''
                 # for element in iter(data_1.values()):
@@ -776,15 +786,17 @@ class DisFitProblem(object):
                     else:
                         noise_params[obs][cond] = data_2['noiseParameters'].values
 
-                for cond, data_2 in data_1.groupby('simulationConditionId'):
+                # for cond, data_2 in data_1.groupby('simulationConditionId'):
                     # if len(set(data_2['noiseParameters'])) <= 1:
                     #     noise_params[obs][cond] = [data_2['noiseParameters'].values[0]]
                     # else:
-                    noise_params[obs][cond] = data_2['noiseParameters'].values
+                    # noise_params[obs][cond] = data_2['noiseParameters'].values
 
             generated_code.extend(bytes('    # Define noise overrides\n', 'utf8'))
             generated_code.extend(bytes('    println("Defining noiseParameter overrides...")\n', 'utf8'))
 
+            str_1 = ''
+            str_2 = ''
             str_3 = ''
             print('noise_params')
             print(noise_params)
@@ -792,8 +804,7 @@ class DisFitProblem(object):
                 for element in data_1.values():
                     if len(set(element)) > 1:
                         str_3 = True
-            str_1 = ''
-            str_2 = ''
+            
             if str_3:
                 str_1 = ', k in 1:length(t_exp)'
                 str_2 = ', k'
@@ -842,7 +853,7 @@ class DisFitProblem(object):
         for i in range(mod.getNumCompartments()):
             element = mod.getCompartment(i)
             if element.getId() not in self.petab_problem.condition_df.columns:
-                generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(element.getId(), element.getSize()), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {0} == {1}, start={1})\n'.format(element.getId(), element.getSize()), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Write species
@@ -873,7 +884,7 @@ class DisFitProblem(object):
                         if (formula[i] in parameters.keys()) and (formula[i] not in
                             list(self._condition_specific_pars)+list(self._global_pars)):
                             # list(self._local_pars)+list(self._condition_defined_pars)+list(self._global_pars)):
-                            generated_code.extend(bytes('    @variable(m, {} == {})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
+                            generated_code.extend(bytes('    @variable(m, {0} == {1}, start={1})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
                     generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
         for specie in species_interpreted_as_ic:
             generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, specie+'_0'), 'utf8'))

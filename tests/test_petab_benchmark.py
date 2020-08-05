@@ -27,8 +27,8 @@ def test_petab_benchmark():
     i = 0
     for case in os.listdir(CASES_DIR):
         i += 1
-        if i != 14: # 6: Ask Sungho why NLP Error again. # 8: What is the memory problem. # 10 Takes to long to be run. Process is killed (at least if run from python)
-            # 14: Why is the process killed?
+        if i != 18: # 6: Ask Sungho why NLP Error again. # 8: What is the memory problem. # 10 Takes to long to be run. Process is killed (at least if run from python)
+            # 14: Why is the process killed?, 18: EXIT: Restoration Failed!.
             continue
         print(case)
         try:
