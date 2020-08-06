@@ -37,17 +37,17 @@ class DisFitProblem(object):
         self._initialization = True
         self._optimized = False
         self._files_written = False
-        self._pickled = False
         self._plotted = False
+
         self._jl = Julia(compiled_modules=False)
-        self._initialization = True
-        self._results = {}
+        # self._results = {}
         self._petab_dirname = os.path.dirname(petab_yaml)
         self._set_petab_problem(petab_yaml)
         self.t_ratio = t_ratio
         self.n_starts = n_starts
         self.infer_ic_from_sbml = infer_ic_from_sbml
         self._set_julia_code()
+
         self._initialization = False
 
     @property
@@ -58,6 +58,17 @@ class DisFitProblem(object):
             :obj:`dict`: petab_yaml_dict 
         """
         return self._petab_yaml_dict
+
+
+    @property
+    def petab_problem(self):
+        """Get petab_problem
+        
+        Returns:
+            :obj:`petab.problem.Problem`: petab problem
+        """
+        return self._petab_problem
+
 
     @property
     def t_ratio(self):
@@ -84,6 +95,7 @@ class DisFitProblem(object):
         if not self._initialization:
             self._set_julia_code()
 
+
     @property
     def n_starts(self):
         """Get n_starts
@@ -108,6 +120,7 @@ class DisFitProblem(object):
         self._n_starts = value
         if not self._initialization:
             self._set_julia_code()
+
 
     @property
     def infer_ic_from_sbml(self):
@@ -134,6 +147,7 @@ class DisFitProblem(object):
         if not self._initialization:
             self._set_julia_code()
 
+
     @property
     def julia_code(self):
         """Get julia_code
@@ -142,6 +156,7 @@ class DisFitProblem(object):
             :obj:`str`: julia code for optimization
         """
         return self._julia_code
+
 
     @property
     def results(self):
@@ -152,14 +167,83 @@ class DisFitProblem(object):
         """
         return self._results
 
-    @property
-    def petab_problem(self):
-        """Get petab_problem
+
+    def _set_petab_problem(self, petab_yaml):
+        """Converts petab yaml to dict and creates petab.problem.Problem object
         
-        Returns:
-            :obj:`petab.problem.Problem`: petab problem
+        Args:
+            petab_yaml (:obj:`str`): path petab yaml file
+        
+        Raises:
+            SystemExit: if petab yaml file cannot be loaded.
         """
-        return self._petab_problem
+        petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        petab_problem = petab_problem.from_yaml(petab_yaml)
+        
+        petab.lint.lint_problem(petab_problem) # Returns `False` if no error occured and raises exception otherwise.
+        self._check_for_not_implemented_features(petab_problem)
+        petab_problem = self._sort_condition_df_problem(petab_problem)
+
+        self._petab_problem = petab_problem
+
+        self._petab_yaml_dict, self._condition2index, self._n_conditions,\
+            self._condition_specific_pars, self._global_pars =\
+            self._get_translation_vars(petab_yaml, petab_problem)
+
+        
+    def _check_for_not_implemented_features(self, petab_problem):
+        
+        if 'preequilibrationConditionId' in petab_problem.measurement_df.columns:
+            raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+
+        if np.inf in list(petab_problem.measurement_df['time']):
+            raise NotImplementedError('Fitting steady state problems is not possible (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+        
+        t_conds = []
+        for obs, data_1 in petab_problem.measurement_df.groupby('observableId'):
+            t_conds.append(tuple(data_1['time']))
+        if len(set(t_conds)) != 1:
+            raise NotImplementedError('Measurement time points differ between conditions. This is not implemented.')
+
+
+    def _sort_condition_df_problem(self, petab_problem):
+
+        idx = np.empty(len(petab_problem.condition_df.index))
+        for i, cond in enumerate(petab_problem.measurement_df['simulationConditionId'].drop_duplicates()):
+            for j, c in enumerate(petab_problem.condition_df.index):
+                if c == cond:
+                    idx[j] = i
+        petab_problem.condition_df['sorting'] = idx
+        petab_problem.condition_df = petab_problem.condition_df.sort_values(by='sorting').drop(columns=['sorting'])
+
+        return petab_problem
+
+
+    def _get_translation_vars(self, petab_yaml, petab_problem):
+        
+        with open(petab_yaml, 'r') as f:
+            try:
+                yaml_dict = yaml.safe_load(f)
+            except yaml.YAMLError as error:
+                raise SystemExit('Error occured: {}'.format(str(error)))
+        
+        condition2index = {petab_problem.condition_df.index[i]: i for i in range(len(petab_problem.condition_df.index))}
+        if 'preequilibrationConditionId' in petab_problem.measurement_df.columns:
+            condition2index = {k: v for k, v in condition2index.items() if k not in petab_problem.measurement_df['preequilibrationConditionId']}
+
+        n_conditions = petab_problem.condition_df.shape[0]
+
+        condition_specific_pars = {}
+        for parameter in petab_problem.condition_df.columns:
+            if parameter != 'conditionName':
+                condition_specific_pars[parameter] = [val for val in petab_problem.condition_df[parameter]]
+
+        global_pars = {}
+        for parameter in petab_problem.parameter_df.index:
+            global_pars[parameter] = petab_problem.parameter_df.loc[parameter, 'estimate']
+
+        return (yaml_dict, condition2index, n_conditions, condition_specific_pars, global_pars)
+        
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
         """Write code to julia file
@@ -171,6 +255,7 @@ class DisFitProblem(object):
             f.write(self.julia_code)
             self._julia_file = path
             self._files_written = True
+
 
     def optimize(self):
         """Optimize DisFitProblem
@@ -213,6 +298,107 @@ class DisFitProblem(object):
 
         self._optimized = True
         return self.results
+
+
+    def _get_param_ratios(self, par_dict):
+        
+        par_best = par_dict[str(self._best_iter)]
+        par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
+
+        local_par_names = {}
+        for par_type in self.petab_problem.condition_df.columns:
+            if str(self.petab_problem.condition_df[par_type].dtype) == 'object':
+                for i in range(self._n_conditions):
+                    local_par_names[self.petab_problem.condition_df.iloc[i][par_type]] = (par_type, i)
+
+        par_best_to_par_0_col = []
+        par_best_col = []
+        for key in par_0.keys():
+            if key in par_best.keys():
+                if par_0[key] != 0:
+                    par_best_to_par_0_col.append(par_best[key] / par_0[key])
+                else:
+                    par_best_to_par_0_col.append('NA (diff={})'.format(par_best[key]-par_0[key]))
+                par_best_col.append(par_best[key])
+            else:
+                par_type, i = local_par_names[key]
+                par_best_to_par_0_col.append(par_best[par_type][i] / par_0[key])
+                par_best_col.append(par_best[par_type][i])
+
+        name_col = [str(key) for key in par_0.keys()]
+        par_0_col = [par_0[str(key)] for key in par_0.keys()]
+
+        df = pd.DataFrame(list(zip(name_col, par_0_col, par_best_col, par_best_to_par_0_col)),
+            columns=['Name', 'par_0', 'par_best', 'par_best_to_par_0'])
+        df = df.sort_values(by=['Name']).reset_index(drop=True)
+
+        return df
+
+
+    def _results_to_frame(self, simulation_dict, variable_type='observableId'):
+
+        t_max = self.petab_problem.measurement_df['time'].max()
+        t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
+        t_exp = sorted(set(self.petab_problem.measurement_df['time']))
+        res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
+        for variable in simulation_dict[self._best_iter].keys():
+            for c in self._condition2index.keys():
+                try:
+                    value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
+                except IndexError:
+                    continue
+                res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
+                res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
+                if variable_type == 'speciesId':
+                    res_dict['time'] = res_dict['time'] + list(t_sim)
+                elif variable_type == 'observableId':
+                    res_dict['time'] = res_dict['time'] + list(t_exp)
+                res_dict['simulation'] = res_dict['simulation'] + list(value)
+                
+        return pd.DataFrame(res_dict)
+
+
+    def _set_simulation_df(self):
+
+        simulation_df = self.results['observables']
+        t_sim_to_gt_sim = []
+        idx = -1
+        for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
+            idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
+                - self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])) + idx+1
+            t_sim_to_gt_sim.append(idx)
+        simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
+        simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
+        self.petab_problem.simulation_df = simulation_df.rename(columns={'simulation': 'measurement'})
+
+
+    def write_results(self, path=os.path.join('.', 'results.xlsx'), df_format='wide'):
+        """Write results to excel file
+        
+        Args:
+            path (:obj:`str`, optional): path of excel file to write results to.
+        """
+        if df_format not in ['long', 'wide']:
+            warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `wide`.')
+            df_format = 'wide'
+
+        with pd.ExcelWriter(path) as writer:
+            self.results['par_best'].to_excel(writer, sheet_name='par_best', index=False)
+
+            if df_format == 'wide':
+                for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
+                    df = self.results[var_type].groupby('simulationConditionId')
+                    for condition in self._condition2index.keys():
+                        dfg = df.get_group(condition)
+                        dfg = dfg.set_index(['time', Id])
+                        dfg = dfg.unstack()
+                        dfg = dfg.loc[:, 'simulation']
+                        dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
+            else:
+                for var_type in ['species', 'observables']:
+                    df = self.results[var_type]
+                    df.to_excel(writer, sheet_name=var_type, index=True)
+
 
     def plot_results(self, condition, path=os.path.join('.', 'plot.pdf'), observables=[], size=(6, 5)):
         """Plot results
@@ -273,155 +459,7 @@ class DisFitProblem(object):
         self._plotted = True
         self._plot_file = path
 
-    def write_results(self, path=os.path.join('.', 'results.xlsx'), df_format='wide'):
-        """Write results to excel file
-        
-        Args:
-            path (:obj:`str`, optional): path of excel file to write results to.
-        """
-        if df_format not in ['long', 'wide']:
-            warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `wide`.')
-            df_format = 'wide'
-
-        with pd.ExcelWriter(path) as writer:
-            self.results['par_best'].to_excel(writer, sheet_name='par_best', index=False)
-
-            if df_format == 'wide':
-                for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
-                    df = self.results[var_type].groupby('simulationConditionId')
-                    for condition in self._condition2index.keys():
-                        dfg = df.get_group(condition)
-                        dfg = dfg.set_index(['time', Id])
-                        dfg = dfg.unstack()
-                        dfg = dfg.loc[:, 'simulation']
-                        dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
-            else:
-                for var_type in ['species', 'observables']:
-                    df = self.results[var_type]
-                    df.to_excel(writer, sheet_name=var_type, index=True)
-
-    def _get_param_ratios(self, par_dict):
-        
-        par_best = par_dict[str(self._best_iter)]
-        par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
-
-        local_par_names = {}
-        for par_type in self.petab_problem.condition_df.columns:
-            if str(self.petab_problem.condition_df[par_type].dtype) == 'object':
-                for i in range(self._n_conditions):
-                    local_par_names[self.petab_problem.condition_df.iloc[i][par_type]] = (par_type, i)
-
-        par_best_to_par_0_col = []
-        par_best_col = []
-        for key in par_0.keys():
-            if key in par_best.keys():
-                if par_0[key] != 0:
-                    par_best_to_par_0_col.append(par_best[key] / par_0[key])
-                else:
-                    par_best_to_par_0_col.append('NA (diff={})'.format(par_best[key]-par_0[key]))
-                par_best_col.append(par_best[key])
-            else:
-                par_type, i = local_par_names[key]
-                par_best_to_par_0_col.append(par_best[par_type][i] / par_0[key])
-                par_best_col.append(par_best[par_type][i])
-
-        name_col = [str(key) for key in par_0.keys()]
-        par_0_col = [par_0[str(key)] for key in par_0.keys()]
-
-        df = pd.DataFrame(list(zip(name_col, par_0_col, par_best_col, par_best_to_par_0_col)),
-            columns=['Name', 'par_0', 'par_best', 'par_best_to_par_0'])
-        df = df.sort_values(by=['Name']).reset_index(drop=True)
-
-        return df
-
-    def _set_simulation_df(self):
-
-        simulation_df = self.results['observables']
-        t_sim_to_gt_sim = []
-        idx = -1
-        for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
-            idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
-                - self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])) + idx+1
-            t_sim_to_gt_sim.append(idx)
-        simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
-        simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
-        self.petab_problem.simulation_df = simulation_df.rename(columns={'simulation': 'measurement'})
-
-    def _results_to_frame(self, simulation_dict, variable_type='observableId'):
-
-        t_max = self.petab_problem.measurement_df['time'].max()
-        t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
-        t_exp = sorted(set(self.petab_problem.measurement_df['time']))
-        res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
-        for variable in simulation_dict[self._best_iter].keys():
-            for c in self._condition2index.keys():
-                try:
-                    value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
-                except IndexError:
-                    continue
-                res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
-                res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
-                if variable_type == 'speciesId':
-                    res_dict['time'] = res_dict['time'] + list(t_sim)
-                elif variable_type == 'observableId':
-                    res_dict['time'] = res_dict['time'] + list(t_exp)
-                res_dict['simulation'] = res_dict['simulation'] + list(value)
-                
-        return pd.DataFrame(res_dict)
-
-    def _set_petab_problem(self, petab_yaml):
-        """Converts petab yaml to dict and creates petab.problem.Problem object
-        
-        Args:
-            petab_yaml (:obj:`str`): path petab yaml file
-        
-        Raises:
-            SystemExit: if petab yaml file cannot be loaded.
-        """
-        problem = petab.problem.Problem()                                                                                                                                                                          
-        problem = problem.from_yaml(petab_yaml)
-        petab.lint.lint_problem(problem) # Returns `False` if no error occured and raises exception otherwise.
-        t_conds = []
-        for obs, data_1 in problem.measurement_df.groupby('observableId'):
-            t_conds.append(data_1.shape[0])
-        if len(set(t_conds)) != 1:
-            raise NotImplementedError('The number of time points differs between conditions. This is not implemented.')
-        if np.inf in list(problem.measurement_df['time']):
-            raise NotImplementedError('Fitting steady state problems is not possible (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
-        idx = np.empty(len(problem.condition_df.index))
-        for i, cond in enumerate(problem.measurement_df['simulationConditionId'].drop_duplicates()):
-            for j, c in enumerate(problem.condition_df.index):
-                if c == cond:
-                    idx[j] = i
-        problem.condition_df['sorting'] = idx
-        problem.condition_df = problem.condition_df.sort_values(by='sorting').drop(columns=['sorting'])
-        print(problem.condition_df)
-
-
-        self._petab_problem = problem
-
-        with open(petab_yaml, 'r') as f:
-            try:
-                self._petab_yaml_dict = yaml.safe_load(f)
-            except yaml.YAMLError as error:
-                raise SystemExit('Error occured: {}'.format(str(error)))
-        if 'preequilibrationConditionId' in self._petab_problem.measurement_df.columns:
-            raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
-
-        self._condition2index = {self.petab_problem.condition_df.index[i]: i for i in range(len(self.petab_problem.condition_df.index))}
-        if 'preequilibrationConditionId' in self.petab_problem.measurement_df.columns:
-            self._condition2index = {k: v for k, v in self._condition2index.items() if k not in self.petab_problem.measurement_df['preequilibrationConditionId']}
-
-        self._condition_specific_pars = {}
-        self._n_conditions = self.petab_problem.condition_df.shape[0]
-        for parameter in self.petab_problem.condition_df.columns:
-            if parameter != 'conditionName':
-                self._condition_specific_pars[parameter] = [val for val in self.petab_problem.condition_df[parameter]]
-
-        self._global_pars = {}
-        for parameter in self.petab_problem.parameter_df.index:
-            self._global_pars[parameter] = self.petab_problem.parameter_df.loc[parameter, 'estimate']
-
+    
     def _set_julia_code(self):
         """Transform petab.problem.Problem to Julia JuMP model.
         """
