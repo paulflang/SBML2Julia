@@ -79,6 +79,7 @@ class DisFitProblem(object):
         """
         return self._t_ratio
 
+
     @t_ratio.setter
     def t_ratio(self, value):
         """Set t_ratio
@@ -265,7 +266,6 @@ class DisFitProblem(object):
         """
         print('Entering Julia for optimization...')
         self._results_all = self._jl.eval(self.julia_code)
-        print(self._results_all['parameters'])
         print('Results transferred. Exited Julia.')
 
         self._best_iter = min(self._results_all['objective_value'], key=self._results_all['objective_value'].get)
@@ -358,9 +358,6 @@ class DisFitProblem(object):
                 elif variable_type == 'observableId':
                     res_dict['time'] = res_dict['time'] + list(t_exp)
                 res_dict['simulation'] = res_dict['simulation'] + list(value)
-
-        print('res_dict')
-        print(res_dict)
                 
         return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
 
@@ -667,66 +664,8 @@ class DisFitProblem(object):
             obs_in_condition = [j+1 for c, j in self._condition2index.items() if c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
             obs_to_conditions[observable] = obs_in_condition
 
-
-        # def _write_overrides(generated_code, var_type):
-
-        #     set_of_params = set()
-        #     if var_type+'Parameters' in self.petab_problem.measurement_df.columns and not self.petab_problem.measurement_df[var_type+'Parameters'].empty:
-        #         params = {}
-        #         for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
-        #             params[obs] = {}
-        #             same_par_for_all_t = True
-        #             for cond, data_2 in data_1.groupby('simulationConditionId'):
-        #                 if len(set(data_2[var_type+'Parameters'])) > 1:
-        #                     same_par_for_all_t = False
-        #             for cond, data_2 in data_1.groupby('simulationConditionId'):
-        #                 if same_par_for_all_t:
-        #                     params[obs][cond] = [data_2[var_type+'Parameters'].values[0]]
-        #                 else:
-        #                     params[obs][cond] = data_2[var_type+'Parameters'].values
-
-        #         generated_code.extend(bytes('    # Define '+var_type+' overrides\n', 'utf8'))
-        #         generated_code.extend(bytes('    println("Defining '+var_type+'Parameter overrides...")\n', 'utf8'))
-                
-        #         str_1 = ''
-        #         str_2 = ''
-        #         str_3 = ''
-        #         for data_1 in iter(params.values()):
-        #             for element in data_1.values():
-        #                 if len(set(element)) > 1:
-        #                     str_3 = True
-        #         if str_3:
-        #             str_1 = ', k in 1:length(t_exp)'
-        #             str_2 = ', k'
-        #         for obs, obs_in_condition in obs_to_conditions.items():
-        #             if not obs_to_conditions[obs]:
-        #                 continue
-        #             data_1 = params[obs]
-        #             n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
-
-        #             for i in range(n_par):
-        #                 generated_code.extend(bytes('    @variable(m, {}Parameter{}_{}[j in 1:{}{}], start=1.)\n'.format(var_type, i+1, obs, len(obs_in_condition), str_1), 'utf8'))
-        #                 set_of_params.add((f'{var_type}Parameter{i+1}_{obs}', str_2))
-
-        #             j = 0
-        #             for cond, arr in data_1.items():
-        #                 j += 1
-        #                 for k, params in enumerate(arr):
-        #                     if str_3:
-        #                         str_3 = f', {k+1}'
-        #                     for element in iter(data_1.values()):
-        #                         if len(element) > 1:
-        #                             str_3 = f', {k+1}'
-        #                     pars = [par.strip() for par in str(params).rstrip(';').split(';')]
-        #                     for n, par in enumerate(pars):
-        #                         if par != 'nan':
-        #                             generated_code.extend(bytes(f'    @constraint(m, {var_type}Parameter{n+1}_{obs}[{j}{str_3}] == {par})\n', 'utf8'))
-        #             generated_code.extend(bytes('\n', 'utf8'))
-
-        #     return (generated_code, set_of_params)
-
-        generated_code, set_of_observable_params = _write_overrides(self, generated_code, 'observable')
-        generated_code, set_of_noise_params = _write_overrides(self, generated_code, 'noise')
+        generated_code, set_of_observable_params = self._write_overrides(generated_code, 'observable', obs_to_conditions)
+        generated_code, set_of_noise_params = self._write_overrides(generated_code, 'noise', obs_to_conditions)
 
 
         # Write out compartment values 
@@ -961,7 +900,7 @@ class DisFitProblem(object):
             self.plot_results(self._plot_file)
 
 
-    def _write_overrides(self, generated_code, var_type):
+    def _write_overrides(self, generated_code, var_type, obs_to_conditions):
 
         set_of_params = set()
         if var_type+'Parameters' in self.petab_problem.measurement_df.columns and not self.petab_problem.measurement_df[var_type+'Parameters'].empty:

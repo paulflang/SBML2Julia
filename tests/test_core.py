@@ -76,12 +76,6 @@ class DisFitProblemTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             problem.t_ratio = 'a'
 
-        # Test resetting
-        problem = core.DisFitProblem(PETAB_YAML)
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
-        problem.t_ratio = 1
-        self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
-
 
     def test_n_starts_setter(self):
         problem = Mock()
@@ -91,12 +85,6 @@ class DisFitProblemTestCase(unittest.TestCase):
             problem.n_starts = 1.1
         with self.assertRaises(ValueError):
             problem.n_starts = 'a'
-
-        # Test resetting
-        problem = core.DisFitProblem(PETAB_YAML)
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
-        problem.n_starts = 2
-        self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
 
     def test_infer_ic_from_sbml_setter(self):
@@ -306,69 +294,38 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
 
-    def test_write_overrides(self):
+    def test_write_overrides(self): # Todo: add a problem with noise parameters here.
         problem = Mock()
         problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
         problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+        obs_to_conditions = {obs: [1,2,3,4] for obs in problem.petab_problem.measurement_df.index}
 
-        code, set_of_params = problem._write_overrides('', 'observable')
+        code, set_of_params = problem._write_overrides('', 'observable', obs_to_conditions)
         self.assertTrue(code in JL_CODE_GOLD)
         self.assertEqual(set_of_params, set())
 
-        code, set_of_params = problem._write_overrides('', 'noise')
+        code, set_of_params = problem._write_overrides('', 'noise', obs_to_conditions)
         self.assertTrue(code in JL_CODE_GOLD)
         self.assertEqual(set_of_params, set())
-        
-        sdfs # Todo: add a problem with noise parameters here.
 
 
-    # def test_plot(self):
-    #     problem = core.DisFitProblem(PETAB_YAML)
-    #     with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
-    #         results_gold = pickle.load(f)
-    #     problem._results = results_gold
-    #     problem.plot_results('wt')
+    def test_resetting(self):
+        problem = core.DisFitProblem(PETAB_YAML)
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        problem.t_ratio = 1
+        self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-    # def test_optimize_results_plot(self):
-    #     # test_optimize()
-    #     problem = core.DisFitProblem(PETAB_YAML, t_ratio=1.99999)
-    #     problem.optimize()
-    #     results = problem.results
+        problem = core.DisFitProblem(PETAB_YAML)
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        problem.n_starts = 2
+        self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-    #     with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
-    #         results_gold = pickle.load(f)
+        # problem = core.DisFitProblem(PETAB_YAML)
+        # self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        # problem.infer_ic_from_sbml
+        # self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-    #     # self.assertEqual(problem.results, results_gold) # Todo: for some reason the output is none even if it shouldn't be)
-    #     self.assertEqual(set(results.keys()), set(['parameters', 'par_best', 'species', 'observables']))
-    #     self.assertEqual(results['parameters'].keys(), results_gold['parameters'].keys())
-    #     for i_iter in results_gold['parameters'].keys():
-    #         self.assertEqual(results['parameters'][i_iter].keys(), results_gold['parameters'][i_iter].keys())
-    #         for param in results_gold['parameters'][i_iter].keys():
-    #             assert_allclose(results['parameters'][i_iter][param], results_gold['parameters'][i_iter][param])
 
-    #     self.assertEqual(results['species'].keys(), results_gold['species'].keys())
-    #     for i_iter in results_gold['species'].keys():
-    #         self.assertEqual(results['species'][i_iter].keys(), results_gold['species'][i_iter].keys())
-    #         for specie in results_gold['species'][i_iter].keys():
-    #             assert_allclose(results['species'][i_iter][specie],
-    #                 results_gold['species'][i_iter][specie], rtol=1e-05, atol=1e-08)
-
-    #     self.assertEqual(results['observables'].keys(), results_gold['observables'].keys())
-    #     for i_iter in results_gold['observables'].keys():
-    #         self.assertEqual(results['observables'][i_iter].keys(), results_gold['observables'][i_iter].keys())
-    #         for observable in results_gold['observables'][i_iter].keys():
-    #             assert_allclose(results['observables'][i_iter][observable],
-    #                 results_gold['observables'][i_iter][observable], rtol=1e-05, atol=1e-08)
-        
-    #     assert_frame_equal(results['par_best'], results_gold['par_best'])
-
-    #     problem.write_results(path=os.path.join(self.dirname, 'results.xlsx'))
-    #     self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results.xlsx')))
-
-    #     # test_plot_results()
-    #     problem.plot_results('wt', path=os.path.join(self.dirname, 'plot.pdf'))
-    #     problem.plot_results('wt', path=os.path.join(self.dirname, 'plot.pdf'), observables=['obs_Ensa', 'obs_pEnsa'])
-    #     self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'plot.pdf')))
 
 
 # import os
