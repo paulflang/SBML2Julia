@@ -17,6 +17,7 @@ import shutil
 import tempfile
 import unittest
 from DisFit import core
+from julia.api import Julia
 import importlib
 importlib.reload(core)
 from numpy.testing import assert_allclose
@@ -37,6 +38,7 @@ with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
 class Mock(core.DisFitProblem):
     def __init__(self):
         self._initialization = True
+        self._jl = Julia(compiled_modules=False)
 
 
 class DisFitProblemTestCase(unittest.TestCase):
@@ -189,26 +191,143 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
     def test_write_jl_file(self):
-
-
-
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = Mock()
+        problem._julia_code = JL_CODE_GOLD
         problem.write_jl_file(path=os.path.join(self.dirname, 'jl_code.jl'))
         with open(os.path.join(self.dirname, 'jl_code.jl'), 'r') as f:
             jl_code = f.read()
         self.assertEqual(jl_code, JL_CODE_GOLD)
 
 
+    def test_optimize(self):
+        problem = core.DisFitProblem(PETAB_YAML)
+        results = problem.optimize()
+
+        print(problem._best_iter)
+        self.assertEqual(problem._best_iter, '1')
+
+        self.assertEqual(set(results.keys()), set(['par_best', 'species', 'observables', 'fval', 'chi2']))
+        
+        assert_frame_equal(results['par_best'], RESULTS_GOLD['par_best'])
+        assert_frame_equal(results['species'], RESULTS_GOLD['species'])
+        assert_frame_equal(results['observables'], RESULTS_GOLD['observables'])
+        self.assertAlmostEqual(results['fval'], RESULTS_GOLD['fval'])
+        self.assertAlmostEqual(results['chi2'], RESULTS_GOLD['chi2'])
+
+        self.assertTrue(isinstance(problem.petab_problem.simulation_df, pd.DataFrame))
 
 
+    def test_get_param_ratios(self):
+        problem = Mock()
+        problem._best_iter = '1'
+        problem._n_conditions = 4
+        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+
+        par_dict = {'1':
+            {'fB55_pGw_weak': 1.250000005, 'fB55_wt': 1.250000005, 'fB55_iWee': 1.1250000039999999,
+            'kPhCdc25': 0.9955692429176523, 'kDpEnsa': 0.04984394161435494, 'kDpGw2': 9.993552511531249,
+            'kCdc25_1': 0.10303120213630562, 'kPhEnsa_iWee': 0.125, 'kDpGw1': 0.24845896113749727,
+            'kDpCdc25': 9.841409443285976, 'kPhEnsa_pGw_weak': 0.11249999999999999,
+            'kPhWee': 1.013150760597791, 'kDpWee': 10.052516838989787, 'kPhGw': 0.995923588764344,
+            'kPhEnsa_wt': 0.125, 'kPhEnsa_Cb_low': 0.125, 'kWee1': 0.009879213854455046,
+            'fCb': 2.0000399837133416, 'fB55_Cb_low': 1.375000006, 'kAspEB55': 52.05738881531509,
+            'jiWee': 0.11443890616434232, 'kWee2': 1.0164397373870508, 'kCdc25_2': 0.9133917145270964,
+            'kDipEB55': 0.0034194365965829255}
+            }
+
+        par_best = problem._get_param_ratios(par_dict)
+        assert_frame_equal(par_best, RESULTS_GOLD['par_best'])
+
+
+    def test_results_to_frame(self):
+        problem = Mock()
+        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+        problem._best_iter = '1'
+        problem._t_ratio = 1
+        res_dict_gold = {'speciesId': ['a', 'a', 'b', 'b', 'a', 'a', 'b', 'b'],
+            'simulationConditionId': ['c0', 'c0', 'c0', 'c0', 'c1', 'c1', 'c1', 'c1'],
+            'time': [0., 1., 0., 1., 0., 1., 0., 1.], 'simulation': [1,2,3,4,5,6,7,8]}
+        simulation_dict = {'1': {'a': [[1,2], [5,6]], 'b': [[3,4], [7,8]]}}
+        problem._condition2index = {'c0': 0, 'c1': 1}
+        problem._petab_problem.measurement_df = pd.DataFrame(res_dict_gold).sort_values(['simulationConditionId', 'speciesId', 'time'])
+        df = problem._results_to_frame(simulation_dict, variable_type='speciesId')
+
+        assert_frame_equal(df, problem._petab_problem.measurement_df)
+
+
+    def test_set_simulation_df(self):
+        problem = Mock()
+        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+
+        problem._petab_problem.measurement_df = pd.DataFrame({'observableId': ['obs_a', 'obs_a'],
+            'simulationConditionId': ['c0', 'c0'], 'time': [0, 10], 'measurement': [0.7, 0.1]})
+        df = pd.DataFrame({'observableId': ['obs_a'], 'simulationConditionId': ['c0'],
+            'time': [10.1], 'measurement': [1]})
+        problem._results = {'observables': problem._petab_problem.measurement_df.append(df).reset_index(drop=True)}
+        print(problem.results)
+
+        problem._set_simulation_df()
+
+        simulation_df_gold = copy.deepcopy(problem._petab_problem.measurement_df)
+        assert_frame_equal(problem._petab_problem.simulation_df, simulation_df_gold)
+
+
+    def test_write_results(self):
+        problem = Mock()
+        problem._results = RESULTS_GOLD
+        problem._condition2index = {'wt': 0, 'iWee': 1, 'Cb_low': 2, 'pGw_weak': 3}
+
+        problem.write_results(path=os.path.join(self.dirname, 'results_1.xlsx'))
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results_1.xlsx')))
+
+        problem.write_results(path=os.path.join(self.dirname, 'results_2.xlsx'), df_format='long')
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results_2.xlsx')))
 
 
     def test_plot(self):
+        problem = Mock()
+        problem._t_ratio = 2
+        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+        problem._results = RESULTS_GOLD
+
+        problem.plot_results('wt', path=os.path.join(self.dirname, 'plot_1.pdf'))
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'plot_1.pdf')))
+
+        problem.plot_results('wt', path=os.path.join(self.dirname, 'plot_2.pdf'), observables=['obs_Ensa', 'obs_pEnsa'])
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'plot_2.pdf')))
+
+
+    def test_set_julia_code(self):
         problem = core.DisFitProblem(PETAB_YAML)
-        with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
-            results_gold = pickle.load(f)
-        problem._results = results_gold
-        problem.plot_results('wt')
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+
+
+    def test_write_overrides(self):
+        problem = Mock()
+        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+
+        code, set_of_params = problem._write_overrides('', 'observable')
+        self.assertTrue(code in JL_CODE_GOLD)
+        self.assertEqual(set_of_params, set())
+
+        code, set_of_params = problem._write_overrides('', 'noise')
+        self.assertTrue(code in JL_CODE_GOLD)
+        self.assertEqual(set_of_params, set())
+        
+        sdfs # Todo: add a problem with noise parameters here.
+
+
+    # def test_plot(self):
+    #     problem = core.DisFitProblem(PETAB_YAML)
+    #     with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
+    #         results_gold = pickle.load(f)
+    #     problem._results = results_gold
+    #     problem.plot_results('wt')
 
     # def test_optimize_results_plot(self):
     #     # test_optimize()
