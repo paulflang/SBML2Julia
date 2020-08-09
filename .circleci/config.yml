@@ -39,7 +39,7 @@ jobs:
           command: |
             . venv/bin/activate
             python3 -m pytest tests/test_core.py
-  test_core:
+  test_suite:
     docker:
       - image: paulflang/disfit
     steps:
@@ -54,7 +54,7 @@ jobs:
             python3 -m pip install -r requirements.dev.txt
             echo "source /root/project/venv/bin/activate" >> $BASH_ENV
       - run: 
-          name: test_core
+          name: test_suite
           command: |
             . venv/bin/activate
             python3 -m pytest tests/test_petab_suite.py
@@ -84,6 +84,9 @@ workflows:
     jobs:
       - build
       - test_core:
+          requires:
+            - build
+      - test_suite:
           requires:
             - build
       - test_main:
