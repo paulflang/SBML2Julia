@@ -1,5 +1,5 @@
 capturer
-logging
+# logging
 mock
 # pickle
 # pkg_resources
