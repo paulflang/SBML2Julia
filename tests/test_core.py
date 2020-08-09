@@ -18,8 +18,8 @@ import tempfile
 import unittest
 from DisFit import core
 from julia.api import Julia
-import importlib
-importlib.reload(core)
+# import importlib
+# importlib.reload(core)
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 

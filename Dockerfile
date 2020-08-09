@@ -9,6 +9,9 @@ RUN apt-get update -y \
     && locale-gen en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
+# Add petab_test_suite to image
+ADD petab_test_suite.tar.gz /
+
 # Install Python (e.g., 3.6.9), pip, git, setuptools and test-dependencies
 RUN apt-get update -y \
     && apt-get install --no-install-recommends -y \
@@ -19,6 +22,8 @@ RUN apt-get update -y \
     && pip3 install -U pytest \
     && pip3 install -U capturer \
     && pip3 install -U mock \
+    # && pip3 install -U logging \
+    && pip3 install -e /petab_test_suite \
     # && pip3 install -U pickle \
     # && pip3 install -U pkg_resources \
     # && pip3 install -U shutil \

@@ -1,8 +1,10 @@
 capturer
+logging
 mock
 # pickle
 # pkg_resources
 # shutil
 # tempfile
 # unittest
+petabtests
 pytest

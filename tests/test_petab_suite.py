@@ -2,8 +2,8 @@
 
 import petabtests
 from DisFit import core
-import importlib
-importlib.reload(core)
+# import importlib
+# importlib.reload(core)
 import sys
 import os
 import pytest
@@ -23,7 +23,7 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        # if case != '0001':
+        # if case != '0014':
         #     continue
         try:
             execute_case(case)
@@ -118,4 +118,4 @@ def _execute_case(case):
 
     logger.info(f"Case {case} passed.")
 
-test_petab_suite()
+# test_petab_suite()
