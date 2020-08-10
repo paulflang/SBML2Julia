@@ -67,7 +67,7 @@ class CliTestCase(unittest.TestCase):
 
     def test_optimize(self):
         with __main__.App(argv=['optimize', YAML_PATH, '-t', '2', '-n', '1',
-            '-o', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
+            '-i', 'False', '-o', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
             app.run()
 
             # test that the CLI produced the correct output
@@ -78,7 +78,7 @@ class CliTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
 
         with __main__.App(argv=['optimize', YAML_PATH, '-t', '3', '-n', '2',
-            '-o', self.tempdir_2, '-p', '[a, b]']) as app:
+            '-i', 'True', '-o', self.tempdir_2, '-p', '[a, b]']) as app:
             app.run()
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
 

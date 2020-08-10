@@ -12,12 +12,12 @@ The `DisFit` CLI allows you to specify the following options:
 
 * **-t**, **--t_ratio**: ratio between experimental observation intervals and simulation time-discretization intervals. Default ``2``.
 * **-n**, **--n_starts**: number of multistarts. Default ``1``.
-
+* **-i**, **infer_ic_from_sbml**: if missing initial conditions shall be infered from SBML model. Default ``False``.
 * **-o**, **--out_dir**: output directory for julia_code, results and plot. Default ``'./DisFit_results'``.
 * **-p**, **--plot_vars**: list of species to be plotted. Default all, i.e. ``[]``.
 
 The problem is then specified and solved via::
 
-    user@bash:/$ DisFit optimize 'sbml_path' 'csv_path' -t 2 -f 2 -n 1 -o './DisFit_results' -p '[]'
+    user@bash:/$ DisFit optimize 'my_petab_promlem.yaml' -t 2 -n 1 -i 'False' -o './DisFit_results' -p '[]'
 
 The results can be found in the output directory given to the ``-o`` argument.

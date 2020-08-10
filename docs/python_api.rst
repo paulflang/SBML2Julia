@@ -26,7 +26,7 @@ DisFit also contains the following optimization hyperparameters:
 
 The problem is then specified as::
 
-    >>> problem = DisFit.DisFitProblem(petab_promlem.yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False)
+    >>> problem = DisFit.DisFitProblem(my_petab_promlem.yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False)
 
 Once the problem is specified, `DisFit` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
 

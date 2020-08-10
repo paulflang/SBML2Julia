@@ -44,6 +44,8 @@ class OptimizeController(cement.Controller):
                             help='ratio between experimental observation intervals and time discretization intervals')),
             (['-n', '--n_starts'], dict(default=1, type=int,
                             help='number of multistarts')),
+            (['-i', '--infer_ic_from_sbml'], dict(default=False, type=bool,
+                            help='if missing initial conditions shall be infered from SBML model')),
             (['-o', '--out_dir'], dict(default='./DisFit_results', type=str,
                             help='output directory for julia_code, results and plot')),
             (['-p', '--plot_obs'], dict(default='[]', type=str,
@@ -55,7 +57,7 @@ class OptimizeController(cement.Controller):
         args = self.app.pargs
         try:
             print('--- Generating optimization problem ---')
-            problem = DisFitProblem(args.petab_yaml, t_ratio=args.t_ratio, n_starts=args.n_starts)
+            problem = DisFitProblem(args.petab_yaml, t_ratio=args.t_ratio, n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml)
         except Exception as error:
             raise SystemExit('Error occured: {}'.format(str(error)))
 
