@@ -54,7 +54,7 @@ The results can be accessed via::
 
     >>> results = problem.results
 
-written to an excel file via::
+and written to an excel file via::
 
     >>> problem.wirte_results(path='path_to_results.xlsx')
 
