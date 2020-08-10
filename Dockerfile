@@ -23,6 +23,7 @@ RUN apt-get update -y \
     && pip3 install -U capturer \
     && pip3 install -U mock \
     # && pip3 install -U logging \
+    && pip3 install -U petab \
     && pip3 install -e /petab_test_suite \
     # && pip3 install -U pickle \
     # && pip3 install -U pkg_resources \

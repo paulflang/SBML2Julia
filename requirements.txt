@@ -5,6 +5,7 @@ numpy
 openpyxl
 os
 pandas
+petab
 re
 scipy
 setuptools

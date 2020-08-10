@@ -16,7 +16,7 @@ Run this command to import `DisFit`::
 Specifying an optimization problem
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-DisFit uses the PEtab format for specifying biological parameter estimation problems. PEtab is built around SBML and based on tab-separated values (TSV) files. Please visit the PEtab docs and have a look at the PEtab examples for detailed instructions on how to specify an optimization problem in PEtab.
+DisFit uses the PEtab format for specifying biological parameter estimation problems. PEtab is built around SBML and based on tab-separated values (TSV) files. Please visit the `PEtab documentation <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_ and have a look at the `PEtab examples <https://github.com/PEtab-dev/petab_test_suite/tree/master/cases>`_ for detailed instructions on how to specify an optimization problem in PEtab.
 
 DisFit also contains the following optimization hyperparameters:
 
@@ -58,7 +58,7 @@ written to an excel file via::
 
     >>> problem.wirte_results(path='path_to_results.xlsx')
 
-Time courses for the optimal solution of condition `cond` and corresponding experimental datapoints can be plotted by::
+Time courses for the optimal solution of condition ``cond`` and corresponding experimental datapoints can be plotted by::
 
     >>> problem.plot_results(cond, path='path_to_plot.pdf', observables=[], size=(6, 5))
 
