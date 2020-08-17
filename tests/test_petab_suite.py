@@ -2,8 +2,8 @@
 
 import petabtests
 from DisFit import core
-# import importlib
-# importlib.reload(core)
+import importlib
+importlib.reload(core)
 import sys
 import os
 import pytest
@@ -23,8 +23,8 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        # if case != '0014':
-        #     continue
+        if case != '0009':
+            continue
         try:
             execute_case(case)
             n_success += 1
@@ -78,7 +78,10 @@ def _execute_case(case):
     yaml_file = os.path.join(case_dir, petabtests.problem_yaml_name(case))
 
     # simulate
-    problem = core.DisFitProblem(yaml_file, t_ratio=4, infer_ic_from_sbml=True)
+    t_ratio = 4
+    if case == '0009' or '0010':
+    	t_ratio = 100
+    problem = core.DisFitProblem(yaml_file, t_ratio=t_ratio, infer_ic_from_sbml=True)
     problem.write_jl_file()
     problem.optimize()
     problem.plot_results('c0')
@@ -118,4 +121,4 @@ def _execute_case(case):
 
     logger.info(f"Case {case} passed.")
 
-# test_petab_suite()
+test_petab_suite()

@@ -187,15 +187,15 @@ class DisFitProblem(object):
 
         self._petab_problem = petab_problem
 
-        self._petab_yaml_dict, self._condition2index, self._n_conditions,\
-            self._condition_specific_pars, self._global_pars =\
+        self._petab_yaml_dict, self._condition2index, self._j_to_parameters,\
+            self._n_conditions, self._condition_specific_pars, self._global_pars =\
             self._get_translation_vars(petab_yaml, petab_problem)
 
         
     def _check_for_not_implemented_features(self, petab_problem):
         
-        if 'preequilibrationConditionId' in petab_problem.measurement_df.columns:
-            raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+        # if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
+        #     raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
 
         if np.inf in list(petab_problem.measurement_df['time']):
             raise NotImplementedError('Fitting steady state problems is not possible (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
@@ -229,8 +229,40 @@ class DisFitProblem(object):
                 raise SystemExit('Error occured: {}'.format(str(error)))
         
         condition2index = {petab_problem.condition_df.index[i]: i for i in range(len(petab_problem.condition_df.index))}
-        if 'preequilibrationConditionId' in petab_problem.measurement_df.columns:
-            condition2index = {k: v for k, v in condition2index.items() if k not in petab_problem.measurement_df['preequilibrationConditionId']}
+        
+        simulationConditionIdx = np.arange(len(condition2index))+1
+        preequilibrationConditionIdx = []
+        if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
+            # condition2index = {k: v for k, v in condition2index.items() if k not in petab_problem.measurement_df['preequilibrationConditionId']}
+            p2c = petab_problem.measurement_df.loc[:, ['preequilibrationConditionId', 'simulationConditionId']].drop_duplicates()
+            for sCId, data in p2c.groupby('simulationConditionId'):
+                if len(data.index) > 1:
+                    raise NotImplementedError(f'{sCId} must be assiciated with <=1 preequilibrationConditionIds. Please modify PEtab problem accordingly.')
+            simulationConditionIdx = [condition2index[c]+1 for c in p2c['simulationConditionId']]
+            preequilibrationConditionIdx = [condition2index[c]+1 for c in p2c['preequilibrationConditionId'] if isinstance(c, str)]
+        j_to_parameters = (simulationConditionIdx, preequilibrationConditionIdx)
+
+        #     unique_p = p2c['preequilibrationConditionId'].drop_duplicates()
+        #     print(1111111111)
+        #     if isinstance(unique_p, pd.core.series.Series):
+        #         unique_p = unique_p.to_frame()
+        #     print(121212)
+        #     unique_p['preequilibration_idx'] = [i+1 for i in range(len(p2c.index))]
+        #     print(2222222222222)
+        #     # print(unique_p)
+        #     # print(type(unique_p.loc['preequilibration_idx']))
+        #     p2c = p2c.merge(unique_p, on='preequilibrationConditionId', how='left')
+            
+        #     print(121212)
+        #     preequilibration_idx = list(p2c['preequilibration_idx'])
+        #     conditions_with_preequilibration = [isinstance(v, str) for v in p2c.loc[:, 'preequilibrationConditionId']]
+        #     print(3333)
+        #     conditions_with_preequilibration = np.arange(len(conditions_with_preequilibration))[conditions_with_preequilibration]+1
+        #     print(4444444444)
+        #     preequilibration_arrays = (preequilibration_idx, conditions_with_preequilibration)
+
+        # print('preequilibration_arrays')
+        # print(preequilibration_arrays)
 
         n_conditions = len(petab_problem.condition_df.index)
 
@@ -243,7 +275,7 @@ class DisFitProblem(object):
         for parameter in petab_problem.parameter_df.index:
             global_pars[parameter] = petab_problem.parameter_df.loc[parameter, 'estimate']
 
-        return (yaml_dict, condition2index, n_conditions, condition_specific_pars, global_pars)
+        return (yaml_dict, condition2index, j_to_parameters, n_conditions, condition_specific_pars, global_pars)
         
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
@@ -266,6 +298,7 @@ class DisFitProblem(object):
         """
         print('Entering Julia for optimization...')
         self._results_all = self._jl.eval(self.julia_code)
+        print(self._results_all)
         print('Results transferred. Exited Julia.')
 
         self._best_iter = min(self._results_all['objective_value'], key=self._results_all['objective_value'].get)
@@ -277,11 +310,14 @@ class DisFitProblem(object):
         self._results['observables'] = self._results_to_frame(self._results_all['observables'], variable_type='observableId')
         # self._results['observables'] = df.sort_values(['observableId', 'simulationConditionId', 'time'])
         self._set_simulation_df()
+        print(321321)
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
         ndf = pd.DataFrame()
+        print(123123)
         if 'noiseParameters' in self.petab_problem.measurement_df.columns:
             ndf = self.petab_problem.measurement_df['noiseParameters']
+        print(self.petab_problem.simulation_df)
     # try:
         self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
             pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
@@ -342,22 +378,42 @@ class DisFitProblem(object):
         t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
         t_exp = sorted(set(self.petab_problem.measurement_df['time']))
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
+        index2condition = {v: k for k, v in self._condition2index.items()}
+        print(index2condition)
         for variable in simulation_dict[self._best_iter].keys():
-            for c in self._condition2index.keys():
+            # for c, i in self._condition2index.items():
+            print(variable)
+            for j, c_idx in enumerate(self._j_to_parameters[0]):
 
-        # for c in self._condition2index.keys():
-        #     for variable in simulation_dict[self._best_iter].keys():
+            # for c in self._condition2index.keys():
+            #     for variable in simulation_dict[self._best_iter].keys():
+                print(j)
+                print(c_idx)
                 try:
-                    value = simulation_dict[self._best_iter][variable][self._condition2index[c]]
+                    if variable_type == 'speciesId':
+                        value = simulation_dict[self._best_iter][variable][j][:-1]
+                    elif variable_type == 'observableId':
+                        value = simulation_dict[self._best_iter][variable][j]
+                    print(value)
                 except IndexError:
+                    print('continueing')
                     continue
-                res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [c]*len(value)
+                res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [index2condition[c_idx-1]]*len(value)
+                print(res_dict['simulationConditionId'])
                 res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
+                print(res_dict[variable_type])
                 if variable_type == 'speciesId':
                     res_dict['time'] = res_dict['time'] + list(t_sim)
                 elif variable_type == 'observableId':
                     res_dict['time'] = res_dict['time'] + list(t_exp)
+                print(res_dict["time"])
+                print(list(value))
+                print('i can make a list of `value`')
+                print(res_dict['simulation'])
+                print('i can print res_dict[simulation]')
                 res_dict['simulation'] = res_dict['simulation'] + list(value)
+                print(res_dict['simulation'])
+        print('finished results 2 frame')
                 
         return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
 
@@ -392,12 +448,13 @@ class DisFitProblem(object):
             if df_format == 'wide':
                 for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
                     df = self.results[var_type].groupby('simulationConditionId')
-                    for condition in self._condition2index.keys():
-                        dfg = df.get_group(condition)
-                        dfg = dfg.set_index(['time', Id])
-                        dfg = dfg.unstack()
-                        dfg = dfg.loc[:, 'simulation']
-                        dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
+                    for condition, i in self._condition2index.items():
+                        if i+1 in self._j_to_parameters[0]:
+                            dfg = df.get_group(condition)
+                            dfg = dfg.set_index(['time', Id])
+                            dfg = dfg.unstack()
+                            dfg = dfg.loc[:, 'simulation']
+                            dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
             else:
                 for var_type in ['species', 'observables']:
                     df = self.results[var_type]
@@ -419,10 +476,12 @@ class DisFitProblem(object):
         # Options
         x_label = 'time'
         y_label = 'Abundance'
-        cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters', 'noiseParameters'])]
+        cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters', 'noiseParameters', 'preequilibrationConditionId'])]
         measurement_df = self.petab_problem.measurement_df\
             .loc[:, cols].set_index(['simulationConditionId', 'time', 'observableId'])\
             .unstack().loc[str(condition), :]
+        print(measurement_df)
+        print('-----------------')
         measurement_df.columns = measurement_df.columns.droplevel()
         t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
         t_sim = np.linspace(start=0, stop=t[-1], num=np.int(np.ceil(t[-1]*self.t_ratio+1)))
@@ -432,7 +491,10 @@ class DisFitProblem(object):
             observables = self.petab_problem.observable_df.index
         
         df = self.results['observables'].groupby('simulationConditionId')
+        print(df)
+        print('----------------------')
         df = df.get_group(condition)
+        print(df)
         df = df.set_index(['time', 'observableId'])
         df = df.unstack()
         t_sim = [df.index[i] for i in range(len(df.index))]
@@ -445,6 +507,8 @@ class DisFitProblem(object):
         
         sim_lines = axes.plot(t_sim, values, linewidth=3)
         axes.set_prop_cycle(None) # reset the color cycle
+        print(t)
+        print(exp_data)
         exp_points = axes.plot(t, exp_data, 'x')
         sim_legend = axes.legend(sim_lines, observables, frameon=True, title='Simulation', loc='upper right')
         # axes.set_prop_cycle(None)
@@ -608,7 +672,12 @@ class DisFitProblem(object):
         generated_code.extend(bytes('results["objective_value"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["parameters"] = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["species"] = Dict()\n', 'utf8'))
-        generated_code.extend(bytes('results["observables"] = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('results["observables"] = Dict()\n\n', 'utf8'))
+
+        generated_code.extend(bytes(f'j_to_cond_par = {self._j_to_parameters[0]}\n', 'utf8'))
+        if self._j_to_parameters[1]:
+            generated_code.extend(bytes(f'j_to_pre_par = {self._j_to_parameters[1]}\n\n', 'utf8'))
+
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
         generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))\n\n', 'utf8'))
 
@@ -661,9 +730,13 @@ class DisFitProblem(object):
         # Write overrides:
         obs_to_conditions = {}
         for observable in self.petab_problem.observable_df.index:
-            obs_in_condition = [j+1 for c, j in self._condition2index.items() if c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
+            obs_in_condition = [j+1 for c, j in self._condition2index.items() if j+1 in self._j_to_parameters[0] and\
+                c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
             obs_to_conditions[observable] = obs_in_condition
-
+        print('obs_to_conditions')
+        print(self._j_to_parameters[0])
+        print(self._condition2index.items())
+        print(obs_to_conditions)
         generated_code, set_of_observable_params = self._write_overrides(generated_code, 'observable', obs_to_conditions)
         generated_code, set_of_noise_params = self._write_overrides(generated_code, 'noise', obs_to_conditions)
 
@@ -679,36 +752,40 @@ class DisFitProblem(object):
 
 
         # Write species
+        n_j = len(self._j_to_parameters[0])
         generated_code.extend(bytes('    # Model species\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
         for specie in species.keys():
             if species[specie]:
                 lb = self.petab_problem.species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == self.petab_problem.species_df.index
                 ub = self.petab_problem.species_df.loc[specie, 'upperBound']
-                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:length(t_sim)] <= {})\n'.format(lb, specie, self._n_conditions, ub), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {} <= {}[j in 1:{}, k in 1:(length(t_sim)+1)] <= {})\n'.format(lb, specie, n_j, ub), 'utf8'))
             else:
-                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}, k in 1:length(t_sim)])\n'.format(specie, self._n_conditions), 'utf8'))
+                generated_code.extend(bytes('    @variable(m, {}[j in 1:{}, k in 1:(length(t_sim)+1)])\n'.format(specie, n_j), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
         # Write initial assignments
         generated_code.extend(bytes('    # Model initial assignments\n', 'utf8'))
+        write_ic = False
+        if 'preequilibrationConditionId' not in self.petab_problem.measurement_df.columns or self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
+            write_ic = True
         generated_code.extend(bytes('    println("Defining initial assignments...")\n', 'utf8'))
         for specie, par in initial_assignments.items():
-            if specie not in species_interpreted_as_ic:
+            if specie not in species_interpreted_as_ic and write_ic:
                 if par in self._global_pars:
-                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
                 elif par in self._condition_specific_pars.keys():
-                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j_to_cond_par[j]])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
                 elif self.infer_ic_from_sbml:
                     formula = str(par).split() # par can sometimes be a float, which would cause an error when splitting
                     for i in range(len(formula)):
                         if (formula[i] in parameters.keys()) and (formula[i] not in
                             list(self._condition_specific_pars)+list(self._global_pars)):
-                            generated_code.extend(bytes('    @variable(m, {0} == {1}, start={1})\n'.format(formula[i], self._n_conditions, parameters[formula[i]]), 'utf8'))
-                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                            generated_code.extend(bytes('    @variable(m, {0} == {1}, start={1})\n'.format(formula[i], parameters[formula[i]]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j_to_cond_par[j],1] == {})\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
         for specie in species_interpreted_as_ic:
-            generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j])\n'.format(self._n_conditions, specie, specie+'_0'), 'utf8'))
+            generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j_to_cond_par[j]])\n'.format(n_j, specie, specie+'_0'), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
@@ -719,12 +796,12 @@ class DisFitProblem(object):
         for specie in species: # For every species
             if species[specie]:
                 generated_code.extend(bytes('    println("{}")\n'.format(specie), 'utf8'))
-                generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(self._n_conditions), 'utf8'))
+                generated_code.extend(bytes('    @NLconstraint(m, [j in 1:{}, k in 1:length(t_sim)-1],\n'.format(n_j), 'utf8'))
                 generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
                 for (coef, reaction_name) in species[specie]: # For every reaction
                     reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
                     for pattern in patterns: # Add iterator `j` to condition-defined and local parameters
-                        reaction_formula = re.sub('[( ]'+pattern+'[, )]', lambda matchobj: matchobj.group(0)[:-1]+'[j]'+matchobj.group(0)[-1:], reaction_formula) # The matchobject starts with a `(` or ` ` and ends with a `,` ` ` or `)`. I insert `[j]` just before the ending of the matchobject.
+                        reaction_formula = re.sub('[( ]'+pattern+'[, )]', lambda matchobj: matchobj.group(0)[:-1]+'[j_to_cond_par[j]]'+matchobj.group(0)[-1:], reaction_formula) # The matchobject starts with a `(` or ` ` and ends with a `,` ` ` or `)`. I insert `[j]` just before the ending of the matchobject.
                     for spec in species.keys():
                         tmp_iterator = '[j]'
                         if species[spec]:
@@ -736,7 +813,49 @@ class DisFitProblem(object):
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)-1], {}[j, k] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+                generated_code.extend(bytes('    @constraint(m, [j_to_cond_par[j] in 1:{}, k in 1:length(t_sim)-1], {}[j_to_cond_par[j], k] == {}[j_to_cond_par[j]])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
+
+
+        # Write pre-equilibration constraints
+        generated_code.extend(bytes('    # Pre-equilibration constraints\n', 'utf8'))
+        if self._j_to_parameters[1]:
+            condition_iterator = f'1:{len(self._j_to_parameters[1])}'
+            # if len(self._preequilibration_arrays[0]) != len(self._preequilibration_arrays[1]):
+            #     condition_iterator = self._preequilibration_arrays[1]
+            generated_code.extend(bytes('    println("Defining pre-equilibration constraints...")\n', 'utf8'))
+            # patterns = [par for par in self.petab_problem.condition_df.columns if par not in species.keys()]       
+            # generated_code.extend(bytes(f'    preequilibration_idx = {self._preequilibration_arrays[0]}\n', 'utf8'))
+            if self._calling_function == '_execute_case':
+                generated_code.extend(bytes('    @constraint(m, [j in {}], A[j, length(t_sim)+1] + B[j, length(t_sim)+1] == 1)\n       '.format(condition_iterator), 'utf8'))
+
+            for specie in species: # For every species
+                if species[specie]:
+                    generated_code.extend(bytes('    println("{}")\n'.format(specie), 'utf8'))
+                    generated_code.extend(bytes('    @NLconstraint(m, [j in {}],\n       '.format(condition_iterator), 'utf8'))
+                    # generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
+                    for (coef, reaction_name) in species[specie]: # For every reaction
+                        reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
+                        for pattern in patterns: # Add iterator `[preequilibration_idx[j]` to condition-defined and local parameters
+                            reaction_formula = re.sub('[( ]'+pattern+'[, )]', lambda matchobj: matchobj.group(0)[:-1]+'[j_to_pre_par[j]]'+matchobj.group(0)[-1:], reaction_formula) # The matchobject starts with a `(` or ` ` and ends with a `,` ` ` or `)`. I insert `[j]` just before the ending of the matchobject.
+                        for spec in species.keys():
+                            tmp_iterator = '[j]'
+                            if species[spec]:
+                                tmp_iterator = '[j, length(t_sim)+1]'
+                            reaction_formula = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]', lambda matchobj: matchobj.group(0)[:-1]+tmp_iterator+matchobj.group(0)[-1:], reaction_formula)
+                        reaction_formula = re.sub('pow', '^', reaction_formula)
+                        if 'piecewise(' in reaction_formula:
+                            raise NotImplementedError('`libsbml` model contains `piecewise` conditition in rate law. This is not implemented.')
+                        generated_code.extend(bytes(reaction_formula, 'utf8'))
+                    generated_code.extend(bytes('  == 0 )\n', 'utf8'))
+                if specie not in species_interpreted_as_ic:
+                    generated_code.extend(bytes('    @constraint(m, [j in {0}], {1}[j, length(t_sim)+1] == {1}[j, 1])\n'.format(condition_iterator, specie), 'utf8'))
+                # else:
+                #     generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)-1], {}[j, k] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
+        else:
+            for specie in species:
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j, length(t_sim)+1] == 0)\n'.format(self._n_conditions, specie), 'utf8'))
+
         generated_code.extend(bytes('\n', 'utf8'))
 
 
@@ -812,8 +931,8 @@ class DisFitProblem(object):
                 raise ValueError(f'`noiseDistribution` must be `normal` or `laplace` but is {noise_distribution}.')
                 
             condition_idx_string = '[j]'
-            if len(obs_to_conditions[observable]) < self._n_conditions:
-                condition_idx_string = f'[{obs_to_conditions[observable]}[j]]'
+            # if len(obs_to_conditions[observable]) < self._n_conditions:
+            #     condition_idx_string = f'[{obs_to_conditions[observable]}[j]]'
 
             if noise_distribution == 'normal' and scale == 'lin':
                 sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k]-data{3}[k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
