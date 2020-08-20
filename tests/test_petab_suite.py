@@ -23,8 +23,8 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        if case != '0009':
-            continue
+        # if case != '0008':
+        #     continue
         try:
             execute_case(case)
             n_success += 1
@@ -80,7 +80,7 @@ def _execute_case(case):
     # simulate
     t_ratio = 4
     if case == '0009' or '0010':
-    	t_ratio = 100
+    	t_ratio = 1000
     problem = core.DisFitProblem(yaml_file, t_ratio=t_ratio, infer_ic_from_sbml=True)
     problem.write_jl_file()
     problem.optimize()
@@ -90,7 +90,8 @@ def _execute_case(case):
     results = problem.results
     simulation_df = problem.petab_problem.simulation_df.rename(columns={petab.MEASUREMENT: petab.SIMULATION})
     print('simulation_df')
-    print(simulation_df)
+    print([simulation_df])
+    print(gt_simulation_dfs)
     chi2 = results['chi2']
     llh = - results['fval']
 
@@ -98,11 +99,15 @@ def _execute_case(case):
     print(llh)
     print(gt_llh)
 
+    print('chi2s')
+    print(chi2)
+    print(gt_chi2)
+
     # check if matches
     chi2s_match = petabtests.evaluate_chi2(chi2, gt_chi2, tol_chi2)
     llhs_match = petabtests.evaluate_llh(llh, gt_llh, tol_llh)
     simulations_match = petabtests.evaluate_simulations(
-        [simulation_df], gt_simulation_dfs, tol_simulations)    
+        [simulation_df], gt_simulation_dfs, tol_simulations)   
 
     # log matches
     logger.log(logging.INFO if chi2s_match else logging.ERROR,

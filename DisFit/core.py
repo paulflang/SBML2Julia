@@ -24,12 +24,13 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, petab_yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False):
+    def __init__(self, petab_yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
             t_ratio (:obj:`int` or `float`, optional): number of time discretiation steps per time unit
             n_starts (:obj:`int`): number of multistarts
+            optimizer_options (:obj:`dict`): optimization solver options
         """
 
         print('Initialising problem...')
@@ -45,7 +46,9 @@ class DisFitProblem(object):
         self._set_petab_problem(petab_yaml)
         self.t_ratio = t_ratio
         self.n_starts = n_starts
+        self.optimizer_options = optimizer_options
         self.infer_ic_from_sbml = infer_ic_from_sbml
+
         self._set_julia_code()
 
         self._initialization = False
@@ -145,6 +148,32 @@ class DisFitProblem(object):
         if not isinstance(value, bool):
             raise ValueError('`infer_ic_from_sbml` must be boolean')
         self._infer_ic_from_sbml = value
+        if not self._initialization:
+            self._set_julia_code()
+
+
+    @property
+    def optimizer_options(self):
+        """Get optimizer_options
+        
+        Returns:
+            :obj:`dict`: optimization solver options
+        """    
+        return self._optimizer_options
+
+    @optimizer_options.setter
+    def optimizer_options(self,value):
+        """Set n_starts
+        
+        Args:
+            value (:obj:`int`): number of multistarts
+        
+        Raises:
+            ValueError: if n_starts is not a positive integer
+        """
+        if not isinstance(value, dict):
+            raise ValueError('`optimizer_options` must be a dictionary')
+        self._optimizer_options = value
         if not self._initialization:
             self._set_julia_code()
 
@@ -298,7 +327,6 @@ class DisFitProblem(object):
         """
         print('Entering Julia for optimization...')
         self._results_all = self._jl.eval(self.julia_code)
-        print(self._results_all)
         print('Results transferred. Exited Julia.')
 
         self._best_iter = min(self._results_all['objective_value'], key=self._results_all['objective_value'].get)
@@ -310,14 +338,11 @@ class DisFitProblem(object):
         self._results['observables'] = self._results_to_frame(self._results_all['observables'], variable_type='observableId')
         # self._results['observables'] = df.sort_values(['observableId', 'simulationConditionId', 'time'])
         self._set_simulation_df()
-        print(321321)
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
         ndf = pd.DataFrame()
-        print(123123)
         if 'noiseParameters' in self.petab_problem.measurement_df.columns:
             ndf = self.petab_problem.measurement_df['noiseParameters']
-        print(self.petab_problem.simulation_df)
     # try:
         self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
             pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
@@ -376,44 +401,34 @@ class DisFitProblem(object):
 
         t_max = self.petab_problem.measurement_df['time'].max()
         t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
-        t_exp = sorted(set(self.petab_problem.measurement_df['time']))
+        # print(next(self.petab_problem.measurement_df.groupby('simulationConditionId')))
+        mg = self.petab_problem.measurement_df.groupby('simulationConditionId')
+        t_exp = {}
+        for cond, data in mg:
+            t_exp[cond] = (list(data['time']))
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
         index2condition = {v: k for k, v in self._condition2index.items()}
-        print(index2condition)
         for variable in simulation_dict[self._best_iter].keys():
             # for c, i in self._condition2index.items():
-            print(variable)
             for j, c_idx in enumerate(self._j_to_parameters[0]):
 
             # for c in self._condition2index.keys():
             #     for variable in simulation_dict[self._best_iter].keys():
-                print(j)
-                print(c_idx)
                 try:
                     if variable_type == 'speciesId':
                         value = simulation_dict[self._best_iter][variable][j][:-1]
                     elif variable_type == 'observableId':
                         value = simulation_dict[self._best_iter][variable][j]
-                    print(value)
                 except IndexError:
                     print('continueing')
                     continue
                 res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [index2condition[c_idx-1]]*len(value)
-                print(res_dict['simulationConditionId'])
                 res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
-                print(res_dict[variable_type])
                 if variable_type == 'speciesId':
                     res_dict['time'] = res_dict['time'] + list(t_sim)
                 elif variable_type == 'observableId':
-                    res_dict['time'] = res_dict['time'] + list(t_exp)
-                print(res_dict["time"])
-                print(list(value))
-                print('i can make a list of `value`')
-                print(res_dict['simulation'])
-                print('i can print res_dict[simulation]')
+                    res_dict['time'] = res_dict['time'] + t_exp[index2condition[c_idx-1]]
                 res_dict['simulation'] = res_dict['simulation'] + list(value)
-                print(res_dict['simulation'])
-        print('finished results 2 frame')
                 
         return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
 
@@ -423,7 +438,7 @@ class DisFitProblem(object):
         simulation_df = self.results['observables']
         t_sim_to_gt_sim = []
         idx = -1
-        for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
+        for i in range(len(simulation_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
             idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
                 - self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])) + idx+1
             t_sim_to_gt_sim.append(idx)
@@ -451,7 +466,7 @@ class DisFitProblem(object):
                     for condition, i in self._condition2index.items():
                         if i+1 in self._j_to_parameters[0]:
                             dfg = df.get_group(condition)
-                            dfg = dfg.set_index(['time', Id])
+                            dfg = dfg.set_index(['time', Id]).drop_duplicates()
                             dfg = dfg.unstack()
                             dfg = dfg.loc[:, 'simulation']
                             dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
@@ -478,10 +493,12 @@ class DisFitProblem(object):
         y_label = 'Abundance'
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters', 'noiseParameters', 'preequilibrationConditionId'])]
         measurement_df = self.petab_problem.measurement_df\
-            .loc[:, cols].set_index(['simulationConditionId', 'time', 'observableId'])\
-            .unstack().loc[str(condition), :]
-        print(measurement_df)
-        print('-----------------')
+            .loc[:, cols].set_index(['simulationConditionId', 'time', 'observableId'])
+        if sum(measurement_df.index.duplicated(keep='first')) > 0:
+            warnings.warn('Some time points contain replicate measurements. Only the first measurement is plotted.')
+
+        measurement_df = measurement_df[~measurement_df.index.duplicated(keep='first')]
+        measurement_df = measurement_df.drop_duplicates().unstack().loc[str(condition), :]
         measurement_df.columns = measurement_df.columns.droplevel()
         t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
         t_sim = np.linspace(start=0, stop=t[-1], num=np.int(np.ceil(t[-1]*self.t_ratio+1)))
@@ -491,11 +508,8 @@ class DisFitProblem(object):
             observables = self.petab_problem.observable_df.index
         
         df = self.results['observables'].groupby('simulationConditionId')
-        print(df)
-        print('----------------------')
         df = df.get_group(condition)
-        print(df)
-        df = df.set_index(['time', 'observableId'])
+        df = df.set_index(['time', 'observableId']).drop_duplicates()
         df = df.unstack()
         t_sim = [df.index[i] for i in range(len(df.index))]
         values = df.loc[:, 'simulation'].reset_index(drop=True, inplace=False)[observables]
@@ -507,8 +521,6 @@ class DisFitProblem(object):
         
         sim_lines = axes.plot(t_sim, values, linewidth=3)
         axes.set_prop_cycle(None) # reset the color cycle
-        print(t)
-        print(exp_data)
         exp_points = axes.plot(t, exp_data, 'x')
         sim_legend = axes.legend(sim_lines, observables, frameon=True, title='Simulation', loc='upper right')
         # axes.set_prop_cycle(None)
@@ -654,13 +666,29 @@ class DisFitProblem(object):
         generated_code.extend(bytes('println("Reading measurement data...")\n', 'utf8'))
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
+        generated_code.extend(bytes('insert!(df, 1, (1:length(df[:,1])), :id)\n', 'utf8'))
         generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
         generated_code.extend(bytes('data = []\n', 'utf8'))
         generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
-        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))\n', 'utf8'))
+        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], [:id, :time], :observableId, :measurement))\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
-        generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8'))
+        generated_code.extend(bytes('k_to_time_idx = []\n', 'utf8'))
+        generated_code.extend(bytes('for c in 1:length(keys(dfg))\n', 'utf8'))
+        generated_code.extend(bytes('    push!(k_to_time_idx, [])\n', 'utf8'))
+        generated_code.extend(bytes('    j = 0\n', 'utf8'))
+        generated_code.extend(bytes('    prev = "a"\n', 'utf8'))
+        generated_code.extend(bytes('    for t in dfg[c][:, :time]\n', 'utf8'))
+        generated_code.extend(bytes('        if t != prev\n', 'utf8'))
+        generated_code.extend(bytes('            j = j+1\n', 'utf8'))
+        generated_code.extend(bytes('        end\n', 'utf8'))
+        generated_code.extend(bytes('        push!(k_to_time_idx[c], j)\n', 'utf8'))
+        generated_code.extend(bytes('        prev = t\n', 'utf8'))
+        generated_code.extend(bytes('    end\n', 'utf8'))
+        generated_code.extend(bytes('end\n\n', 'utf8'))
+
+        generated_code.extend(bytes('t_exp = dfg[1][:, :time]\n', 'utf8'))
+        # generated_code.extend(bytes('t_exp = unique(dfg[1][:, :time])\n', 'utf8'))
         generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=Int64(ceil(t_exp[end]*t_ratio+1)))\n', 'utf8'))
         generated_code.extend(bytes('t_sim_to_exp = []\n', 'utf8'))
         generated_code.extend(bytes('for i in 1:length(t_exp)\n', 'utf8'))
@@ -679,7 +707,13 @@ class DisFitProblem(object):
             generated_code.extend(bytes(f'j_to_pre_par = {self._j_to_parameters[1]}\n\n', 'utf8'))
 
         generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
-        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer, tol=1e-6))\n\n', 'utf8'))
+        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
+        for k, v in self.optimizer_options:
+            if isinstance(v, str):
+                generated_code.extend(bytes('    set_optimizer_attribute(m,"{}","{}")\n'.format(k, v), 'utf8'))
+            else:
+                generated_code.extend(bytes('    set_optimizer_attribute(m,"{}",{})\n'.format(k, v), 'utf8'))
+        generated_code.extend(bytes('\n', 'utf8'))
 
 
         # Write global parameters
@@ -728,15 +762,12 @@ class DisFitProblem(object):
 
         
         # Write overrides:
+        generated_code.extend(bytes('    # Define overrides\n', 'utf8'))
         obs_to_conditions = {}
         for observable in self.petab_problem.observable_df.index:
             obs_in_condition = [j+1 for c, j in self._condition2index.items() if j+1 in self._j_to_parameters[0] and\
                 c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
             obs_to_conditions[observable] = obs_in_condition
-        print('obs_to_conditions')
-        print(self._j_to_parameters[0])
-        print(self._condition2index.items())
-        print(obs_to_conditions)
         generated_code, set_of_observable_params = self._write_overrides(generated_code, 'observable', obs_to_conditions)
         generated_code, set_of_noise_params = self._write_overrides(generated_code, 'noise', obs_to_conditions)
 
@@ -850,9 +881,7 @@ class DisFitProblem(object):
                     generated_code.extend(bytes('  == 0 )\n', 'utf8'))
                 if specie not in species_interpreted_as_ic:
                     generated_code.extend(bytes('    @constraint(m, [j in {0}], {1}[j, length(t_sim)+1] == {1}[j, 1])\n'.format(condition_iterator, specie), 'utf8'))
-                # else:
-                #     generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)-1], {}[j, k] == {}[j])\n'.format(self._n_conditions, specie, initial_assignments[specie]), 'utf8'))
-        else:
+        else: # Just a dummy to fill the last time value that will never be used.
             for specie in species:
                 generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j, length(t_sim)+1] == 0)\n'.format(self._n_conditions, specie), 'utf8'))
 
@@ -935,17 +964,17 @@ class DisFitProblem(object):
             #     condition_idx_string = f'[{obs_to_conditions[observable]}[j]]'
 
             if noise_distribution == 'normal' and scale == 'lin':
-                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k]-data{3}[k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'normal' and scale == 'log':
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2) + 0.5*((log({0}[j, k])-log(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2) + 0.5*((log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'normal' and scale == 'log10':
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k])-log10(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'lin':
-                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k]-data{3}[k, :{0}])/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log':
-                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]) + abs(log({0}[j, k])-log(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]) + abs(log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log10':
-                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))               
+                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))               
 
 
         priors = []
@@ -1022,6 +1051,8 @@ class DisFitProblem(object):
     def _write_overrides(self, generated_code, var_type, obs_to_conditions):
 
         set_of_params = set()
+        generated_code.extend(bytes('    # Define '+var_type+' overrides\n', 'utf8'))
+        generated_code.extend(bytes('    println("Defining '+var_type+'Parameter overrides...")\n', 'utf8'))
         if var_type+'Parameters' in self.petab_problem.measurement_df.columns and not self.petab_problem.measurement_df[var_type+'Parameters'].empty:
             params = {}
             for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
@@ -1035,9 +1066,6 @@ class DisFitProblem(object):
                         params[obs][cond] = [data_2[var_type+'Parameters'].values[0]]
                     else:
                         params[obs][cond] = data_2[var_type+'Parameters'].values
-
-            generated_code.extend(bytes('    # Define '+var_type+' overrides\n', 'utf8'))
-            generated_code.extend(bytes('    println("Defining '+var_type+'Parameter overrides...")\n', 'utf8'))
             
             str_1 = ''
             str_2 = ''
