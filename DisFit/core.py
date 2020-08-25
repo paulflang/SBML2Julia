@@ -198,6 +198,11 @@ class DisFitProblem(object):
         return self._results
 
 
+    def import_julia_code(self, file):
+        with open(file, 'r') as f:
+            self._julia_code = f.read()
+
+
     def _set_petab_problem(self, petab_yaml):
         """Converts petab yaml to dict and creates petab.problem.Problem object
         
@@ -348,8 +353,10 @@ class DisFitProblem(object):
             pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
             self.petab_problem.observable_df,
             self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
-        if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
-            warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results[self._results_all['objective_value'][self._best_iter], 'fval']))
+        if not ('objectivePriorType' in self.petab_problem.parameter_df.columns \
+            or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns):
+            if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
+                warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results_all['objective_value'][self._best_iter], self._results['fval']))
         self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
             pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
             self.petab_problem.observable_df, self.petab_problem.parameter_df)
@@ -474,6 +481,14 @@ class DisFitProblem(object):
                 for var_type in ['species', 'observables']:
                     df = self.results[var_type]
                     df.to_excel(writer, sheet_name=var_type, index=True)
+
+
+    def write_optimized_parameter_table(self):
+        df = self.petab_problem.parameter_df
+        df['nominal'] = self.results['par_best']['par_best']
+        out_file = os.path.join(self._petab_dirname, 'post_fit_parameters.tsv')
+        df.to_csv(outfile, sep='t')
+        warnings.warn('Wrote post_fit_parameters.tsv. Please edit `yaml` file accordingly if it shall be added to the petab problem.')
 
 
     def plot_results(self, condition, path=os.path.join('.', 'plot.pdf'), observables=[], size=(6, 5)):
@@ -768,8 +783,10 @@ class DisFitProblem(object):
             obs_in_condition = [j+1 for c, j in self._condition2index.items() if j+1 in self._j_to_parameters[0] and\
                 c in list(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df['observableId']==observable, 'simulationConditionId'])]
             obs_to_conditions[observable] = obs_in_condition
-        generated_code, set_of_observable_params = self._write_overrides(generated_code, 'observable', obs_to_conditions)
-        generated_code, set_of_noise_params = self._write_overrides(generated_code, 'noise', obs_to_conditions)
+        override_code, set_of_observable_params = self._write_overrides('observable', obs_to_conditions)
+        generated_code.extend(bytes(override_code, 'utf8'))
+        override_code, set_of_noise_params = self._write_overrides('noise', obs_to_conditions)
+        generated_code.extend(bytes(override_code, 'utf8'))
 
 
         # Write out compartment values 
@@ -925,6 +942,15 @@ class DisFitProblem(object):
         generated_code.extend(bytes('\n', 'utf8'))
 
 
+        # Write priors
+        nlp = ''
+        if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
+            or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
+            prior_code = self._write_prior_code()
+            generated_code.extend(bytes(prior_code, 'utf8'))
+            nlp = '+ nlp'
+
+
         # Write objective
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining objective...")\n', 'utf8'))
@@ -977,20 +1003,20 @@ class DisFitProblem(object):
                 sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))               
 
 
-        priors = []
-        if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
-            or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
-            for index, row in self.petab_problem.parameter_df.iterrows():
-                prior_type = row['objectivePriorType']
-                prior_parameters = [par.strip() for par in row['objectivePriorParameters'].split(';')]
-                if index in self._global_pars.keys():
-                    priors.append(str(self._n_conditions)+' * '+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '')+'\n')
-                else:
-                    priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
+        # priors = []
+        # if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
+        #     or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
+        #     for index, row in self.petab_problem.parameter_df.iterrows():
+        #         prior_type = row['objectivePriorType']
+        #         prior_parameters = [par.strip() for par in row['objectivePriorParameters'].split(';')]
+        #         if index in self._global_pars.keys():
+        #             priors.append(str(self._n_conditions)+' * '+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '')+'\n')
+        #         else: # For condition-specific parameters that are in the parameter table (i.e. local parameters)
+        #             priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
 
 
-        generated_code.extend(bytes('        + '.join(sums_of_nllhs+priors), 'utf8'))
-        generated_code.extend(bytes('        )\n\n', 'utf8'))
+        generated_code.extend(bytes('        + '.join(sums_of_nllhs), 'utf8'))
+        generated_code.extend(bytes(f'        {nlp})\n\n', 'utf8'))
 
         generated_code.extend(bytes('    println("Optimizing:")\n', 'utf8'))
         generated_code.extend(bytes('    optimize!(m)\n\n', 'utf8'))
@@ -1048,11 +1074,12 @@ class DisFitProblem(object):
             self.plot_results(self._plot_file)
 
 
-    def _write_overrides(self, generated_code, var_type, obs_to_conditions):
+    def _write_overrides(self, var_type, obs_to_conditions):
 
         set_of_params = set()
-        generated_code.extend(bytes('    # Define '+var_type+' overrides\n', 'utf8'))
-        generated_code.extend(bytes('    println("Defining '+var_type+'Parameter overrides...")\n', 'utf8'))
+        override_code = bytearray('', 'utf8')
+        override_code.extend(bytes('    # Define '+var_type+' overrides\n', 'utf8'))
+        override_code.extend(bytes('    println("Defining '+var_type+'Parameter overrides...")\n', 'utf8'))
         if var_type+'Parameters' in self.petab_problem.measurement_df.columns and not self.petab_problem.measurement_df[var_type+'Parameters'].empty:
             params = {}
             for obs, data_1 in self.petab_problem.measurement_df.groupby('observableId'):
@@ -1084,7 +1111,7 @@ class DisFitProblem(object):
                 n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
 
                 for i in range(n_par):
-                    generated_code.extend(bytes('    @variable(m, {}Parameter{}_{}[j in 1:{}{}], start=1.)\n'.format(var_type, i+1, obs, len(obs_in_condition), str_1), 'utf8'))
+                    override_code.extend(bytes('    @variable(m, {}Parameter{}_{}[j in 1:{}{}], start=1.)\n'.format(var_type, i+1, obs, len(obs_in_condition), str_1), 'utf8'))
                     set_of_params.add((f'{var_type}Parameter{i+1}_{obs}', str_2))
 
                 j = 0
@@ -1099,7 +1126,101 @@ class DisFitProblem(object):
                         pars = [par.strip() for par in str(params).rstrip(';').split(';')]
                         for n, par in enumerate(pars):
                             if par != 'nan':
-                                generated_code.extend(bytes(f'    @constraint(m, {var_type}Parameter{n+1}_{obs}[{j}{str_3}] == {par})\n', 'utf8'))
-                generated_code.extend(bytes('\n', 'utf8'))
+                                override_code.extend(bytes(f'    @constraint(m, {var_type}Parameter{n+1}_{obs}[{j}{str_3}] == {par})\n', 'utf8'))
+                override_code.extend(bytes('\n', 'utf8'))
+        override_code.extend(bytes('\n', 'utf8'))
 
-        return (generated_code, set_of_params)
+        return (override_code.decode(), set_of_params)
+
+
+    def _write_prior_code(self):
+
+        prior_code = bytearray('', 'utf8')
+        idx_with_prior_1 = list(~self.petab_problem.parameter_df['objectivePriorType'].isna())
+        idx_with_prior_2 = list(~self.petab_problem.parameter_df['objectivePriorParameters'].isna())
+        print(idx_with_prior_1)
+        if sum(np.equal(idx_with_prior_1, idx_with_prior_2)) != len (idx_with_prior_1):
+            raise Exception('All rows and only those rows containing an `objectivePriorType` must also contain `objectivePriorParameters`.')
+        parameter_df = self.petab_problem.parameter_df.iloc[idx_with_prior_1, :]
+        n_par_with_prior = sum(idx_with_prior_1)
+        
+        prior_code.extend(bytes('    # Defining objectivePriors\n', 'utf8'))
+        prior_code.extend(bytes('    println("Defining objectivePriors")\n', 'utf8'))
+        prior_code.extend(bytes(f'    @variable(m, prior_mean[l in 1:{n_par_with_prior}], start=1.)\n', 'utf8'))
+        for l, vals in enumerate(parameter_df['objectivePriorParameters']):
+            val = vals.rstrip(';').split(';')[0].strip()
+            prior_code.extend(bytes(f'    @constraint(m, prior_mean[{l+1}] == {val})\n', 'utf8'))
+        prior_code.extend(bytes('\n', 'utf8'))
+
+        prior_code.extend(bytes(f'    @variable(m, 0 <= prior_std[l in 1:{n_par_with_prior}], start=1.)\n', 'utf8'))
+        for l, vals in enumerate(parameter_df['objectivePriorParameters']):
+            val = vals.rstrip(';').split(';')[1].strip()
+            prior_code.extend(bytes(f'    @constraint(m, prior_std[{l+1}] == {val})\n', 'utf8'))
+        prior_code.extend(bytes('\n', 'utf8'))
+
+        prior_code.extend(bytes(f'    @variable(m, par_est[l in 1:{n_par_with_prior}], start=1.)\n', 'utf8'))
+        for l, par in enumerate(parameter_df.index):
+            prior_code.extend(bytes(f'    @constraint(m, par_est[{l+1}] == {par})\n', 'utf8'))
+        prior_code.extend(bytes('\n', 'utf8'))
+
+        prior_code.extend(bytes(f'    @variable(m, n_occurences[l in 1:{n_par_with_prior}])\n', 'utf8'))
+        for l, par in enumerate(parameter_df.index):
+            if par in self._global_pars.keys():
+                prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {self._n_conditions})\n', 'utf8'))
+            else:
+                n_occurences = np.sum(np.sum(parameter_df == par))
+                if n_occurences < 1:
+                    raise NotImplementedError('Parameter table contains a parameter that is \
+                        neither global nor specified in the condition table.')
+                prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {n_occurences})\n', 'utf8'))
+        prior_code.extend(bytes('\n', 'utf8'))
+
+        if 'laplace' in list(parameter_df['objectivePriorType']):
+            prior_code.extend(bytes(f'    @variable(m, delta_par[l in 1:{n_par_with_prior}])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @constraint(m, [l in 1:{n_par_with_prior}], delta_par[l] >= par_est[l] - prior_mean[l])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @constraint(m, [l in 1:{n_par_with_prior}], delta_par[l] >= prior_mean[l] - par_est[l])\n', 'utf8'))
+            prior_code.extend(bytes('\n', 'utf8'))
+
+        if 'logLaplace' in list(parameter_df['objectivePriorType']):
+            prior_code.extend(bytes(f'    @variable(m, delta_log_par[l in 1:{n_par_with_prior}])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @NLconstraint(m, [l in 1:{n_par_with_prior}], delta_log_par[l] >= log(par_est[l]) - prior_mean[l])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @NLconstraint(m, [l in 1:{n_par_with_prior}], delta_log_par[l] >= prior_mean[l] - log(par_est[l]))\n', 'utf8'))
+            prior_code.extend(bytes('\n', 'utf8'))
+
+        prior_types = {'normal': [], 'laplace': [], 'logNormal': [], 'logLaplace': []}
+        for l, prior_type in enumerate(parameter_df['objectivePriorType']):
+            if prior_type == 'normal':
+                prior_types['normal'].append(l+1)
+            elif prior_type == 'laplace':
+                prior_types['laplace'].append(l+1)
+            elif prior_type == 'logNormal':
+                vals = parameter_df.loc[parameter_df.index[l], 'objectivePriorParameters']
+                vals = vals.rstrip(';').split(';')
+                mode = np.exp(float(vals[0])-float(vals[1])**2)
+                if mode < 2e-8:
+                    warnings.warn(f'Mode of {parameter_df.index[l]} is {mode}. A small parameter value may cause an error in JuMP when taking its log.')
+                prior_types['logNormal'].append(l+1)
+            elif prior_type == 'logLaplace':
+                prior_types['logLaplace'].append(l+1)
+            else:
+                raise NotImplementedError('Only `objectivePriorType`s `normal`, `laplace`, `logNormal` and `logLaplace` are implemented.')
+
+        
+        for k, v in prior_types.items():
+            if v:
+                prior_code.extend(bytes(f'    {k}_priors = {v}\n', 'utf8'))
+                prior_code.extend(bytes(f'    @variable(m, nlp_{k})\n', 'utf8'))
+                if k == 'normal':
+                    prior_code.extend(bytes(f'    @NLconstraint(m, nlp_{k} == sum(n_occurences[l] * ( 0.5 * log(2*pi*prior_std[l]^2) + 0.5*((par_est[l]-prior_mean[l])/prior_std[l])^2 ) for l in {k}_priors))\n', 'utf8'))
+                elif k == 'laplace':
+                    prior_code.extend(bytes(f'    @NLconstraint(m, nlp_{k} == sum(n_occurences[l] * ( log(2*prior_std[l]) + delta_par[l]/prior_std[l] ) for l in {k}_priors))\n', 'utf8'))
+                elif k == 'logNormal':
+                    prior_code.extend(bytes(f'    @NLconstraint(m, nlp_{k} == sum(n_occurences[l] * ( log(par_est[l]*prior_std[l]*sqrt(2*pi)) + 0.5*((log(par_est[l])-prior_mean[l])/prior_std[l])^2 ) for l in {k}_priors))\n', 'utf8'))
+                elif k == 'logLaplace':
+                    prior_code.extend(bytes(f'    @NLconstraint(m, nlp_{k} == sum(n_occurences[l] * ( log(2*prior_std[l]*par_est[l]) + delta_log_par[l]/prior_std[l] ) for l in {k}_priors))\n', 'utf8'))
+        prior_code.extend(bytes('\n', 'utf8'))
+
+        prior_code.extend(bytes('    @variable(m, nlp)\n', 'utf8'))
+        prior_code.extend(bytes(f"    @constraint(m, nlp == {' + '.join(set(['nlp_'+v for v in parameter_df['objectivePriorType']]))})\n\n", 'utf8'))
+
+        return prior_code.decode()
