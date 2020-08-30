@@ -24,11 +24,11 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, petab_yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}):
+    def __init__(self, petab_yaml, t_steps=None, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
-            t_ratio (:obj:`int` or `float`, optional): number of time discretiation steps per time unit
+            t_steps (:obj:`int` or `float`, optional): number of time discretiation steps per time unit
             n_starts (:obj:`int`): number of multistarts
             optimizer_options (:obj:`dict`): optimization solver options
         """
@@ -44,7 +44,7 @@ class DisFitProblem(object):
         # self._results = {}
         self._petab_dirname = os.path.dirname(petab_yaml)
         self._set_petab_problem(petab_yaml)
-        self.t_ratio = t_ratio
+        self.t_steps = t_steps
         self.n_starts = n_starts
         self.optimizer_options = optimizer_options
         self.infer_ic_from_sbml = infer_ic_from_sbml
@@ -74,28 +74,34 @@ class DisFitProblem(object):
 
 
     @property
-    def t_ratio(self):
-        """Get t_ratio
+    def t_steps(self):
+        """Get t_steps
         
         Returns:
             :obj:`int` or `float`: number of time discretiation steps per time unit
         """
-        return self._t_ratio
+        return self._t_steps
 
 
-    @t_ratio.setter
-    def t_ratio(self, value):
-        """Set t_ratio
+    @t_steps.setter
+    def t_steps(self, value):
+        """Set t_steps
         
         Args:
             value (:obj:`int` or `float`): number of time discretiation steps per time unit
         
         Raises:
-            ValueError: if t_ratio is not a positive real number.
+            ValueError: if t_steps is not a positive real number.
         """
-        if not (isinstance(value, int) or isinstance(value, float)) or (value <= 0):
-            raise ValueError('`t_ratio` must be a positive real number.')
-        self._t_ratio = value
+        if value == None:
+            n_exp = len(set(self.petab_problem.measurement_df['time']))
+            if n_exp == 1:
+                value = 101
+            else:
+                value = int(np.ceil(100/(n_exp-1))*(n_exp-1) + 1)
+        if not (isinstance(value, int)) or (value <= 0):
+            raise ValueError('`t_steps` must be a positive integer.')
+        self._t_steps = value
         if not self._initialization:
             self._set_julia_code()
 
@@ -215,7 +221,9 @@ class DisFitProblem(object):
         petab_problem = petab.problem.Problem()                                                                                                                                                                          
         petab_problem = petab_problem.from_yaml(petab_yaml)
         
+        print('before linting')
         petab.lint.lint_problem(petab_problem) # Returns `False` if no error occured and raises exception otherwise.
+        print('after linting')
         self._check_for_not_implemented_features(petab_problem)
         petab_problem = self._sort_condition_df_problem(petab_problem)
 
@@ -240,14 +248,40 @@ class DisFitProblem(object):
         if len(set(t_conds)) != 1:
             raise NotImplementedError('Measurement time points differ between conditions. This is not implemented.')
 
+        if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not petab_problem.measurement_df['preequilibrationConditionId'].empty:
+            p2c = petab_problem.measurement_df.loc[:, ['preequilibrationConditionId', 'simulationConditionId']].drop_duplicates()
+            for sCId, data in p2c.groupby('simulationConditionId'):
+                if len(data.index) > 1:
+                    raise NotImplementedError(f'{sCId} must be assiciated with <=1 preequilibrationConditionIds. Please modify PEtab problem accordingly.')
+
+        noiseParameter_names = set()
+        if 'noiseParameters' in petab_problem.measurement_df.columns:
+            for vals in petab_problem.measurement_df['noiseParameters']:
+                pars = str(vals).rstrip(';').split(';')
+                for par in pars:
+                    noiseParameter_names.add(par.strip())
+        observableParameter_names = set()
+        if 'observableParameters' in petab_problem.measurement_df.columns:
+            for vals in petab_problem.measurement_df['observableParameters']:
+                pars = str(vals).rstrip(';').split(';')
+                for par in pars:
+                    observableParameter_names.add(par.strip())
+
+        if 'objectivePriorType' in petab_problem.parameter_df.columns:
+            for l, par in enumerate(petab_problem.parameter_df.index):
+                if par in noiseParameter_names and isinstance(petab_problem.parameter_df['objectivePriorType'][l], str):
+                    raise NotImplementedError('Priors for noiseParameter overrides are not implemented.')
+                if par in observableParameter_names and isinstance(petab_problem.parameter_df['objectivePriorType'][l], str):
+                    raise NotImplementedError('Priors for observableParameter overrides are not implemented.')
 
     def _sort_condition_df_problem(self, petab_problem):
 
-        idx = np.empty(len(petab_problem.condition_df.index))
+        idx = 1e6*np.ones(len(petab_problem.condition_df.index))
         for i, cond in enumerate(petab_problem.measurement_df['simulationConditionId'].drop_duplicates()):
             for j, c in enumerate(petab_problem.condition_df.index):
                 if c == cond:
                     idx[j] = i
+        print(idx)
         petab_problem.condition_df['sorting'] = idx
         petab_problem.condition_df = petab_problem.condition_df.sort_values(by='sorting').drop(columns=['sorting'])
 
@@ -264,16 +298,15 @@ class DisFitProblem(object):
         
         condition2index = {petab_problem.condition_df.index[i]: i for i in range(len(petab_problem.condition_df.index))}
         
-        simulationConditionIdx = np.arange(len(condition2index))+1
+        simulationConditionIdx = list(np.arange(len(condition2index))+1)
         preequilibrationConditionIdx = []
         if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
-            # condition2index = {k: v for k, v in condition2index.items() if k not in petab_problem.measurement_df['preequilibrationConditionId']}
-            p2c = petab_problem.measurement_df.loc[:, ['preequilibrationConditionId', 'simulationConditionId']].drop_duplicates()
-            for sCId, data in p2c.groupby('simulationConditionId'):
-                if len(data.index) > 1:
-                    raise NotImplementedError(f'{sCId} must be assiciated with <=1 preequilibrationConditionIds. Please modify PEtab problem accordingly.')
+            p2c = self.petab_problem.measurement_df.loc[:, ['preequilibrationConditionId', 'simulationConditionId']].drop_duplicates()
             simulationConditionIdx = [condition2index[c]+1 for c in p2c['simulationConditionId']]
-            preequilibrationConditionIdx = [condition2index[c]+1 for c in p2c['preequilibrationConditionId'] if isinstance(c, str)]
+            preequilibrationConditionIdx = [condition2index[c]+1 if isinstance(c, str) else '' for c in p2c['preequilibrationConditionId']]
+            # cond_to_precond = {}
+            # for _, row in p2c.iterrows():
+            #     cond_to_precond[row['simulationConditionId']] = row['preequilibrationConditionIdon']
         j_to_parameters = (simulationConditionIdx, preequilibrationConditionIdx)
 
         #     unique_p = p2c['preequilibrationConditionId'].drop_duplicates()
@@ -333,39 +366,56 @@ class DisFitProblem(object):
         print('Entering Julia for optimization...')
         self._results_all = self._jl.eval(self.julia_code)
         print('Results transferred. Exited Julia.')
+        print(self._results_all)
 
         self._best_iter = min(self._results_all['objective_value'], key=self._results_all['objective_value'].get)
 
         self._results = {}
         self._results['par_best'] = self._get_param_ratios(self._results_all['parameters'])
+        print(self._results['par_best'])
         self._results['species'] = self._results_to_frame(self._results_all['species'], variable_type='speciesId')
+        print(self._results['species'])
         # self._results['species'] = df.sort_values(['speciesId', 'simulationConditionId', 'time'])
         self._results['observables'] = self._results_to_frame(self._results_all['observables'], variable_type='observableId')
+        print(self._results['observables'])
         # self._results['observables'] = df.sort_values(['observableId', 'simulationConditionId', 'time'])
         self._set_simulation_df()
+        print('simulation_df set')
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
         ndf = pd.DataFrame()
         if 'noiseParameters' in self.petab_problem.measurement_df.columns:
             ndf = self.petab_problem.measurement_df['noiseParameters']
-    # try:
-        self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
-            pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
-            self.petab_problem.observable_df,
-            self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
-        if not ('objectivePriorType' in self.petab_problem.parameter_df.columns \
-            or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns):
-            if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
-                warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results_all['objective_value'][self._best_iter], self._results['fval']))
-        self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
-            pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
-            self.petab_problem.observable_df, self.petab_problem.parameter_df)
-    # except:
-    #     warnings.warn('Could not calculate llh and/or chi2 using PEtab. Using llh from Julia instead.')
-    #     self._results['fval'] = self._results_all['objective_value'][self._best_iter]
-    #     self._results['chi2'] = np.nan
+        try:
+            # print('printing dfs')
+            # print(self.petab_problem.measurement_df.loc[:, cols])
+            # print(pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1))
+            # print(self.petab_problem.observable_df)
+            # print(self.petab_problem.parameter_df)
 
-        self._optimized = True
+            print('aaaaaaaaa')
+            self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
+                pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
+                self.petab_problem.observable_df,
+                self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
+            if not ('objectivePriorType' in self.petab_problem.parameter_df.columns \
+                or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns):
+                if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
+                    warnings.warn('Optimization algorithm may not have used correct objective (Julia llh: {}; PEtab llh: {}).'.format(self._results_all['objective_value'][self._best_iter], self._results['fval']))
+            print('bbbbbbbbbbbbbbb')
+            self._results['chi2'] = petab.calculate_chi2(self.petab_problem.measurement_df.loc[:, cols],
+                pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
+                self.petab_problem.observable_df, self.petab_problem.parameter_df)
+            print('ccccccccccccc')
+        except:
+            print('dddddddddddddddddd')
+            warnings.warn('Could not calculate llh and/or chi2 using PEtab. Using llh from Julia instead.')
+            self._results['fval'] = self._results_all['objective_value'][self._best_iter]
+            print('eeeeeeeeeeeeeeeeeeeee')
+            self._results['chi2'] = np.nan
+            print('fffffffffffffffffffff')
+
+            self._optimized = True
         return self.results
 
 
@@ -377,7 +427,10 @@ class DisFitProblem(object):
         local_par_names = {}
         for par_type in self.petab_problem.condition_df.columns:
             if str(self.petab_problem.condition_df[par_type].dtype) == 'object':
+                print('n_conditions')
+                print(self._n_conditions)
                 for i in range(self._n_conditions):
+                    print(i)
                     local_par_names[self.petab_problem.condition_df.iloc[i][par_type]] = (par_type, i)
 
         par_best_to_par_0_col = []
@@ -407,12 +460,13 @@ class DisFitProblem(object):
     def _results_to_frame(self, simulation_dict, variable_type='observableId'):
 
         t_max = self.petab_problem.measurement_df['time'].max()
-        t_sim = np.linspace(start=0, stop=t_max, num=np.int(np.ceil(t_max*self.t_ratio+1)))
+        t_sim = np.linspace(start=0, stop=t_max, num=self.t_steps)
         # print(next(self.petab_problem.measurement_df.groupby('simulationConditionId')))
-        mg = self.petab_problem.measurement_df.groupby('simulationConditionId')
-        t_exp = {}
-        for cond, data in mg:
-            t_exp[cond] = (list(data['time']))
+        # mg = self.petab_problem.measurement_df.groupby('simulationConditionId')
+        # t_exp = {}
+        # for cond, data in mg:
+        #     t_exp[cond] = (list(data['time']))
+        t_exp = list(self.petab_problem.measurement_df['time'].drop_duplicates())
         res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
         index2condition = {v: k for k, v in self._condition2index.items()}
         for variable in simulation_dict[self._best_iter].keys():
@@ -434,8 +488,13 @@ class DisFitProblem(object):
                 if variable_type == 'speciesId':
                     res_dict['time'] = res_dict['time'] + list(t_sim)
                 elif variable_type == 'observableId':
-                    res_dict['time'] = res_dict['time'] + t_exp[index2condition[c_idx-1]]
+                    res_dict['time'] = res_dict['time'] + t_exp #[index2condition[c_idx-1]]
                 res_dict['simulation'] = res_dict['simulation'] + list(value)
+                # print('res_dict')
+                # print(res_dict)
+        for k, v in res_dict.items():
+            print(k)
+            print(len(v))
                 
         return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
 
@@ -445,7 +504,7 @@ class DisFitProblem(object):
         simulation_df = self.results['observables']
         t_sim_to_gt_sim = []
         idx = -1
-        for i in range(len(simulation_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
+        for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
             idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
                 - self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])) + idx+1
             t_sim_to_gt_sim.append(idx)
@@ -487,7 +546,7 @@ class DisFitProblem(object):
         df = self.petab_problem.parameter_df
         df['nominal'] = self.results['par_best']['par_best']
         out_file = os.path.join(self._petab_dirname, 'post_fit_parameters.tsv')
-        df.to_csv(outfile, sep='t')
+        df.to_csv(out_file, sep='t')
         warnings.warn('Wrote post_fit_parameters.tsv. Please edit `yaml` file accordingly if it shall be added to the petab problem.')
 
 
@@ -509,14 +568,18 @@ class DisFitProblem(object):
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters', 'noiseParameters', 'preequilibrationConditionId'])]
         measurement_df = self.petab_problem.measurement_df\
             .loc[:, cols].set_index(['simulationConditionId', 'time', 'observableId'])
+        print(measurement_df)
         if sum(measurement_df.index.duplicated(keep='first')) > 0:
             warnings.warn('Some time points contain replicate measurements. Only the first measurement is plotted.')
 
         measurement_df = measurement_df[~measurement_df.index.duplicated(keep='first')]
-        measurement_df = measurement_df.drop_duplicates().unstack().loc[str(condition), :]
+        print(measurement_df)
+        measurement_df = measurement_df.unstack().loc[str(condition), :] # measurement_df.drop_duplicates().unstack().loc[str(condition), :]
+        print(measurement_df)
         measurement_df.columns = measurement_df.columns.droplevel()
+        print(measurement_df)
         t = [measurement_df.index[i] for i in range(len(measurement_df.index))]
-        t_sim = np.linspace(start=0, stop=t[-1], num=np.int(np.ceil(t[-1]*self.t_ratio+1)))
+        t_sim = np.linspace(start=0, stop=t[-1], num=self.t_steps)
         if not isinstance(observables, list):
             raise ValueError('`observables` must be a list of observables.')
         if not observables:
@@ -528,6 +591,8 @@ class DisFitProblem(object):
         df = df.unstack()
         t_sim = [df.index[i] for i in range(len(df.index))]
         values = df.loc[:, 'simulation'].reset_index(drop=True, inplace=False)[observables]
+        print('measurement_df')
+        print(measurement_df)
         exp_data = measurement_df[observables]
         
         # Determine the size of the figure
@@ -675,17 +740,17 @@ class DisFitProblem(object):
         generated_code.extend(bytes('using Ipopt\n', 'utf8'))
         generated_code.extend(bytes('using JuMP\n\n', 'utf8'))
 
-        generated_code.extend(bytes('t_ratio = {} # Setting number of ODE discretisation steps\n\n'.format(self.t_ratio), 'utf8'))
+        generated_code.extend(bytes('t_steps = {} # Setting number of ODE discretisation steps\n\n'.format(self.t_steps), 'utf8'))
  
         generated_code.extend(bytes('# Data\n', 'utf8'))
         generated_code.extend(bytes('println("Reading measurement data...")\n', 'utf8'))
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
-        generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8'))
+        generated_code.extend(bytes('df = CSV.read(data_path; use_mmap=false)\n', 'utf8')) #@Sungho: use_mmap=false is said to be slow, but I need to release the file somehow. Alternetive suggestions?
         generated_code.extend(bytes('insert!(df, 1, (1:length(df[:,1])), :id)\n', 'utf8'))
         generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
         generated_code.extend(bytes('data = []\n', 'utf8'))
         generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
-        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], [:id, :time], :observableId, :measurement))\n', 'utf8'))
+        generated_code.extend(bytes('    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))\n', 'utf8')) # [:id, :time]
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('k_to_time_idx = []\n', 'utf8'))
@@ -702,9 +767,9 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    end\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
 
-        generated_code.extend(bytes('t_exp = dfg[1][:, :time]\n', 'utf8'))
+        generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8')) # dfg[1][:, :time]\n', 'utf8'))
         # generated_code.extend(bytes('t_exp = unique(dfg[1][:, :time])\n', 'utf8'))
-        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=Int64(ceil(t_exp[end]*t_ratio+1)))\n', 'utf8'))
+        generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_steps)\n', 'utf8'))
         generated_code.extend(bytes('t_sim_to_exp = []\n', 'utf8'))
         generated_code.extend(bytes('for i in 1:length(t_exp)\n', 'utf8'))
         generated_code.extend(bytes('    idx = argmin(abs.(t_exp[i] .- t_sim))\n', 'utf8'))
@@ -718,12 +783,21 @@ class DisFitProblem(object):
         generated_code.extend(bytes('results["observables"] = Dict()\n\n', 'utf8'))
 
         generated_code.extend(bytes(f'j_to_cond_par = {self._j_to_parameters[0]}\n', 'utf8'))
-        if self._j_to_parameters[1]:
-            generated_code.extend(bytes(f'j_to_pre_par = {self._j_to_parameters[1]}\n\n', 'utf8'))
+        if any(isinstance(item, int) for item in self._j_to_parameters[1]):
+            preequ_bool = [False if isinstance(item, str) else True for item in self._j_to_parameters[1]]
+            cond_without_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if not b]
+            cond_with_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if b]
+            preequ = [item for item, b in zip(self._j_to_parameters[1], preequ_bool) if b]
+            generated_code.extend(bytes(f'cond_without_preequ = {cond_without_preequ}\n', 'utf8'))
+            generated_code.extend(bytes(f'cond_with_preequ = {cond_with_preequ}\n', 'utf8'))
+            generated_code.extend(bytes(f'preequ = {preequ}\n\n', 'utf8'))
 
-        generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
+        if self.n_starts > 1:
+            generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
+        else:
+            generated_code.extend(bytes('i_start = 1\n', 'utf8'))
         generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
-        for k, v in self.optimizer_options:
+        for k, v in self.optimizer_options.items():
             if isinstance(v, str):
                 generated_code.extend(bytes('    set_optimizer_attribute(m,"{}","{}")\n'.format(k, v), 'utf8'))
             else:
@@ -769,7 +843,8 @@ class DisFitProblem(object):
                     if self._calling_function == '_execute_case': # The test cases always simulate from the nominal value
                         estimate = 0
                     if estimate == 1:
-                        generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
+                        # generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
+                        generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
                     elif estimate  == 0:
                         generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))
             generated_code.extend(bytes('\n', 'utf8'))
@@ -816,22 +891,23 @@ class DisFitProblem(object):
         # Write initial assignments
         generated_code.extend(bytes('    # Model initial assignments\n', 'utf8'))
         write_ic = False
-        if 'preequilibrationConditionId' not in self.petab_problem.measurement_df.columns or self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
+        if ('preequilibrationConditionId' not in self.petab_problem.measurement_df.columns) or (np.nan in list(self.petab_problem.measurement_df['preequilibrationConditionId'])):
+            print('inside if')
             write_ic = True
         generated_code.extend(bytes('    println("Defining initial assignments...")\n', 'utf8'))
         for specie, par in initial_assignments.items():
             if specie not in species_interpreted_as_ic and write_ic:
                 if par in self._global_pars:
-                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {})\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[cond_without_preequ[j],1] == {})\n'.format(len(cond_without_preequ), specie, initial_assignments[specie]), 'utf8'))
                 elif par in self._condition_specific_pars.keys():
-                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j_to_cond_par[j]])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[cond_without_preequ[j],1] == {}[cond_without_preequ[j]])\n'.format(len(cond_without_preequ), specie, initial_assignments[specie]), 'utf8'))
                 elif self.infer_ic_from_sbml:
                     formula = str(par).split() # par can sometimes be a float, which would cause an error when splitting
                     for i in range(len(formula)):
                         if (formula[i] in parameters.keys()) and (formula[i] not in
                             list(self._condition_specific_pars)+list(self._global_pars)):
                             generated_code.extend(bytes('    @variable(m, {0} == {1}, start={1})\n'.format(formula[i], parameters[formula[i]]), 'utf8'))
-                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j_to_cond_par[j],1] == {})\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
+                    generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[cond_without_preequ[j],1] == {})\n'.format(len(cond_without_preequ), specie, initial_assignments[specie]), 'utf8'))
         for specie in species_interpreted_as_ic:
             generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j,1] == {}[j_to_cond_par[j]])\n'.format(n_j, specie, specie+'_0'), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
@@ -860,15 +936,15 @@ class DisFitProblem(object):
                         raise NotImplementedError('`libsbml` model contains `piecewise` conditition in rate law. This is not implemented.')
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
-            else:
-                generated_code.extend(bytes('    @constraint(m, [j_to_cond_par[j] in 1:{}, k in 1:length(t_sim)-1], {}[j_to_cond_par[j], k] == {}[j_to_cond_par[j]])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
+            else: # Todo: think about handling if initial_assignments[specie] == None
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)-1], {}[j, k] == {}[j])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
         # Write pre-equilibration constraints
         generated_code.extend(bytes('    # Pre-equilibration constraints\n', 'utf8'))
-        if self._j_to_parameters[1]:
-            condition_iterator = f'1:{len(self._j_to_parameters[1])}'
+        if any(isinstance(item, int) for item in self._j_to_parameters[1]):
+            condition_iterator = f'1:{len(cond_with_preequ)}'
             # if len(self._preequilibration_arrays[0]) != len(self._preequilibration_arrays[1]):
             #     condition_iterator = self._preequilibration_arrays[1]
             generated_code.extend(bytes('    println("Defining pre-equilibration constraints...")\n', 'utf8'))
@@ -878,29 +954,36 @@ class DisFitProblem(object):
                 generated_code.extend(bytes('    @constraint(m, [j in {}], A[j, length(t_sim)+1] + B[j, length(t_sim)+1] == 1)\n       '.format(condition_iterator), 'utf8'))
 
             for specie in species: # For every species
-                if species[specie]:
+                # Non-preequilibrated conditions 
+                if cond_without_preequ:
+                        generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[cond_without_preequ[j], length(t_sim)+1] == 0)\n'.format(len(cond_without_preequ), specie), 'utf8')) # Dummy preequilibration
+                
+                # Preequilibrated conditions                
+                if species[specie]: # Species has reaction
                     generated_code.extend(bytes('    println("{}")\n'.format(specie), 'utf8'))
                     generated_code.extend(bytes('    @NLconstraint(m, [j in {}],\n       '.format(condition_iterator), 'utf8'))
                     # generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
                     for (coef, reaction_name) in species[specie]: # For every reaction
                         reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
                         for pattern in patterns: # Add iterator `[preequilibration_idx[j]` to condition-defined and local parameters
-                            reaction_formula = re.sub('[( ]'+pattern+'[, )]', lambda matchobj: matchobj.group(0)[:-1]+'[j_to_pre_par[j]]'+matchobj.group(0)[-1:], reaction_formula) # The matchobject starts with a `(` or ` ` and ends with a `,` ` ` or `)`. I insert `[j]` just before the ending of the matchobject.
+                            reaction_formula = re.sub('[( ]'+pattern+'[, )]', lambda matchobj: matchobj.group(0)[:-1]+'[preequ[j]]'+matchobj.group(0)[-1:], reaction_formula) # The matchobject starts with a `(` or ` ` and ends with a `,` ` ` or `)`. I insert `[j]` just before the ending of the matchobject.
                         for spec in species.keys():
-                            tmp_iterator = '[j]'
+                            tmp_iterator = '[cond_with_preequ[j]]'
                             if species[spec]:
-                                tmp_iterator = '[j, length(t_sim)+1]'
+                                tmp_iterator = '[cond_with_preequ[j], length(t_sim)+1]'
                             reaction_formula = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]', lambda matchobj: matchobj.group(0)[:-1]+tmp_iterator+matchobj.group(0)[-1:], reaction_formula)
                         reaction_formula = re.sub('pow', '^', reaction_formula)
                         if 'piecewise(' in reaction_formula:
                             raise NotImplementedError('`libsbml` model contains `piecewise` conditition in rate law. This is not implemented.')
                         generated_code.extend(bytes(reaction_formula, 'utf8'))
                     generated_code.extend(bytes('  == 0 )\n', 'utf8'))
-                if specie not in species_interpreted_as_ic:
-                    generated_code.extend(bytes('    @constraint(m, [j in {0}], {1}[j, length(t_sim)+1] == {1}[j, 1])\n'.format(condition_iterator, specie), 'utf8'))
-        else: # Just a dummy to fill the last time value that will never be used.
-            for specie in species:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j, length(t_sim)+1] == 0)\n'.format(self._n_conditions, specie), 'utf8'))
+                    if specie not in species_interpreted_as_ic: # Link preequilibration to ic.
+                        generated_code.extend(bytes('    @constraint(m, [j in {0}], {1}[cond_with_preequ[j], length(t_sim)+1] == {1}[cond_with_preequ[j], 1])\n'.format(condition_iterator, specie), 'utf8'))
+                else: # Species has no reaction
+                     generated_code.extend(bytes('    @constraint(m, [j in {}], {}[j, length(t_sim)+1] == 0)\n'.format(condition_iterator, specie), 'utf8')) # Dummy preequilibration
+        # else: # Just a dummy to fill the last time value that will never be used.
+        #     for specie in species:
+        #         generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j, length(t_sim)+1] == 0)\n'.format(self._n_conditions, specie), 'utf8'))
 
         generated_code.extend(bytes('\n', 'utf8'))
 
@@ -968,7 +1051,10 @@ class DisFitProblem(object):
                 sigma = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]',
                     lambda matchobj: matchobj.group(0)[:-1]+'[j, t_sim_to_exp[k]]'+matchobj.group(0)[-1:],
                     sigma)
-
+            for obs in self.petab_problem.observable_df.index:
+                sigma = re.sub('[^a-zA-Z0-9_]'+obs+'[^a-zA-Z0-9_]',
+                    lambda matchobj: matchobj.group(0)[:-1]+'[j, k]'+matchobj.group(0)[-1:],
+                    sigma)
             scale = 'lin'
             if 'observableTransformation' in self.petab_problem.observable_df.columns:
                 scale = self.petab_problem.observable_df.loc[observable, 'observableTransformation']
@@ -990,17 +1076,17 @@ class DisFitProblem(object):
             #     condition_idx_string = f'[{obs_to_conditions[observable]}[j]]'
 
             if noise_distribution == 'normal' and scale == 'lin':
-                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string)) # 1:length(dfg[j][:, :time])
             elif noise_distribution == 'normal' and scale == 'log':
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2) + 0.5*((log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2) + 0.5*((log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'normal' and scale == 'log10':
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'lin':
-                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log':
-                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]) + abs(log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]) + abs(log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log10':
-                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(dfg[j][:, :time]))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))               
+                sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(obs_to_conditions[observable]), condition_idx_string))               
 
 
         # priors = []
@@ -1058,7 +1144,8 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    results["parameters"][string(i_start)] = parameter_values\n', 'utf8'))
         generated_code.extend(bytes('    results["species"][string(i_start)] = species_values\n', 'utf8'))
         generated_code.extend(bytes('    results["observables"][string(i_start)] = observable_values\n\n', 'utf8'))
-        generated_code.extend(bytes('end\n\n', 'utf8'))
+        if self.n_starts > 1:
+            generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('results', 'utf8'))
 
@@ -1066,8 +1153,8 @@ class DisFitProblem(object):
         # Updating self and files
         code = generated_code.decode()
         self._julia_code = code        
-        if self._optimized == True:
-            self.optimize()
+        # if self._optimized == True:
+        #     self.optimize()
         if self._files_written == True:
             self.write_jl_file(self._julia_file)
         if self._plotted == True:
@@ -1117,14 +1204,14 @@ class DisFitProblem(object):
                 j = 0
                 for cond, arr in data_1.items():
                     j += 1
-                    for k, params in enumerate(arr):
+                    for k, pars in enumerate(arr):
                         if str_3:
                             str_3 = f', {k+1}'
                         for element in iter(data_1.values()):
                             if len(element) > 1:
                                 str_3 = f', {k+1}'
-                        pars = [par.strip() for par in str(params).rstrip(';').split(';')]
-                        for n, par in enumerate(pars):
+                        p = [par.strip() for par in str(pars).rstrip(';').split(';')]
+                        for n, par in enumerate(p):
                             if par != 'nan':
                                 override_code.extend(bytes(f'    @constraint(m, {var_type}Parameter{n+1}_{obs}[{j}{str_3}] == {par})\n', 'utf8'))
                 override_code.extend(bytes('\n', 'utf8'))
@@ -1164,14 +1251,12 @@ class DisFitProblem(object):
         prior_code.extend(bytes('\n', 'utf8'))
 
         prior_code.extend(bytes(f'    @variable(m, n_occurences[l in 1:{n_par_with_prior}])\n', 'utf8'))
+
         for l, par in enumerate(parameter_df.index):
-            if par in self._global_pars.keys():
+            n_occurences = np.sum(np.sum(parameter_df == par))
+            if n_occurences == 0:
                 prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {self._n_conditions})\n', 'utf8'))
             else:
-                n_occurences = np.sum(np.sum(parameter_df == par))
-                if n_occurences < 1:
-                    raise NotImplementedError('Parameter table contains a parameter that is \
-                        neither global nor specified in the condition table.')
                 prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {n_occurences})\n', 'utf8'))
         prior_code.extend(bytes('\n', 'utf8'))
 

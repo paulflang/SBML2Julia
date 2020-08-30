@@ -23,7 +23,7 @@ def test_petab_suite():
     """Execute all cases from the petab test suite, report performance."""
     n_success = n_skipped = 0
     for case in petabtests.CASES_LIST:
-        if case != '0002':
+        if case != '0012':
             continue
         try:
             execute_case(case)
@@ -78,10 +78,10 @@ def _execute_case(case):
     yaml_file = os.path.join(case_dir, petabtests.problem_yaml_name(case))
 
     # simulate
-    t_ratio = 4
-    if case == '0009' or '0010':
-    	t_ratio = 1000
-    problem = core.DisFitProblem(yaml_file, t_ratio=t_ratio, infer_ic_from_sbml=True)
+    t_steps = 11
+    if case == '0006' or '0009' or '0010':
+    	t_steps = 3001
+    problem = core.DisFitProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
     problem.write_jl_file()
     problem.optimize()
     problem.plot_results('c0')
