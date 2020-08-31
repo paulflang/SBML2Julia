@@ -1,0 +1,10 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate	objectivePriorType	objectivePriorParameters
+a0	lin	0	10	1	1	normal	0; 0.001
+b0	lin	0	10	0	1	normal	0; 0.001
+k1_free	lin	0	10	0.8	1	logNormal	-0.2231435513; 0.001
+k2	lin	0	10	0.6	1	logLaplace	-0.51082562376; 0.001
+noise_A1	lin	0	10	0.05	1		
+noise_A2	lin	0	10	0.1	1	laplace	0.1; 0.001
+noise_B	lin	0	10	0.1	0		
+offset_B	lin	0	10	0.5	1		
+scaling_B	lin	0	10	2	1		

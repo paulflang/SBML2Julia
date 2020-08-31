@@ -1,0 +1,45 @@
+observableId	simulationConditionId	preequilibrationConditionId	time	measurement
+obs_a	c0		0	1.074734907
+obs_a	c0		1	0.567938244
+obs_a	c0		2	0.448573654
+obs_a	c0		3	0.396007288
+obs_a	c0		4	0.425480923
+obs_a	c0		5	0.49102923
+obs_a	c0		6	0.495810606
+obs_a	c0		7	0.332564396
+obs_a	c0		8	0.390461256
+obs_a	c0		9	0.444278956
+obs_a	c0		10	0.415673098
+obs_b	c0		0	0.583496632
+obs_b	c0		1	1.390603572
+obs_b	c0		2	1.555398934
+obs_b	c0		3	1.614422218
+obs_b	c0		4	1.477810029
+obs_b	c0		5	1.821656613
+obs_b	c0		6	1.688962619
+obs_b	c0		7	1.660519981
+obs_b	c0		8	1.733377709
+obs_b	c0		9	1.785987312
+obs_b	c0		10	1.739984163
+obs_a	c1	p1	0	0.935627681
+obs_a	c1	p1	1	0.510625141
+obs_a	c1	p1	2	0.579914088
+obs_a	c1	p1	3	0.421512296
+obs_a	c1	p1	4	0.539281894
+obs_a	c1	p1	5	0.44743502
+obs_a	c1	p1	6	0.473909923
+obs_a	c1	p1	7	0.417930995
+obs_a	c1	p1	8	0.479591984
+obs_a	c1	p1	9	0.425251465
+obs_a	c1	p1	10	0.350906435
+obs_b	c1	p1	0	0.798858807
+obs_b	c1	p1	1	1.547773453
+obs_b	c1	p1	2	1.415761584
+obs_b	c1	p1	3	1.352898792
+obs_b	c1	p1	4	1.545469912
+obs_b	c1	p1	5	1.803629838
+obs_b	c1	p1	6	1.541006137
+obs_b	c1	p1	7	1.613673297
+obs_b	c1	p1	8	1.743535542
+obs_b	c1	p1	9	1.534078666
+obs_b	c1	p1	10	1.673746944

@@ -1,0 +1,3 @@
+observableId	observableFormula	noiseFormula
+obs_a	A	noise_A1 + noise_A2 * obs_a
+obs_b	offset_B + scaling_B * B	noise_B

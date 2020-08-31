@@ -783,11 +783,12 @@ class DisFitProblem(object):
         generated_code.extend(bytes('results["observables"] = Dict()\n\n', 'utf8'))
 
         generated_code.extend(bytes(f'j_to_cond_par = {self._j_to_parameters[0]}\n', 'utf8'))
+        
+        preequ_bool = [False if isinstance(item, str) else True for item in self._j_to_parameters[1]]
+        cond_without_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if not b]
+        cond_with_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if b]
+        preequ = [item for item, b in zip(self._j_to_parameters[1], preequ_bool) if b]
         if any(isinstance(item, int) for item in self._j_to_parameters[1]):
-            preequ_bool = [False if isinstance(item, str) else True for item in self._j_to_parameters[1]]
-            cond_without_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if not b]
-            cond_with_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if b]
-            preequ = [item for item, b in zip(self._j_to_parameters[1], preequ_bool) if b]
             generated_code.extend(bytes(f'cond_without_preequ = {cond_without_preequ}\n', 'utf8'))
             generated_code.extend(bytes(f'cond_with_preequ = {cond_with_preequ}\n', 'utf8'))
             generated_code.extend(bytes(f'preequ = {preequ}\n\n', 'utf8'))
@@ -1029,7 +1030,7 @@ class DisFitProblem(object):
         nlp = ''
         if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
             or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
-            prior_code = self._write_prior_code()
+            prior_code = self._write_prior_code(cond_without_preequ)
             generated_code.extend(bytes(prior_code, 'utf8'))
             nlp = '+ nlp'
 
@@ -1220,7 +1221,7 @@ class DisFitProblem(object):
         return (override_code.decode(), set_of_params)
 
 
-    def _write_prior_code(self):
+    def _write_prior_code(self, cond_without_preequ):
 
         prior_code = bytearray('', 'utf8')
         idx_with_prior_1 = list(~self.petab_problem.parameter_df['objectivePriorType'].isna())
@@ -1252,25 +1253,18 @@ class DisFitProblem(object):
 
         prior_code.extend(bytes(f'    @variable(m, n_occurences[l in 1:{n_par_with_prior}])\n', 'utf8'))
 
+        
+
         for l, par in enumerate(parameter_df.index):
-            n_occurences = np.sum(np.sum(parameter_df == par))
+            n_occurences = np.sum(np.sum(self.petab_problem.condition_df.iloc[cond_without_preequ, :] == par, axis=1) > 0)
+            n_occurences_in_preequ = np.sum(np.sum(self.petab_problem.condition_df.iloc[cond_without_preequ, :] == par))
+            if n_occurences_in_preequ != 0:
+                warnings.warn(f'PEtab specifies objectivePriors for the preequilibration parameter {par}, but parameter priors will not be added to the objective function for preequilibration conditions.')
             if n_occurences == 0:
-                prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {self._n_conditions})\n', 'utf8'))
+                prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {len(cond_without_preequ)})\n', 'utf8'))
             else:
                 prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {n_occurences})\n', 'utf8'))
         prior_code.extend(bytes('\n', 'utf8'))
-
-        if 'laplace' in list(parameter_df['objectivePriorType']):
-            prior_code.extend(bytes(f'    @variable(m, delta_par[l in 1:{n_par_with_prior}])\n', 'utf8'))
-            prior_code.extend(bytes(f'    @constraint(m, [l in 1:{n_par_with_prior}], delta_par[l] >= par_est[l] - prior_mean[l])\n', 'utf8'))
-            prior_code.extend(bytes(f'    @constraint(m, [l in 1:{n_par_with_prior}], delta_par[l] >= prior_mean[l] - par_est[l])\n', 'utf8'))
-            prior_code.extend(bytes('\n', 'utf8'))
-
-        if 'logLaplace' in list(parameter_df['objectivePriorType']):
-            prior_code.extend(bytes(f'    @variable(m, delta_log_par[l in 1:{n_par_with_prior}])\n', 'utf8'))
-            prior_code.extend(bytes(f'    @NLconstraint(m, [l in 1:{n_par_with_prior}], delta_log_par[l] >= log(par_est[l]) - prior_mean[l])\n', 'utf8'))
-            prior_code.extend(bytes(f'    @NLconstraint(m, [l in 1:{n_par_with_prior}], delta_log_par[l] >= prior_mean[l] - log(par_est[l]))\n', 'utf8'))
-            prior_code.extend(bytes('\n', 'utf8'))
 
         prior_types = {'normal': [], 'laplace': [], 'logNormal': [], 'logLaplace': []}
         for l, prior_type in enumerate(parameter_df['objectivePriorType']):
@@ -1290,10 +1284,23 @@ class DisFitProblem(object):
             else:
                 raise NotImplementedError('Only `objectivePriorType`s `normal`, `laplace`, `logNormal` and `logLaplace` are implemented.')
 
-        
         for k, v in prior_types.items():
             if v:
                 prior_code.extend(bytes(f'    {k}_priors = {v}\n', 'utf8'))
+        if 'laplace' in list(parameter_df['objectivePriorType']):
+            prior_code.extend(bytes(f'    @variable(m, delta_par[l in {prior_types["laplace"]}])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @constraint(m, [l in {prior_types["laplace"]}], delta_par[l] >= par_est[l] - prior_mean[l])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @constraint(m, [l in {prior_types["laplace"]}], delta_par[l] >= prior_mean[l] - par_est[l])\n', 'utf8'))
+            prior_code.extend(bytes('\n', 'utf8'))
+
+        if 'logLaplace' in list(parameter_df['objectivePriorType']):
+            prior_code.extend(bytes(f'    @variable(m, delta_log_par[l in {prior_types["logLaplace"]}])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @NLconstraint(m, [l in {prior_types["logLaplace"]}], delta_log_par[l] >= log(par_est[l]) - prior_mean[l])\n', 'utf8'))
+            prior_code.extend(bytes(f'    @NLconstraint(m, [l in {prior_types["logLaplace"]}], delta_log_par[l] >= prior_mean[l] - log(par_est[l]))\n', 'utf8'))
+            prior_code.extend(bytes('\n', 'utf8'))
+
+        for k, v in prior_types.items():
+            if v:
                 prior_code.extend(bytes(f'    @variable(m, nlp_{k})\n', 'utf8'))
                 if k == 'normal':
                     prior_code.extend(bytes(f'    @NLconstraint(m, nlp_{k} == sum(n_occurences[l] * ( 0.5 * log(2*pi*prior_std[l]^2) + 0.5*((par_est[l]-prior_mean[l])/prior_std[l])^2 ) for l in {k}_priors))\n', 'utf8'))

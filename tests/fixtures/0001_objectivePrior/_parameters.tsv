@@ -1,0 +1,9 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
+a0	lin	0	10	1	1
+b0	lin	0	10	0	1
+k1_c0	lin	0	10	0.8	1
+k2	lin	0	10	0.6	1
+offset_obs_b	lin	0	10	0.1	1
+scaling_obs_b	lin	0	10	1	1
+offset_noise	lin	0	10	0.1	0
+scaling_noise	lin	0	10	0.1	0
