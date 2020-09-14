@@ -234,7 +234,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             print(df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
             print(np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object]))\
                 & df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
-            
+
             return (np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object]))\
                 & df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
 
@@ -429,11 +429,11 @@ from pandas.testing import assert_frame_equal
 
 #Todo: write resimulations test
 
-FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
-PETAB_YAML = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
+# FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
+# PETAB_YAML = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
 # FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
 #     'petab_test_suite', 'cases')
-# PETAB_YAML = os.path.join(FIXTURES, '0009', '_0009.yaml')
+# PETAB_YAML = os.path.join(FIXTURES, '0002', '_0002.yaml')
 FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software', 'DisFit', 'tests', 'fixtures',
     '0015_objectivePrior')
 PETAB_YAML = os.path.join(FIXTURES, '_0015_objectivePrior.yaml')
@@ -446,6 +446,9 @@ PETAB_YAML = os.path.join(FIXTURES, '_0015_objectivePrior.yaml')
 #     JL_CODE_GOLD = f.read()
 # JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
 #     FIXTURES, JL_CODE_GOLD)
+# FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
+#     'DisFit', 'examples')
+# PETAB_YAML = os.path.join(FIXTURES, 'Shin_PLOS2019', 'Shin_PLOS2019.yaml')
 
 problem = core.DisFitProblem(PETAB_YAML)
 problem.write_jl_file()
