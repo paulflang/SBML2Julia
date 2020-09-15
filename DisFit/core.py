@@ -1356,17 +1356,17 @@ class DisFitProblem(object):
                 for element in data_1.values():
                     if len(set(element)) > 1:
                         str_3 = True
-            if str_3:
-                str_1 = ', k in 1:length(t_exp)'
-                str_2 = ', k'
             for obs, obs_in_condition in obs_to_conditions.items():
                 if not obs_to_conditions[obs]:
                     continue
                 data_1 = params[obs]
                 n_par = len(str(next(iter(data_1.values()))[0]).rstrip(';').split(';'))
 
+                if str_3:
+                    str_1 = f', k in 1:length(t_exp["{obs}"][j])'
+                    str_2 = ', k'
                 for i in range(n_par):
-                    override_code.extend(bytes('    @variable(m, {}Parameter{}_{}[j in 1:{}{}], start=1.)\n'.format(var_type, i+1, obs, len(obs_in_condition), str_1), 'utf8'))
+                    override_code.extend(bytes(f'    @variable(m, {var_type}Parameter{i+1}_{obs}[j in obs2conds["{obs}"]{str_1}], start=1.)\n', 'utf8'))
                     set_of_params.add((f'{var_type}Parameter{i+1}_{obs}', str_2))
 
                 j = 0
