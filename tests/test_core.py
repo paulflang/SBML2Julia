@@ -33,6 +33,8 @@ with open(JL_FILE_GOLD, 'r') as f:
     JL_CODE_GOLD = f.read()
 JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
     FIXTURES, JL_CODE_GOLD)
+with open(os.path.join('.', 'substituted_code.jl'), 'w') as f:
+    f.write(JL_CODE_GOLD)
 with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
     RESULTS_GOLD = pickle.load(f)
 
@@ -103,7 +105,8 @@ class DisFitProblemTestCase(unittest.TestCase):
         
         # Test resetting
         problem = core.DisFitProblem(PETAB_YAML)
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        problem.write_jl_file(path=os.path.join('.', 'test_infer_ic_from_sbml_setter.jl'))
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         # problem.infer_ic_from_sbml = True # Todo: add species to SBML for this test case
         # self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -117,7 +120,8 @@ class DisFitProblemTestCase(unittest.TestCase):
         
         # Test resetting
         problem = core.DisFitProblem(PETAB_YAML)
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        problem.write_jl_file(path=os.path.join('.', 'test_optimizer_options_setter.jl'))
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         problem.optimizer_options = {'linear_solver': 'MA27'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -137,6 +141,7 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_import_julia_code(self):
         problem = Mock()
         problem.import_julia_code(JL_FILE_GOLD)
+        problem.write_jl_file(path=os.path.join('.', 'test_import_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
 
@@ -166,11 +171,11 @@ class DisFitProblemTestCase(unittest.TestCase):
         print(c.exception)
         self.assertTrue('steady state' in str(c.exception))
 
-        petab_problem_wrong = copy.deepcopy(petab_problem)
-        petab_problem_wrong.measurement_df.loc[0, 'time'] = 1
-        with self.assertRaises(NotImplementedError) as c:
-            problem._check_for_not_implemented_features(petab_problem_wrong)
-        self.assertTrue('Measurement time points' in str(c.exception))
+        # petab_problem_wrong = copy.deepcopy(petab_problem)
+        # petab_problem_wrong.measurement_df.loc[0, 'time'] = 1
+        # with self.assertRaises(NotImplementedError) as c:
+        #     problem._check_for_not_implemented_features(petab_problem_wrong)
+        # self.assertTrue('Measurement time points' in str(c.exception))
 
         petab_problem_wrong = copy.deepcopy(petab_problem)
         petab_problem_wrong.measurement_df['preequilibrationConditionId'] = 1*['p1']+43*['p2']
@@ -238,12 +243,12 @@ class DisFitProblemTestCase(unittest.TestCase):
             return (np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object]))\
                 & df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.DisFitProblem(PETAB_YAML, n_starts=3)
         results = problem.optimize()
         print('results')
         print(results)
 
-        self.assertEqual(problem._best_iter, '1')
+        self.assertTrue(problem._best_iter in ['1', '2', '3'])
 
         self.assertEqual(set(results.keys()), set(['par_best', 'species', 'observables', 'fval', 'chi2']))
         
@@ -259,10 +264,41 @@ class DisFitProblemTestCase(unittest.TestCase):
         _assert_frame_almost_equal(results['par_best'], RESULTS_GOLD['par_best'])
         _assert_frame_almost_equal(results['species'], RESULTS_GOLD['species'])
         _assert_frame_almost_equal(results['observables'], RESULTS_GOLD['observables'])
-        self.assertAlmostEqual(results['fval'], RESULTS_GOLD['fval'])
-        self.assertAlmostEqual(results['chi2'], RESULTS_GOLD['chi2'])
+        self.assertAlmostEqual(results['fval'], RESULTS_GOLD['fval'], delta=1.)
+        self.assertAlmostEqual(results['chi2'], RESULTS_GOLD['chi2'], delta=1.)
 
         self.assertTrue(isinstance(problem.petab_problem.simulation_df, pd.DataFrame))
+
+        
+    def test_prior_code(self):
+
+        problem = core.DisFitProblem(PETAB_YAML)
+        problem._global_pars = {k: (0 if k != 'a0' else 1) for k in problem._global_pars.keys()}
+        problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1' # , '0.1; 1', '-1.1; 1', '-0.4; 2'
+        problem._set_julia_code()
+        results_shifted = problem.optimize()
+        self.assertTrue(results_shifted['par_best'].loc[0, 'par_best'] > RESULTS_GOLD['par_best'].loc[0, 'par_best'])
+
+        problem = core.DisFitProblem(PETAB_YAML)
+        problem._global_pars = {k: (0 if k != 'b0' else 1) for k in problem._global_pars.keys()}
+        problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[1] = '0.05; 1'
+        problem._set_julia_code()
+        results_shifted = problem.optimize()
+        self.assertTrue(results_shifted['par_best'].loc[1, 'par_best'] > RESULTS_GOLD['par_best'].loc[1, 'par_best'])
+
+        problem = core.DisFitProblem(PETAB_YAML)
+        problem._global_pars = {k: (0 if k != 'k1_free' else 1) for k in problem._global_pars.keys()}
+        problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[2] = '1; 0.1'
+        problem._set_julia_code()
+        results_shifted = problem.optimize()
+        self.assertTrue(results_shifted['par_best'].loc[2, 'par_best'] > RESULTS_GOLD['par_best'].loc[2, 'par_best'])
+
+        problem = core.DisFitProblem(PETAB_YAML)
+        problem._global_pars = {k: (0 if k != 'k2' else 1) for k in problem._global_pars.keys()}
+        problem._petab_problem.parameter_df['objectivePriorParameters'].iloc[3] = '-0.4; 0.01'
+        problem._set_julia_code()
+        results_shifted = problem.optimize()
+        self.assertTrue(results_shifted['par_best'].loc[3, 'par_best'] > RESULTS_GOLD['par_best'].loc[3, 'par_best'])
 
 
     def test_get_param_ratios(self):
@@ -292,8 +328,12 @@ class DisFitProblemTestCase(unittest.TestCase):
         res_dict_gold = {'speciesId': 11*['A']+11*['B']+11*['A']+11*['B'],
             'simulationConditionId': 22*['c0'] + 22*['c1'],
             'time': 4*[float(i) for i in range(0, 11)], 'simulation': list(range(1, 45))}
-        simulation_dict = {'1': {'A': [list(range(1, 13)), list(range(23, 35))],
-            'B': [list(range(12,24)), list(range(34, 46))]}}
+        # simulation_dict = {1: {'A': [list(range(1, 13)), list(range(23, 35))],
+        #     'B': [list(range(12,24)), list(range(34, 46))]}}
+
+        simulation_dict = {'A': {1: list(range(1, 12)), 2: list(range(23, 34))},
+            'B': {1: list(range(12,23)), 2: list(range(34, 45))}}
+
         problem._condition2index = {'c0': 0, 'c1': 1}
         problem._petab_problem.measurement_df = pd.DataFrame(res_dict_gold).sort_values(['simulationConditionId', 'speciesId', 'time'])
         df = problem._results_to_frame(simulation_dict, variable_type='speciesId')
@@ -340,7 +380,7 @@ class DisFitProblemTestCase(unittest.TestCase):
         # problem._condition2index = {'c0': 1, 'c1': 2, 'c2': 2, 'p1': 3}
 
         problem.write_optimized_parameter_table()
-        out_path = os.path.join(FIXTURES, 'post_fit_parameters.tsv')
+        out_path = os.path.join(FIXTURES, '0015_objectivePrior', 'post_fit_parameters.tsv')
         self.assertTrue(os.path.isfile(out_path))
         os.remove(out_path)
 
@@ -360,7 +400,8 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
     def test_set_julia_code(self):
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.DisFitProblem(PETAB_YAML) #failed
+        problem.write_jl_file(path=os.path.join('.', 'test_set_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
 
@@ -393,11 +434,13 @@ class DisFitProblemTestCase(unittest.TestCase):
     #     print(code)
     #     self.assertTrue(code in JL_CODE_GOLD)
     #     self.assertEqual(set_of_params, set())
+    # change mu in every condition
 
 
     def test_resetting(self):
         problem = core.DisFitProblem(PETAB_YAML)
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
+        problem.write_jl_file(path=os.path.join('.', 'test_resetting.jl'))
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         problem.t_steps = 3
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -414,18 +457,19 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
 
-import os
-import pandas as pd
-import pickle
-import pkg_resources
-import re
-import shutil
-import tempfile
-import unittest
-from DisFit import core
-importlib.reload(core)
-from numpy.testing import assert_allclose
-from pandas.testing import assert_frame_equal
+# import os
+# import pandas as pd
+# import pickle
+# import pkg_resources
+# import re
+# import shutil
+# import tempfile
+# import unittest
+# from DisFit import core
+# importlib.reload(core)
+# from numpy.testing import assert_allclose
+
+# from pandas.testing import assert_frame_equal
 
 #Todo: write resimulations test
 
@@ -434,30 +478,81 @@ from pandas.testing import assert_frame_equal
 # FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
 #     'petab_test_suite', 'cases')
 # PETAB_YAML = os.path.join(FIXTURES, '0002', '_0002.yaml')
-FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software', 'DisFit', 'tests', 'fixtures',
-    '0015_objectivePrior')
-PETAB_YAML = os.path.join(FIXTURES, '_0015_objectivePrior.yaml')
+# FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software', 'DisFit', 'tests', 'fixtures',
+#     '0015_objectivePrior')
+# PETAB_YAML = os.path.join(FIXTURES, '_0015_objectivePrior.yaml')
 # FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
 #     'Benchmark-Models-PEtab', 'Benchmark-Models')
 # PETAB_YAML = os.path.join(FIXTURES, 'Borghans_BiophysChem1997', 'Borghans_BiophysChem1997.yaml')
 
-# jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
+# jl_file_gold = os.path.join(FIXTURES, '..', 'jl_file_gold.jl')
 # with open(jl_file_gold, 'r') as f:
 #     JL_CODE_GOLD = f.read()
 # JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
 #     FIXTURES, JL_CODE_GOLD)
+# with open(os.path.join(FIXTURES, '..', 'results_gold.pickle'), 'rb') as f:
+#     RESULTS_GOLD = pickle.load(f)
 # FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
 #     'DisFit', 'examples')
 # PETAB_YAML = os.path.join(FIXTURES, 'Shin_PLOS2019', 'Shin_PLOS2019.yaml')
 
-problem = core.DisFitProblem(PETAB_YAML)
-problem.write_jl_file()
-problem.optimize()
-problem.plot_results('c0', path='plot.pdf')
-problem.write_results()
-# problem.results['par_best']
 
 
-import pickle
-with open('results_gold.pickle', 'wb') as f:
-    pickle.dump(problem.results, f)
+# problem = core.DisFitProblem(PETAB_YAML)
+# problem.write_jl_file()
+# problem.optimize()
+# problem.plot_results('c0', path='plot.pdf')
+# problem.write_results()
+# # problem.results['par_best']
+
+
+# import pickle
+# with open('results_gold.pickle', 'wb') as f:
+#     pickle.dump(problem.results, f)
+
+
+
+# from DisFit import core
+# importlib.reload(core)
+# problem = core.DisFitProblem(PETAB_YAML)
+# problem._global_pars = {k: (0 if k != 'a0' else 1) for k in problem._global_pars.keys()}
+# problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1' # , '0.1; 1', '-1.1; 1', '-0.4; 2'
+# problem._set_julia_code()
+# problem.write_jl_file()
+# results_shifted = problem.optimize()
+# print(results_shifted['par_best'].loc[0, 'par_best'])
+# print('ASSERTING:--------------------------------')
+# print(results_shifted['par_best'].loc[0, 'par_best'] > RESULTS_GOLD['par_best'].loc[0, 'par_best'])
+
+# problem = core.DisFitProblem(PETAB_YAML)
+# problem._global_pars = {k: (0 if k != 'b0' else 1) for k in problem._global_pars.keys()}
+# problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[1] = '0.05; 1'
+# problem._set_julia_code()
+# problem.write_jl_file()
+# results_shifted = problem.optimize()
+# print(results_shifted['par_best'].loc[0, 'par_best'])
+# print('ASSERTING:--------------------------------')
+# print(results_shifted['par_best'].loc[1, 'par_best'] > RESULTS_GOLD['par_best'].loc[1, 'par_best'])
+
+# problem = core.DisFitProblem(PETAB_YAML)
+# problem._global_pars = {k: (0 if k != 'k1_free' else 1) for k in problem._global_pars.keys()}
+# problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[2] = '1; 0.1'
+# problem._set_julia_code()
+# problem.write_jl_file()
+# results_shifted = problem.optimize()
+# print(results_shifted['par_best'].loc[0, 'par_best'])
+# print('ASSERTING:--------------------------------')
+# print(results_shifted['par_best'].loc[2, 'par_best'] > RESULTS_GOLD['par_best'].loc[2, 'par_best'])
+
+# problem = core.DisFitProblem(PETAB_YAML, n_starts=1)
+# problem._global_pars = {k: (0 if k != 'k2' else 1) for k in problem._global_pars.keys()}
+# problem._petab_problem.parameter_df['objectivePriorParameters'].iloc[3] = '-0.4; 0.1'
+# problem._set_julia_code()
+# problem.write_jl_file()
+# results_shifted = problem.optimize()
+# problem.plot_results('c0', path='plot.pdf')
+# print(results_shifted['par_best'].loc[0, 'par_best'])
+# print('ASSERTING:--------------------------------')
+# print(results_shifted['par_best'].loc[3, 'par_best'])
+# print(RESULTS_GOLD['par_best'].loc[3, 'par_best'])
+# print(results_shifted['par_best'].loc[3, 'par_best'] > RESULTS_GOLD['par_best'].loc[3, 'par_best'])

@@ -3,39 +3,72 @@ using DataFrames
 using Ipopt
 using JuMP
 
-t_steps = 101 # Setting number of ODE discretisation steps
+n_steps = 101 # Setting number of ODE discretisation steps
 
 # Data
 println("Reading measurement data...")
 data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures/0015_objectivePrior/_measurements.tsv"
 df = CSV.read(data_path; use_mmap=false)
 insert!(df, 1, (1:length(df[:,1])), :id)
-dfg = groupby(df, :simulationConditionId)
-data = []
-for condition in keys(dfg)
-    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))
+
+df_by_o = groupby(df, :observableId)
+df_by_c = groupby(df, :simulationConditionId)
+
+# Setting variables
+t_sim = range(0, stop=maximum(df[!, :time]), length=n_steps)
+t_exp = Dict()
+m_exp = Dict()
+t_sim_to_exp = Dict()
+deduplicated_time_idx = Dict()
+
+cond2idx = Dict()
+for i_cond in 1:length(keys(df_by_c))
+    cond_name = values(keys(df_by_c)[i_cond])[1]
+    cond2idx[cond_name] = i_cond
 end
 
-k_to_time_idx = []
-for c in 1:length(keys(dfg))
-    push!(k_to_time_idx, [])
-    j = 0
-    prev = "a"
-    for t in dfg[c][:, :time]
-        if t != prev
-            j = j+1
+for i_obs in 1:length(keys(df_by_o))
+    obs_name = values(keys(df_by_o)[i_obs])[1]
+    t_exp[obs_name] = Dict()
+    m_exp[obs_name] = Dict()
+    t_sim_to_exp[obs_name] = Dict()
+    deduplicated_time_idx[obs_name] = Dict()
+    df_by_o_c = groupby(DataFrame(df_by_o[i_obs]), :simulationConditionId)
+    for i_cond in 1:length(keys(df_by_o_c))
+        cond_name = values(keys(df_by_o_c)[i_cond])[1]
+        cond_idx = cond2idx[cond_name]
+        t_exp[obs_name][cond_idx] = df_by_o_c[i_cond][!, :time]
+        m_exp[obs_name][cond_idx] = df_by_o_c[i_cond][!, :measurement]
+
+        t = df_by_o_c[i_cond][!, :time]
+        tmp = []
+        for i in 1:length(t)
+            idx = argmin(abs.(t[i] .- t_sim))
+            append!(tmp, idx)
         end
-        push!(k_to_time_idx[c], j)
-        prev = t
+        t_sim_to_exp[obs_name][cond_idx] = tmp
+
+        deduplicated_time_idx[obs_name][cond_idx] = []
+        idx = 0
+        prev = "a"
+        for t in df_by_o_c[i_cond][!, :time]
+            if t != prev
+                idx = idx + 1
+            end
+            push!(deduplicated_time_idx[obs_name][cond_idx], idx)
+            prev = t
+        end
     end
 end
 
-t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])
-t_sim = range(0, stop=t_exp[end], length=t_steps)
-t_sim_to_exp = []
-for i in 1:length(t_exp)
-    idx = argmin(abs.(t_exp[i] .- t_sim))
-    append!(t_sim_to_exp, idx)
+obs2conds = Dict()
+for obs_dict in t_exp
+    obs_name = obs_dict[1]
+    obs2conds[obs_name] = []
+    for cond_dict in obs_dict[2]
+        cond_idx = cond_dict[1]
+        push!(obs2conds[obs_name], cond_idx)
+    end
 end
 
 results = Dict()
@@ -55,15 +88,15 @@ i_start = 1
 
     # Define global parameters
     println("Defining global parameters...")
-    @variable(m, 0 <= a0 <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, 0 <= b0 <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, 0 <= k1_free <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, 0 <= k2 <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, 0 <= noise_A1 <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, 0 <= noise_A2 <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, noise_B == 0.1, start=0.1)
-    @variable(m, 0 <= offset_B <= 10, start=0+(10-0)*rand(Float64))
-    @variable(m, 0 <= scaling_B <= 10, start=0+(10-0)*rand(Float64))
+    @variable(m, 0.0 <= a0 <= 10.0, start=0.0+(10.0-(0.0))*rand(Float64))
+    @variable(m, 0.0 <= b0 <= 10.0, start=0.0+(10.0-(0.0))*rand(Float64))
+    @variable(m, 0.0 <= k1_free <= 10.0, start=0.0+(10.0-(0.0))*rand(Float64))
+    @variable(m, 0.0 <= k2 <= 10.0, start=0.0+(10.0-(0.0))*rand(Float64))
+    @variable(m, 0.005 <= noise_A1 <= 0.1, start=0.005+(0.1-(0.005))*rand(Float64))
+    @variable(m, 0.01 <= noise_A2 <= 0.2, start=0.01+(0.2-(0.01))*rand(Float64))
+    @variable(m, 0.01 <= noise_B <= 0.2, start=0.01+(0.2-(0.01))*rand(Float64))
+    @variable(m, 0.0 <= offset_B <= 5.0, start=0.0+(5.0-(0.0))*rand(Float64))
+    @variable(m, 0.0 <= scaling_B <= 10.0, start=0.0+(10.0-(0.0))*rand(Float64))
 
     # Define condition-specific parameters
     println("Defining condition-specific parameters...")
@@ -86,8 +119,8 @@ i_start = 1
 
     # Model species
     println("Defining species...")
-    @variable(m, 0.0 <= A[j in 1:2, k in 1:(length(t_sim)+1)] <= 11.0)
-    @variable(m, 0.0 <= B[j in 1:2, k in 1:(length(t_sim)+1)] <= 11.0)
+    @variable(m, 0.0 <= A[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
+    @variable(m, 0.0 <= B[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
 
     # Model initial assignments
     println("Defining initial assignments...")
@@ -105,12 +138,12 @@ i_start = 1
 
     # Pre-equilibration constraints
     println("Defining pre-equilibration constraints...")
-    @constraint(m, [j in 1:1], A[cond_without_preequ[j], length(t_sim)+1] == 0)
+    @constraint(m, [j in 1:1], A[cond_without_preequ[j], length(t_sim)+1] == 0) # Dummy preequilibration for these conditions
     println("A")
     @NLconstraint(m, [j in 1:1],
         -1.0*( compartment * k1[preequ[j]] * A[cond_with_preequ[j], length(t_sim)+1] ) +1.0*( compartment * k2 * B[cond_with_preequ[j], length(t_sim)+1] )  == 0 )
     @constraint(m, [j in 1:1], A[cond_with_preequ[j], length(t_sim)+1] == A[cond_with_preequ[j], 1])
-    @constraint(m, [j in 1:1], B[cond_without_preequ[j], length(t_sim)+1] == 0)
+    @constraint(m, [j in 1:1], B[cond_without_preequ[j], length(t_sim)+1] == 0) # Dummy preequilibration for these conditions
     println("B")
     @NLconstraint(m, [j in 1:1],
         +1.0*( compartment * k1[preequ[j]] * A[cond_with_preequ[j], length(t_sim)+1] ) -1.0*( compartment * k2 * B[cond_with_preequ[j], length(t_sim)+1] )  == 0 )
@@ -118,16 +151,60 @@ i_start = 1
 
     # Define observables
     println("Defining observables...")
-    @variable(m, -0.19999999999999996 <= obs_a[j in 1:2, k in 1:length(t_exp)] <= 1.6, start=1.)
-    @NLconstraint(m, [j in 1:2, k in 1:length(t_exp)], obs_a[j, k] == A[j, t_sim_to_exp[k]])
-    @variable(m, -0.4 <= obs_b[j in 1:2, k in 1:length(t_exp)] <= 0.8, start=1.)
-    @NLconstraint(m, [j in 1:2, k in 1:length(t_exp)], obs_b[j, k] == offset_B+scaling_B*B[j, t_sim_to_exp[k]])
+    @variable(m, -0.4096061150000001 <= obs_a[j in obs2conds["obs_a"], k in 1:length(t_exp["obs_a"][j])] <= 1.8169054180000002, start=1.)
+    @NLconstraint(m, [j in obs2conds["obs_a"], k in 1:length(t_exp["obs_a"][j])], obs_a[j, k] == A[j, t_sim_to_exp["obs_a"][j][k]])
+    @variable(m, -0.6546633489999999 <= obs_b[j in obs2conds["obs_b"], k in 1:length(t_exp["obs_b"][j])] <= 3.059816594, start=1.)
+    @NLconstraint(m, [j in obs2conds["obs_b"], k in 1:length(t_exp["obs_b"][j])], obs_b[j, k] == offset_B+scaling_B*B[j, t_sim_to_exp["obs_b"][j][k]])
+
+    # Defining objectivePriors
+    println("Defining objectivePriors")
+    @variable(m, prior_mean[l in 1:4], start=1.)
+    @constraint(m, prior_mean[1] == 1)
+    @constraint(m, prior_mean[2] == 0)
+    @constraint(m, prior_mean[3] == -1.22314355131)
+    @constraint(m, prior_mean[4] == -0.51082562376)
+
+    @variable(m, 0 <= prior_std[l in 1:4], start=1.)
+    @constraint(m, prior_std[1] == 1)
+    @constraint(m, prior_std[2] == 1)
+    @constraint(m, prior_std[3] == 1)
+    @constraint(m, prior_std[4] == 2)
+
+    @variable(m, par_est[l in 1:4], start=1.)
+    @constraint(m, par_est[1] == a0)
+    @constraint(m, par_est[2] == b0)
+    @constraint(m, par_est[3] == k1_free)
+    @constraint(m, par_est[4] == k2)
+
+    normal_priors = [1]
+    laplace_priors = [2]
+    logNormal_priors = [3]
+    logLaplace_priors = [4]
+    @variable(m, delta_par[l in [2]])
+    @constraint(m, [l in [2]], delta_par[l] >= par_est[l] - prior_mean[l])
+    @constraint(m, [l in [2]], delta_par[l] >= prior_mean[l] - par_est[l])
+
+    @variable(m, delta_log_par[l in [4]])
+    @NLconstraint(m, [l in [4]], delta_log_par[l] >= log(par_est[l]) - prior_mean[l])
+    @NLconstraint(m, [l in [4]], delta_log_par[l] >= prior_mean[l] - log(par_est[l]))
+
+    @variable(m, nlp_normal)
+    @NLconstraint(m, nlp_normal == sum( 0.5 * log(2*pi*prior_std[l]^2) + 0.5*((par_est[l]-prior_mean[l])/prior_std[l])^2 for l in normal_priors))
+    @variable(m, nlp_laplace)
+    @NLconstraint(m, nlp_laplace == sum( log(2*prior_std[l]) + delta_par[l]/prior_std[l] for l in laplace_priors))
+    @variable(m, nlp_logNormal)
+    @NLconstraint(m, nlp_logNormal == sum( log(par_est[l]*prior_std[l]*sqrt(2*pi)) + 0.5*((log(par_est[l])-prior_mean[l])/prior_std[l])^2 for l in logNormal_priors))
+    @variable(m, nlp_logLaplace)
+    @NLconstraint(m, nlp_logLaplace == sum( log(2*prior_std[l]*par_est[l]) + delta_log_par[l]/prior_std[l] for l in logLaplace_priors))
+
+    @variable(m, nlp)
+    @constraint(m, nlp == nlp_laplace + nlp_logLaplace + nlp_logNormal + nlp_normal)
 
     # Define objective
     println("Defining objective...")
-    @NLobjective(m, Min, sum(0.5 * log(2*pi*(( noise_A1 + noise_A2 * obs_a[j, k] ))^2) + 0.5*((obs_a[j, k_to_time_idx[j][k]]-data[j][k, :obs_a])/(( noise_A1 + noise_A2 * obs_a[j, k] )))^2 for j in 1:2 for k in 1:length(t_exp))
-        + sum(0.5 * log(2*pi*(( noise_B ))^2) + 0.5*((obs_b[j, k_to_time_idx[j][k]]-data[j][k, :obs_b])/(( noise_B )))^2 for j in 1:2 for k in 1:length(t_exp))
-        )
+    @NLobjective(m, Min, sum(0.5 * log(2*pi*(( noise_A1 + noise_A2 * obs_a[j, k] ))^2) + 0.5*((obs_a[j, deduplicated_time_idx["obs_a"][j][k]]-m_exp["obs_a"][j][k])/(( noise_A1 + noise_A2 * obs_a[j, k] )))^2 for j in obs2conds["obs_a"] for k in 1:length(t_exp["obs_a"][j]))
+        + sum(0.5 * log(2*pi*(( noise_B ))^2) + 0.5*((obs_b[j, deduplicated_time_idx["obs_b"][j][k]]-m_exp["obs_b"][j][k])/(( noise_B )))^2 for j in obs2conds["obs_b"] for k in 1:length(t_exp["obs_b"][j]))
+        + nlp)
 
     println("Optimizing:")
     optimize!(m)
@@ -143,17 +220,12 @@ i_start = 1
         end
     end
 
-    species_names = [A, B, ]
-    species_values = Dict()
-    for s in species_names
-        species_values[split(string(s[1]), "[")[1]] = JuMP.value.(s)
-    end
+    species_names = ["A", "B", ]
+    species_values = Dict(string(spec)=>Dict(cond_idx=>[value(eval(Symbol(spec))[cond_idx, val_idx]) for val_idx=1:length(t_sim)]
+        for cond_idx in 1:length(keys(df_by_c))) for spec in species_names)
 
-    observable_names = [obs_a, obs_b, ]
-    observable_values = Dict()
-    for o in observable_names
-        observable_values[split(string(o[1]), "[")[1]] = Array(JuMP.value.(o))
-    end
+    observable_values = Dict(obs=>Dict(cond_idx=>[value(eval(Symbol(obs))[cond_idx, val_idx]) for val_idx=1:length(list)]
+        for (cond_idx, list) in dict) for (obs, dict) in m_exp)
 
     objective_val = objective_value(m)
 
