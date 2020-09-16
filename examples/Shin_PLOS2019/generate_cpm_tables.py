@@ -93,11 +93,18 @@ df1 = df1.iloc[s, :]
 m_exp = {'observableId': [], 'simulationConditionId': [], 'measurement': [], 'time': []}
 for file in os.listdir(data_dir):
     df = pd.read_csv(os.path.join(data_dir, file))
+    if '1.1' in df.columns:
+        df = df.rename(columns={'1': '0', '1.1': '1'})
     s = natsorted(df.columns[1:])
-    i = s[0].split('.')[0]
+    print(file)
+    print(s)
+    i = s[0]
+    print('i')
+    print(i)
     j = s[1]
     time = list(df.iloc[:, 0])
     measurement_a = list(df[i])
+    print(measurement_a)
     measurement_b = list(df[j])
     simulationConditionId = f'c_{i}_{j}_i'
     if simulationConditionId in m_exp['simulationConditionId']:
