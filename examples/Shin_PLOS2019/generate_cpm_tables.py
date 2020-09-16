@@ -14,9 +14,9 @@ with open(out_path, 'wt') as f:
     for i in range(1, 13):
         simulationConditionId = f'c_{i}'
         mu_a = f'mu_{i}'
-        mu_b = str(0)
-        alpha_ab = str(0)
-        alpha_ba = str(0)
+        mu_b = f'mu_{i}'
+        alpha_ab = f'alpha_{i}_{i}'
+        alpha_ba = f'alpha_{i}_{i}'
         tsv_writer.writerow([simulationConditionId, mu_a, mu_b, alpha_ab, alpha_ba])
 
     for i in range(1, 13):
@@ -44,7 +44,7 @@ with open(out_path, 'wt') as f:
     nominalValue = 1
     estimate = 1
     objectivePriorType = 'normal'
-    objectivePriorParameters = '0.3; 0.1' # Todo: @Sungho: What L2 priors and bounds have you used?
+    objectivePriorParameters = f'0.0; {1/(50**0.5)}' # Todo: @Sungho: What L2 priors and bounds have you used?
     for i in range(1, 13):
         parameterId = f'mu_{i}'
         tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
@@ -52,18 +52,19 @@ with open(out_path, 'wt') as f:
     lowerBound = -1
     upperBound = 1
     nominalValue = 0
-    objectivePriorParameters = '0; 0.1'
     for i in range(1, 13):
-        for j in range(i+1, 13):
+        for j in range(i, 13):
             parameterId = f'alpha_{i}_{j}'
             tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
-            parameterId = f'alpha_{j}_{i}'
-            tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
+            if i < j:
+                parameterId = f'alpha_{j}_{i}'
+                tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
     parameterId = 'sigma'
     lowerBound = 0
-    upperBound = 0.5
-    nominalValue = 0.05
+    upperBound = 2
+    nominalValue = 1
+    estimate = 0
     tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
 print(f'Wrote to `{out_path}`.')

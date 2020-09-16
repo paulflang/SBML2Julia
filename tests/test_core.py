@@ -232,6 +232,13 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertEqual(jl_code, JL_CODE_GOLD)
 
 
+    def test_insert_custom_code(self):
+        problem = Mock()
+        problem._julia_code = 'abc\n123'
+        problem.insert_custom_code({3: 'd', 7: '4'})
+        self.assertEqual(problem._julia_code, 'abcd\n1234')
+
+
     def test_optimize(self):
         
         def _assert_frame_almost_equal(df1, df2):
@@ -251,14 +258,6 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertTrue(problem._best_iter in ['1', '2', '3'])
 
         self.assertEqual(set(results.keys()), set(['par_best', 'species', 'observables', 'fval', 'chi2']))
-        
-        print(results['par_best'])
-        print(RESULTS_GOLD['par_best'])
-
-
-
-
-
 
 
         _assert_frame_almost_equal(results['par_best'], RESULTS_GOLD['par_best'])
@@ -341,22 +340,22 @@ class DisFitProblemTestCase(unittest.TestCase):
         assert_frame_equal(df, problem._petab_problem.measurement_df)
 
 
-    def test_set_simulation_df(self):
-        problem = Mock()
-        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
-        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+    # def test_set_simulation_df(self):
+    #     problem = Mock()
+    #     problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+    #     problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
 
-        problem._petab_problem.measurement_df = pd.DataFrame({'observableId': ['obs_a', 'obs_a'],
-            'simulationConditionId': ['c0', 'c0'], 'time': [0, 10], 'measurement': [0.7, 0.1]})
-        df = pd.DataFrame({'observableId': ['obs_a'], 'simulationConditionId': ['c0'],
-            'time': [10.1], 'measurement': [1]})
-        problem._results = {'observables': problem._petab_problem.measurement_df.append(df).reset_index(drop=True)}
-        print(problem.results)
+    #     problem._petab_problem.measurement_df = pd.DataFrame({'observableId': ['obs_a', 'obs_a'],
+    #         'simulationConditionId': ['c0', 'c0'], 'time': [0, 10], 'measurement': [0.7, 0.1]})
+    #     df = pd.DataFrame({'observableId': ['obs_a'], 'simulationConditionId': ['c0'],
+    #         'time': [10.1], 'measurement': [1]})
+    #     problem._results = {'observables': problem._petab_problem.measurement_df.append(df).reset_index(drop=True)}
+    #     print(problem.results)
 
-        problem._set_simulation_df()
+    #     problem._set_simulation_df()
 
-        simulation_df_gold = copy.deepcopy(problem._petab_problem.measurement_df)
-        assert_frame_equal(problem._petab_problem.simulation_df, simulation_df_gold)
+    #     simulation_df_gold = copy.deepcopy(problem._petab_problem.measurement_df)
+    #     assert_frame_equal(problem._petab_problem.simulation_df, simulation_df_gold)
 
 
     def test_write_results(self):
@@ -391,6 +390,8 @@ class DisFitProblemTestCase(unittest.TestCase):
         problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
         problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
         problem._results = RESULTS_GOLD
+        problem._condition2index = {'c0': 0, 'c1': 1}
+        problem._obs_to_conditions = {'obs_a': [0, 1], 'obs_b': [0, 1]}
 
         problem.plot_results('c0', path=os.path.join(self.dirname, 'plot_1.pdf'))
         self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'plot_1.pdf')))
@@ -409,15 +410,15 @@ class DisFitProblemTestCase(unittest.TestCase):
         problem = Mock()
         problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
         problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
-        obs_to_conditions = {obs: [1,2,3,4] for obs in problem.petab_problem.measurement_df.index}
+        problem._obs_to_conditions = {obs: [1,2,3,4] for obs in problem.petab_problem.measurement_df.index}
 
-        code, set_of_params = problem._write_overrides('observable', obs_to_conditions)
+        code, set_of_params = problem._write_overrides('observable')
         print('code')
         print(code)
         self.assertTrue(code in JL_CODE_GOLD)
         self.assertEqual(set_of_params, set())
 
-        code, set_of_params = problem._write_overrides('noise', obs_to_conditions)
+        code, set_of_params = problem._write_overrides('noise')
         print('code')
         print(code)
         self.assertTrue(code in JL_CODE_GOLD)
@@ -499,11 +500,12 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
 # problem = core.DisFitProblem(PETAB_YAML)
+# problem.insert_custom_code({51791: '    bindings = [Int(i) for i in range(13, stop=210, length=198) if mod(i,3) != 0]\n    @constraint(m, [j in bindings], A[j, 3] == 20*A[j+1, 1])\n    @constraint(m, [j in bindings], B[j, 3] == 20*B[j+1, 1])\n\n'})
 # problem.write_jl_file()
 # problem.optimize()
-# problem.plot_results('c0', path='plot.pdf')
+# problem.plot_results('c_1', path='plot.pdf')
 # problem.write_results()
-# # problem.results['par_best']
+# problem.results['par_best']
 
 
 # import pickle
