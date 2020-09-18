@@ -40,13 +40,17 @@ class OptimizeController(cement.Controller):
         stacked_type = 'nested'
         arguments = [
             (['petab_yaml'], dict(type=str, help='PEtab yaml problem specification')),
-            (['-t', '--t_ratio'], dict(default=2, type=int,
-                            help='ratio between experimental observation intervals and time discretization intervals')),
+            (['-t', '--t_steps'], dict(default=None, type=int,
+                            help='number of time-discretization steps')),
             (['-n', '--n_starts'], dict(default=1, type=int,
                             help='number of multistarts')),
             (['-i', '--infer_ic_from_sbml'], dict(default=False, type=bool,
                             help='if missing initial conditions shall be infered from SBML model')),
-            (['-o', '--out_dir'], dict(default='./DisFit_results', type=str,
+            (['-o', '--optimizer_options'], dict(default={}, type=dict,
+                            help='optimization solver options')),
+            (['-c', '--custom_code_dict'], dict(default={}, type=dict,
+                            help='dict with replaced code as keys and replacement code as values')),
+            (['-d', '--out_dir'], dict(default='./DisFit_results', type=str,
                             help='output directory for julia_code, results and plot')),
             (['-p', '--plot_obs'], dict(default='[]', type=str,
                             help='list of observables to be plotted'))
@@ -57,7 +61,10 @@ class OptimizeController(cement.Controller):
         args = self.app.pargs
         try:
             print('--- Generating optimization problem ---')
-            problem = DisFitProblem(args.petab_yaml, t_ratio=args.t_ratio, n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml)
+            problem = DisFitProblem(args.petab_yaml, t_steps=args.t_steps,
+                n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml,
+                optimizer_options=args.optimizer_options,
+                custom_code_dict=args.custom_code_dict)
         except Exception as error:
             raise SystemExit('Error occured: {}'.format(str(error)))
 

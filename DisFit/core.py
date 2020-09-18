@@ -24,13 +24,15 @@ importlib.reload(libsbml)
 
 class DisFitProblem(object):
 
-    def __init__(self, petab_yaml, t_steps=None, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}, custom_code_dict={}):
+    def __init__(self, petab_yaml, t_steps=None, n_starts=1, infer_ic_from_sbml=False,
+        optimizer_options={}, custom_code_dict={}):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
-            t_steps (:obj:`int` or `float`, optional): number of time discretiation steps per time unit
+            t_steps (:obj:`int` or `float`, optional): number of time-discretiation steps per time unit
             n_starts (:obj:`int`): number of multistarts
             optimizer_options (:obj:`dict`): optimization solver options
+            custom_code_dict (:obj:`dict`): dict with replaced code as keys and replacement code as values
         """
 
         print('Initialising problem...')
@@ -48,10 +50,9 @@ class DisFitProblem(object):
         self.n_starts = n_starts
         self.optimizer_options = optimizer_options
         self.infer_ic_from_sbml = infer_ic_from_sbml
-
         self._set_julia_code()
-        if custom_code_dict:
-            self.insert_custom_code(custom_code_dict)
+        self.custom_code_dict = custom_code_dict 
+
         self._initialization = False
 
     @property
@@ -186,6 +187,41 @@ class DisFitProblem(object):
 
 
     @property
+    def custom_code_dict(self):
+        """Get custom_code_dict
+        
+        Returns:
+            :obj:`dict`: custom code dict
+        """    
+        return self._custom_code_dict
+
+    @custom_code_dict.setter
+    def custom_code_dict(self,value):
+        """Set custom_code_dict
+        
+        Args:
+            value (:obj:`dict`): custom code dict
+        
+        Raises:
+            ValueError: if custom_code_dict is not a dict
+        """
+        if not isinstance(value, dict):
+            raise ValueError('`custom_code_dict` must be a dictionary')
+        for k in value.keys():
+            if not isintance(k, str):
+                raise ValueError(f'Keys of `custom_code_dict` must be strings but `{k}` is `{type(k)}`.')
+        for v in value.values():
+            if not isintance(v, str):
+                raise ValueError(f'Values of `custom_code_dict` must be strings but `{v}` is `{type(v)}`.')
+
+        self._custom_code_dict = value
+        if not self._initialization:
+            self._set_julia_code()
+        if value:
+            self.insert_custom_code(value)
+
+
+    @property
     def julia_code(self):
         """Get julia_code
         
@@ -222,9 +258,7 @@ class DisFitProblem(object):
         petab_problem = petab.problem.Problem()                                                                                                                                                                          
         petab_problem = petab_problem.from_yaml(petab_yaml)
         
-        print('before linting')
         petab.lint.lint_problem(petab_problem) # Returns `False` if no error occured and raises exception otherwise.
-        print('after linting')
         self._check_for_not_implemented_features(petab_problem)
         petab_problem = self._sort_condition_df_problem(petab_problem)
 
@@ -233,8 +267,6 @@ class DisFitProblem(object):
         self._petab_yaml_dict, self._condition2index, self._j_to_parameters,\
             self._n_conditions, self._condition_specific_pars, self._global_pars =\
             self._get_translation_vars(petab_yaml, petab_problem)
-        print('global_pars')
-        print(self._global_pars)
 
         
     def _check_for_not_implemented_features(self, petab_problem):
@@ -351,11 +383,11 @@ class DisFitProblem(object):
         
 
     def insert_custom_code(self, custom_code_dict):
-        positions = reversed(np.sort(list(custom_code_dict.keys())))
-        code = bytearray(self.julia_code, 'utf8')
+        positions = custom_code_dict.keys()
+        code = self.julia_code
         for pos in positions:
-            code[pos:pos] = bytearray(custom_code_dict[pos], 'utf8')
-        self._julia_code = code.decode()
+            code = re.sub(pos, custom_code_dict[pos], code)
+        self._julia_code = code
 
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
@@ -451,9 +483,10 @@ class DisFitProblem(object):
         par_0_col = [par_0[str(key)] for key in par_0.keys()]
 
         df = pd.DataFrame(list(zip(name_col, par_0_col, par_best_col, par_best_to_par_0_col)),
-            columns=['Name', 'par_0', 'par_best', 'par_best_to_par_0'])
+            columns=['Name', 'par_0', 'par_best', 'par_best_to_par_0']).set_index('Name')
         # df = df.sort_values(by=['Name']).reset_index(drop=True)
         df = df.loc[list(self.petab_problem.parameter_df.index), :]
+        df = df.reset_index()
 
         return df
 
@@ -983,8 +1016,6 @@ class DisFitProblem(object):
             nominal = self.petab_problem.parameter_df.loc[parameter, 'nominalValue']
             if self._calling_function == '_execute_case':
                 estimate = 0
-            print(parameter)
-            print(estimate)
             if estimate == 1:
                     generated_code.extend(bytes('    @variable(m, {0} <= {1} <= {2}, start={0}+({2}-({0}))*rand(Float64))\n'.format(lb, parameter, ub), 'utf8'))
             elif estimate == 0:
@@ -1204,10 +1235,10 @@ class DisFitProblem(object):
         nlp = ''
         if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
             or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
-            prior_code = self._write_prior_code(cond_without_preequ)
+            prior_code = self._write_prior_code(cond_with_preequ)
             generated_code.extend(bytes(prior_code, 'utf8'))
             if prior_code:
-                nlp = '+ nlp'
+                nlp = '+ neg_log_priors'
 
 
         # Write objective
@@ -1406,7 +1437,7 @@ class DisFitProblem(object):
         return (override_code.decode(), set_of_params)
 
 
-    def _write_prior_code(self, cond_without_preequ):
+    def _write_prior_code(self, cond_with_preequ):
 
         prior_code = bytearray('', 'utf8')
         idx_with_prior_1 = list(~self.petab_problem.parameter_df['objectivePriorType'].isna())
@@ -1443,7 +1474,12 @@ class DisFitProblem(object):
 
         for l, par in enumerate(parameter_df.index):
             # n_occurences = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_without_preequ)-1, :] == par, axis=1) > 0)
-            n_occurences_in_preequ = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_without_preequ)-1, :] == par))
+            # print('cond_with_preequ')
+            # print(cond_with_preequ)
+            # print(np.array(cond_with_preequ))
+            # print(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par)
+            n_occurences_in_preequ = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par))
+            # print(n_occurences_in_preequ)
             if n_occurences_in_preequ != 0:
                 warnings.warn(f'PEtab specifies objectivePriors for the preequilibration parameter {par}, but parameter priors will not be added to the objective function for preequilibration conditions.')
         #     if n_occurences == 0:
@@ -1498,8 +1534,8 @@ class DisFitProblem(object):
                     prior_code.extend(bytes(f'    @NLconstraint(m, nlp_{k} == sum( log(2*prior_std[l]*par_est[l]) + delta_log_par[l]/prior_std[l] for l in {k}_priors))\n', 'utf8'))
         prior_code.extend(bytes('\n', 'utf8'))
 
-        prior_code.extend(bytes('    @variable(m, nlp)\n', 'utf8'))
+        prior_code.extend(bytes('    @variable(m, neg_log_priors)\n', 'utf8'))
         neg_log_priors = list(set(['nlp_'+v for v in parameter_df['objectivePriorType']]))
-        prior_code.extend(bytes(f"    @constraint(m, nlp == {' + '.join(np.sort(neg_log_priors))})\n\n", 'utf8'))
+        prior_code.extend(bytes(f"    @constraint(m, neg_log_priors == {' + '.join(np.sort(neg_log_priors))})\n\n", 'utf8'))
 
         return prior_code.decode()

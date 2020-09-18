@@ -65,6 +65,8 @@ with open(out_path, 'wt') as f:
     upperBound = 2
     nominalValue = 1
     estimate = 0
+    objectivePriorType = ''
+    objectivePriorParameters = ''
     tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
 print(f'Wrote to `{out_path}`.')
@@ -96,15 +98,10 @@ for file in os.listdir(data_dir):
     if '1.1' in df.columns:
         df = df.rename(columns={'1': '0', '1.1': '1'})
     s = natsorted(df.columns[1:])
-    print(file)
-    print(s)
     i = s[0]
-    print('i')
-    print(i)
     j = s[1]
     time = list(df.iloc[:, 0])
     measurement_a = list(df[i])
-    print(measurement_a)
     measurement_b = list(df[j])
     simulationConditionId = f'c_{i}_{j}_i'
     if simulationConditionId in m_exp['simulationConditionId']:

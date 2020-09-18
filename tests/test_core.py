@@ -235,30 +235,21 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_insert_custom_code(self):
         problem = Mock()
         problem._julia_code = 'abc\n123'
-        problem.insert_custom_code({3: 'd', 7: '4'})
-        self.assertEqual(problem._julia_code, 'abcd\n1234')
+        problem.insert_custom_code({abc: 'abcd', 123: '01234'})
+        self.assertEqual(problem._julia_code, 'abcd\n01234')
 
 
     def test_optimize(self):
         
         def _assert_frame_almost_equal(df1, df2):
-            print(np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object])))
-            print(df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
-            print(np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object]))\
-                & df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
-
             return (np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object]))\
                 & df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
 
         problem = core.DisFitProblem(PETAB_YAML, n_starts=3)
         results = problem.optimize()
-        print('results')
-        print(results)
 
         self.assertTrue(problem._best_iter in ['1', '2', '3'])
-
         self.assertEqual(set(results.keys()), set(['par_best', 'species', 'observables', 'fval', 'chi2']))
-
 
         _assert_frame_almost_equal(results['par_best'], RESULTS_GOLD['par_best'])
         _assert_frame_almost_equal(results['species'], RESULTS_GOLD['species'])
@@ -458,17 +449,17 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
 
-# import os
-# import pandas as pd
-# import pickle
-# import pkg_resources
-# import re
-# import shutil
-# import tempfile
-# import unittest
-# from DisFit import core
-# importlib.reload(core)
-# from numpy.testing import assert_allclose
+import os
+import pandas as pd
+import pickle
+import pkg_resources
+import re
+import shutil
+import tempfile
+import unittest
+from DisFit import core
+importlib.reload(core)
+from numpy.testing import assert_allclose
 
 # from pandas.testing import assert_frame_equal
 
@@ -493,17 +484,17 @@ class DisFitProblemTestCase(unittest.TestCase):
 #     FIXTURES, JL_CODE_GOLD)
 # with open(os.path.join(FIXTURES, '..', 'results_gold.pickle'), 'rb') as f:
 #     RESULTS_GOLD = pickle.load(f)
-# FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
-#     'DisFit', 'examples')
-# PETAB_YAML = os.path.join(FIXTURES, 'Shin_PLOS2019', 'Shin_PLOS2019.yaml')
+FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
+    'DisFit', 'examples')
+PETAB_YAML = os.path.join(FIXTURES, 'Shin_PLOS2019', 'Shin_PLOS2019.yaml')
 
 
 
-# problem = core.DisFitProblem(PETAB_YAML)
-# problem.insert_custom_code({51791: '    bindings = [Int(i) for i in range(13, stop=210, length=198) if mod(i,3) != 0]\n    @constraint(m, [j in bindings], A[j, 3] == 20*A[j+1, 1])\n    @constraint(m, [j in bindings], B[j, 3] == 20*B[j+1, 1])\n\n'})
-# problem.write_jl_file()
-# problem.optimize()
-# problem.plot_results('c_1', path='plot.pdf')
+problem = core.DisFitProblem(PETAB_YAML, optimizer_options={'linear_solver': 'MA57'})
+problem.insert_custom_code({'    # Model initial assignments': '    # Custom code\n    bindings = [Int(i) for i in range(13, stop=210, length=198) if mod(i,3) != 0]\n    @constraint(m, [j in bindings], A[j, 3] == 20*A[j+1, 1])\n    @constraint(m, [j in bindings], B[j, 3] == 20*B[j+1, 1])\n\n    # Model initial assignments'})
+problem.write_jl_file()
+problem.optimize()
+problem.plot_results('c_1', path='plot.pdf')
 # problem.write_results()
 # problem.results['par_best']
 
