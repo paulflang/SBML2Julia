@@ -116,13 +116,32 @@ class DisFitProblemTestCase(unittest.TestCase):
         problem.optimizer_options = {'linear_solver': 'MA27'}
         self.assertEqual(problem.optimizer_options['linear_solver'], 'MA27')
         with self.assertRaises(ValueError):
-            problem.infer_ic_from_sbml = 1
+            problem.optimizer_options = 1
         
         # Test resetting
         problem = core.DisFitProblem(PETAB_YAML)
-        problem.write_jl_file(path=os.path.join('.', 'test_optimizer_options_setter.jl'))
+        # problem.write_jl_file(path=os.path.join('.', 'test_optimizer_options_setter.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         problem.optimizer_options = {'linear_solver': 'MA27'}
+        self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
+
+
+    def test_custom_code_dict_setter(self):
+        problem = Mock()
+        problem._julia_code = 'abc\n123'
+        problem.custom_code_dict = {'abc': 'abcd'}
+        self.assertEqual(problem.custom_code_dict['123'], '1234')
+        with self.assertRaises(ValueError):
+            problem.custom_code_dict = 1
+        with self.assertRaises(ValueError):
+            problem.custom_code_dict = {1: '1234'}
+        with self.assertRaises(ValueError):
+            problem.custom_code_dict = {'abc': 1}
+        
+        # Test resetting
+        problem = core.DisFitProblem(PETAB_YAML)
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
+        problem.optimizer_options = {'# Write global parameters': '# Write global parameters1'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
 
@@ -235,7 +254,7 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_insert_custom_code(self):
         problem = Mock()
         problem._julia_code = 'abc\n123'
-        problem.insert_custom_code({abc: 'abcd', 123: '01234'})
+        problem.insert_custom_code({'abc': 'abcd', '123': '01234'})
         self.assertEqual(problem._julia_code, 'abcd\n01234')
 
 
@@ -449,24 +468,25 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
 
-import os
-import pandas as pd
-import pickle
-import pkg_resources
-import re
-import shutil
-import tempfile
-import unittest
-from DisFit import core
-importlib.reload(core)
-from numpy.testing import assert_allclose
+# import os
+# import pandas as pd
+# import pickle
+# import pkg_resources
+# import re
+# import shutil
+# import tempfile
+# import unittest
+# from DisFit import core
+# importlib.reload(core)
+# from numpy.testing import assert_allclose
 
 # from pandas.testing import assert_frame_equal
 
 #Todo: write resimulations test
 
-# FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
-# PETAB_YAML = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
+# FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
+#     'DisFit', 'examples')
+# PETAB_YAML = os.path.join(FIXTURES, 'Vinod_FEBS2015', 'Vinod_FEBS2015.yaml')
 # FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
 #     'petab_test_suite', 'cases')
 # PETAB_YAML = os.path.join(FIXTURES, '0002', '_0002.yaml')
@@ -484,17 +504,17 @@ from numpy.testing import assert_allclose
 #     FIXTURES, JL_CODE_GOLD)
 # with open(os.path.join(FIXTURES, '..', 'results_gold.pickle'), 'rb') as f:
 #     RESULTS_GOLD = pickle.load(f)
-FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
-    'DisFit', 'examples')
-PETAB_YAML = os.path.join(FIXTURES, 'Shin_PLOS2019', 'Shin_PLOS2019.yaml')
+# FIXTURES = os.path.join('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software',
+#     'DisFit', 'examples')
+# PETAB_YAML = os.path.join(FIXTURES, 'Shin_PLOS2019', 'Shin_PLOS2019.yaml')
 
 
 
-problem = core.DisFitProblem(PETAB_YAML, optimizer_options={'linear_solver': 'MA57'})
-problem.insert_custom_code({'    # Model initial assignments': '    # Custom code\n    bindings = [Int(i) for i in range(13, stop=210, length=198) if mod(i,3) != 0]\n    @constraint(m, [j in bindings], A[j, 3] == 20*A[j+1, 1])\n    @constraint(m, [j in bindings], B[j, 3] == 20*B[j+1, 1])\n\n    # Model initial assignments'})
-problem.write_jl_file()
-problem.optimize()
-problem.plot_results('c_1', path='plot.pdf')
+# problem = core.DisFitProblem(PETAB_YAML, optimizer_options={'linear_solver': 'MA57'})
+# # problem.insert_custom_code({'    # Model initial assignments': '    # Custom code\n    bindings = [Int(i) for i in range(13, stop=210, length=198) if mod(i,3) != 0]\n    @constraint(m, [j in bindings], A[j, 3] == 20*A[j+1, 1])\n    @constraint(m, [j in bindings], B[j, 3] == 20*B[j+1, 1])\n\n    # Model initial assignments'})
+# problem.write_jl_file() # path='./jl_code_Vinod_FEBS2015.jl')
+# problem.optimize()
+# problem.plot_results('c_1', path='plot.pdf')
 # problem.write_results()
 # problem.results['par_best']
 

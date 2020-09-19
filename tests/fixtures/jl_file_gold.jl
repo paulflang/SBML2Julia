@@ -8,7 +8,7 @@ n_steps = 101 # Setting number of ODE discretisation steps
 # Data
 println("Reading measurement data...")
 data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures/0015_objectivePrior/_measurements.tsv"
-df = CSV.read(data_path; use_mmap=false)
+df = CSV.read(data_path)
 insert!(df, 1, (1:length(df[:,1])), :id)
 
 df_by_o = groupby(df, :observableId)
@@ -197,14 +197,14 @@ i_start = 1
     @variable(m, nlp_logLaplace)
     @NLconstraint(m, nlp_logLaplace == sum( log(2*prior_std[l]*par_est[l]) + delta_log_par[l]/prior_std[l] for l in logLaplace_priors))
 
-    @variable(m, nlp)
-    @constraint(m, nlp == nlp_laplace + nlp_logLaplace + nlp_logNormal + nlp_normal)
+    @variable(m, neg_log_priors)
+    @constraint(m, neg_log_priors == nlp_laplace + nlp_logLaplace + nlp_logNormal + nlp_normal)
 
     # Define objective
     println("Defining objective...")
     @NLobjective(m, Min, sum(0.5 * log(2*pi*(( noise_A1 + noise_A2 * obs_a[j, k] ))^2) + 0.5*((obs_a[j, deduplicated_time_idx["obs_a"][j][k]]-m_exp["obs_a"][j][k])/(( noise_A1 + noise_A2 * obs_a[j, k] )))^2 for j in obs2conds["obs_a"] for k in 1:length(t_exp["obs_a"][j]))
         + sum(0.5 * log(2*pi*(( noise_B ))^2) + 0.5*((obs_b[j, deduplicated_time_idx["obs_b"][j][k]]-m_exp["obs_b"][j][k])/(( noise_B )))^2 for j in obs2conds["obs_b"] for k in 1:length(t_exp["obs_b"][j]))
-        + nlp)
+        + neg_log_priors)
 
     println("Optimizing:")
     optimize!(m)

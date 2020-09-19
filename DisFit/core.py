@@ -208,10 +208,10 @@ class DisFitProblem(object):
         if not isinstance(value, dict):
             raise ValueError('`custom_code_dict` must be a dictionary')
         for k in value.keys():
-            if not isintance(k, str):
+            if not isinstance(k, str):
                 raise ValueError(f'Keys of `custom_code_dict` must be strings but `{k}` is `{type(k)}`.')
         for v in value.values():
-            if not isintance(v, str):
+            if not isinstance(v, str):
                 raise ValueError(f'Values of `custom_code_dict` must be strings but `{v}` is `{type(v)}`.')
 
         self._custom_code_dict = value
@@ -882,7 +882,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('# Data\n', 'utf8'))
         generated_code.extend(bytes('println("Reading measurement data...")\n', 'utf8'))
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
-        generated_code.extend(bytes('df = CSV.read(data_path; use_mmap=false)\n', 'utf8')) #@Sungho: use_mmap=false is said to be slow, but I need to release the file somehow. Alternetive suggestions?
+        generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8')) #@Sungho: use_mmap=false is said to be slow, but I need to release the file somehow. Alternetive suggestions?
         generated_code.extend(bytes('insert!(df, 1, (1:length(df[:,1])), :id)\n\n', 'utf8'))
         
         # New time encoding starts here:
@@ -1037,7 +1037,7 @@ class DisFitProblem(object):
             for i, par in enumerate(v):
                 if str(par).replace('.','',1).replace('e-','',1).replace('e','',1).isdigit():
                     generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
-                else:
+                elif not (isinstance(par, float) and np.isnan(par)):
                     lb = self.petab_problem.parameter_df.loc[par, 'lowerBound']
                     ub = self.petab_problem.parameter_df.loc[par, 'upperBound']
                     nominal = self.petab_problem.parameter_df.loc[par, 'nominalValue']

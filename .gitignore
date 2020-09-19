@@ -21,3 +21,7 @@ docs/Makefile
 # pytest .cache directory
 .cache/
 .pytest_cache/
+
+# raw data
+examples/Shin_PLOS2019/raw_data
+# examples/Shin_PLOS2019/generate_cpm_tables.py
