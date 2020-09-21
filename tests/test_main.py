@@ -66,28 +66,27 @@ class CliTestCase(unittest.TestCase):
                 app.run()
 
     def test_optimize(self):
-        with __main__.App(argv=['optimize', YAML_PATH, '-t', 'None', '-n', '1',
-            '-i', 'False', '-o', '\{\}', '-c', '\{\}', '-d', self.tempdir_1,
-            '-p', '[obs_a, obs_b]']) as app:
+        with __main__.App(argv=['optimize', YAML_PATH, '-n', '1', '-i', 'False', '-o', '{}',
+        	'-c', '{}', '-d', self.tempdir_1, '-p', '[obs_a, obs_b]']) as app:
             app.run()
 
             # test that the CLI produced the correct output
             with open(os.path.join(self.tempdir_1, 'julia_code.jl'), 'r') as f:
                 jl_code = f.read()
             self.assertEqual(jl_code, JL_CODE_GOLD)
-            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plots', 'plot_wt.pdf')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plots', 'plot_c1.pdf')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
 
         with __main__.App(argv=['optimize', YAML_PATH, '-t', '101', '-n', '2',
-            '-i', 'True', '-o', '\{linear_solver: MA27\}',
-            '-c', '\{# Write global parameters: # Write global parameters1\}',
-            '-d', self.tempdir_2, '-p', '[a, b]']) as app:
+            '-i', 'True', '-o', '{linear_solver: MA27}',
+            '-c', '{# Write global parameters: # Write global parameters1}',
+            '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
             app.run()
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
 
         with __main__.App(argv=['optimize', 'a', '-t', '3', '-n', '2', '-i', 'True',
-            '-o', '\{linear_solver: MA27\}',
-            '-c', '\{# Write global parameters: # Write global parameters1\}',
+            '-o', '{linear_solver: MA27}',
+            '-c', '{# Write global parameters: # Write global parameters1}',
             '-d', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
             with self.assertRaises(SystemExit):
                 app.run()

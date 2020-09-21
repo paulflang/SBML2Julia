@@ -40,15 +40,15 @@ class OptimizeController(cement.Controller):
         stacked_type = 'nested'
         arguments = [
             (['petab_yaml'], dict(type=str, help='PEtab yaml problem specification')),
-            (['-t', '--t_steps'], dict(default=None, type=int,
+            (['-t', '--t_steps'], dict(default='', type=str,
                             help='number of time-discretization steps')),
             (['-n', '--n_starts'], dict(default=1, type=int,
                             help='number of multistarts')),
             (['-i', '--infer_ic_from_sbml'], dict(default=False, type=bool,
                             help='if missing initial conditions shall be infered from SBML model')),
-            (['-o', '--optimizer_options'], dict(default={}, type=dict,
+            (['-o', '--optimizer_options'], dict(default='{}', type=str,
                             help='optimization solver options')),
-            (['-c', '--custom_code_dict'], dict(default={}, type=dict,
+            (['-c', '--custom_code_dict'], dict(default='{}', type=str,
                             help='dict with replaced code as keys and replacement code as values')),
             (['-d', '--out_dir'], dict(default='./DisFit_results', type=str,
                             help='output directory for julia_code, results and plot')),
@@ -61,10 +61,24 @@ class OptimizeController(cement.Controller):
         args = self.app.pargs
         try:
             print('--- Generating optimization problem ---')
-            problem = DisFitProblem(args.petab_yaml, t_steps=args.t_steps,
+            if args.t_steps == '':
+                t_steps = None
+            else:
+                t_steps = int(args.t_steps)
+            items = re.split(',', args.optimizer_options.strip('{}'))
+            if items == ['']:
+                optimizer_options = {}
+            else:
+                optimizer_options = {re.split(':', item)[0].strip(): re.split(':', item)[1].strip() for item in items}
+            items = re.split(',', args.custom_code_dict.strip('{}'))
+            if items == ['']:
+                custom_code_dict = {}
+            else:
+                custom_code_dict = {re.split(':', item)[0]: re.split(':', item)[1].lstrip() for item in items}
+            problem = DisFitProblem(args.petab_yaml, t_steps=t_steps,
                 n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml,
-                optimizer_options=args.optimizer_options,
-                custom_code_dict=args.custom_code_dict)
+                optimizer_options=optimizer_options,
+                custom_code_dict=custom_code_dict)
         except Exception as error:
             raise SystemExit('Error occured: {}'.format(str(error)))
 
@@ -89,10 +103,11 @@ class OptimizeController(cement.Controller):
             if not os.path.isdir(os.path.join(args.out_dir, 'plots')):
                 print('Creating {}'.format(os.path.join(args.out_dir, 'plots')))
                 os.makedirs(os.path.join(args.out_dir, 'plots'))
-            observables = re.split(', |,', args.plot_obs.strip('[]'))
+            observables = re.split(',', args.plot_obs.strip('[]'))
+            observables = [o.strip() for o in observables]
             if observables == ['']:
                 observables = []
-            for c in problem._condition2index.keys():
+            for c in [c for c, c_ind in problem._condition2index.items() if c_ind+1 in problem._j_to_parameters[0]]:
                 problem.plot_results(c, path=os.path.join(args.out_dir, 'plots', 'plot_'+c+'.pdf'),
                     observables=observables)
         except Exception as error:

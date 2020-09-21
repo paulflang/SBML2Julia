@@ -1235,7 +1235,7 @@ class DisFitProblem(object):
         nlp = ''
         if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
             or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
-            prior_code = self._write_prior_code(cond_with_preequ)
+            prior_code = self._write_prior_code()
             generated_code.extend(bytes(prior_code, 'utf8'))
             if prior_code:
                 nlp = '+ neg_log_priors'
@@ -1437,7 +1437,7 @@ class DisFitProblem(object):
         return (override_code.decode(), set_of_params)
 
 
-    def _write_prior_code(self, cond_with_preequ):
+    def _write_prior_code(self):
 
         prior_code = bytearray('', 'utf8')
         idx_with_prior_1 = list(~self.petab_problem.parameter_df['objectivePriorType'].isna())
@@ -1472,16 +1472,16 @@ class DisFitProblem(object):
 
         
 
-        for l, par in enumerate(parameter_df.index):
+        # for l, par in enumerate(parameter_df.index):
             # n_occurences = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_without_preequ)-1, :] == par, axis=1) > 0)
             # print('cond_with_preequ')
             # print(cond_with_preequ)
             # print(np.array(cond_with_preequ))
             # print(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par)
-            n_occurences_in_preequ = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par))
+            # n_occurences_in_preequ = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par))
             # print(n_occurences_in_preequ)
-            if n_occurences_in_preequ != 0:
-                warnings.warn(f'PEtab specifies objectivePriors for the preequilibration parameter {par}, but parameter priors will not be added to the objective function for preequilibration conditions.')
+            # if n_occurences_in_preequ != 0:
+            #     warnings.warn(f'PEtab specifies objectivePriors for the preequilibration parameter {par}, but parameter priors will not be added to the objective function for preequilibration conditions.')
         #     if n_occurences == 0:
         #         prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {len(cond_without_preequ)})\n', 'utf8'))
         #     else:

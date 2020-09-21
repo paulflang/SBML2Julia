@@ -435,15 +435,15 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertEqual(set_of_params, set())
 
 
-    # def test_write_prior_code(self):
-    #     problem = Mock()
-    #     problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
-    #     problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
+    def test_write_prior_code(self):
+        problem = Mock()
+        problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
+        problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
 
-    #     code = problem._write_prior_code()
-    #     print('code')
-    #     print(code)
-    #     self.assertTrue(code in JL_CODE_GOLD)
+        code = problem._write_prior_code()
+        print('code')
+        print(code)
+        self.assertTrue(code in JL_CODE_GOLD)
     #     self.assertEqual(set_of_params, set())
     # change mu in every condition
 
