@@ -160,7 +160,9 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_import_julia_code(self):
         problem = Mock()
         problem.import_julia_code(JL_FILE_GOLD)
-        problem.write_jl_file(path=os.path.join('.', 'test_import_julia_code.jl'))
+        problem._julia_code = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+            FIXTURES, problem._julia_code)
+        # problem.write_jl_file(path=os.path.join('.', 'test_import_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
 
