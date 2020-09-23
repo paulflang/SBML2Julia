@@ -586,6 +586,7 @@ class DisFitProblem(object):
             warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `wide`.')
             df_format = 'wide'
 
+        pd.set_option("display.max_rows", None)
         with pd.ExcelWriter(path) as writer:
             self.results['par_best'].to_excel(writer, sheet_name='par_best', index=False)
 
@@ -595,7 +596,12 @@ class DisFitProblem(object):
                     for condition, i in self._condition2index.items():
                         if i+1 in self._j_to_parameters[0]:
                             dfg = df.get_group(condition)
-                            dfg = dfg.set_index(['time', Id]).drop_duplicates()
+                            if var_type == 'species':
+                                print(dfg)
+                            dfg = dfg.set_index(['time', Id]) #.drop_duplicates()
+                            print('dropped duplicates')
+                            if var_type == 'species':
+                                print(dfg)
                             dfg = dfg.unstack()
                             dfg = dfg.loc[:, 'simulation']
                             dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
@@ -1141,7 +1147,7 @@ class DisFitProblem(object):
                     generated_code.extend(bytes(reaction_formula, 'utf8'))
                 generated_code.extend(bytes('     ) * ( t_sim[k+1] - t_sim[k] ) )\n', 'utf8'))
             else: # Todo: think about handling if initial_assignments[specie] == None
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)-1], {}[j, k] == {}[j])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
+                generated_code.extend(bytes('    @constraint(m, [j in 1:{}, k in 1:length(t_sim)], {}[j, k] == {}[j])\n'.format(n_j, specie, initial_assignments[specie]), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 

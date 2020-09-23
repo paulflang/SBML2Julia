@@ -5,12 +5,13 @@ from natsort import natsorted, index_natsorted
 
 basedir = os.path.dirname(os.path.abspath(__file__))
 
-# Write condition table
+## Write condition table
 out_path = os.path.join(basedir, 'condition_table.tsv')
 with open(out_path, 'wt') as f:
     tsv_writer = csv.writer(f, delimiter='\t')
     tsv_writer.writerow(['conditionId', 'mu_a', 'mu_b', 'alpha_ab', 'alpha_ba', 'A', 'B'])
 
+    # Write single species conditions
     for i in range(1, 13):
         simulationConditionId = f'c_{i}'
         mu_a = f'mu_{i}'
@@ -21,6 +22,7 @@ with open(out_path, 'wt') as f:
         B = f'initA_c_{i}'
         tsv_writer.writerow([simulationConditionId, mu_a, mu_b, alpha_ab, alpha_ba, A, B])
 
+    # Write double species conditions
     for i in range(1, 13):
         for j in range(i+1, 13):
             mu_a = f'mu_{i}'
@@ -39,12 +41,13 @@ with open(out_path, 'wt') as f:
 print(f'Wrote to `{out_path}`.')
 
 
-# Write parameter table
+## Write parameter table
 out_path = os.path.join(basedir, 'parameter_table.tsv')
 with open(out_path, 'wt') as f:
     tsv_writer = csv.writer(f, delimiter='\t')
     tsv_writer.writerow(['parameterId', 'parameterScale', 'lowerBound', 'upperBound', 'nominalValue', 'estimate', 'objectivePriorType', 'objectivePriorParameters'])
 
+    # Write mu
     parameterScale = 'lin'
     lowerBound = 0
     upperBound = 2
@@ -56,6 +59,7 @@ with open(out_path, 'wt') as f:
         parameterId = f'mu_{i}'
         tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
+    # Write alpha
     lowerBound = -2
     upperBound = 2
     nominalValue = 0
@@ -72,13 +76,14 @@ with open(out_path, 'wt') as f:
                 tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
 
+    # Write init
     parameterScale = 'lin'
     lowerBound = 0
-    upperBound = 0.5
-    nominalValue = 0.1
+    upperBound = 0.03
+    nominalValue = 0.01
     estimate = 1
     objectivePriorType = 'normal'
-    objectivePriorParameters = f'0.1; {1}' # Todo: @Sungho: What L2 priors and bounds have you used?
+    objectivePriorParameters = '0.01; 0.1'
     for i in range(1, 13):
         parameterId = f'initA_c_{i}'
         tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
@@ -89,6 +94,7 @@ with open(out_path, 'wt') as f:
             tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
 
+    # Write sigma
     parameterId = 'sigma'
     lowerBound = 0
     upperBound = 2
@@ -101,12 +107,12 @@ with open(out_path, 'wt') as f:
 print(f'Wrote to `{out_path}`.')
 
 
-# Write measurement table
-
+## Write measurement table
 out_path = os.path.join(basedir, 'measurement_table.tsv')
 M_dir = os.path.join(basedir, 'raw_data', 'M')
 data_dir = os.path.join(basedir, 'raw_data', 'data')
 
+# Write single species experiments
 m_exp = {'observableId': [], 'simulationConditionId': [], 'measurement': [], 'time': []}
 for file in os.listdir(M_dir):
     df = pd.read_csv(os.path.join(M_dir, file))
@@ -121,6 +127,7 @@ df1 = pd.DataFrame(m_exp)
 s = index_natsorted(df1['simulationConditionId'])
 df1 = df1.iloc[s, :]
 
+# Write double species experiments
 m_exp = {'observableId': [], 'simulationConditionId': [], 'measurement': [], 'time': []}
 for file in os.listdir(data_dir):
     df = pd.read_csv(os.path.join(data_dir, file))
