@@ -1,0 +1,13 @@
+observableId	observableName	observableFormula	noiseFormula	observableTransformation	noiseDistribution
+obs_Cb		fCb * Cb	1	lin	normal
+obs_Gw		2 * Gw / 2	1	lin	normal
+obs_pEnsa		1 + pEnsa - 1	1	lin	normal
+obs_pWee		pWee	1	lin	normal
+obs_Cdc25		Cdc25	1	lin	normal
+obs_Ensa		Ensa	1	lin	normal
+obs_pGw		pGw	1	lin	normal
+obs_pEB55		pEB55	1	lin	normal
+obs_Wee		Wee	1	lin	normal
+obs_pCdc25		pCdc25	1	lin	normal
+obs_B55		B55 * fB55	1	lin	normal
+obs_pCb		pCb	1	lin	normal
