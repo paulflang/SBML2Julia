@@ -82,7 +82,7 @@ def _execute_case(case):
     yaml_file = os.path.join(case_dir, f'{case}.yaml')
 
     # simulate
-    problem = core.DisFitProblem(yaml_file, t_ratio=4, infer_ic_from_sbml=False)
+    problem = core.DisFitProblem(yaml_file, infer_ic_from_sbml=False)
     problem.write_jl_file()
     problem.optimize()
 

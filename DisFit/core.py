@@ -950,6 +950,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('        cond_idx = cond_dict[1]\n', 'utf8'))
         generated_code.extend(bytes('        push!(obs2conds[obs_name], cond_idx)\n', 'utf8'))
         generated_code.extend(bytes('    end\n', 'utf8'))
+        generated_code.extend(bytes('    sort!(obs2conds[obs_name])\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
         
         # generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
@@ -1153,8 +1154,9 @@ class DisFitProblem(object):
 
         # Write pre-equilibration constraints
         generated_code.extend(bytes('    # Pre-equilibration constraints\n', 'utf8'))
-        if any(isinstance(item, int) for item in self._j_to_parameters[1]):
-            condition_iterator = f'1:{len(cond_with_preequ)}'
+        condition_iterator = f'1:{len(cond_with_preequ)}'
+        # if any(isinstance(item, int) for item in self._j_to_parameters[1]):
+        if cond_with_preequ or preequ:
             # if len(self._preequilibration_arrays[0]) != len(self._preequilibration_arrays[1]):
             #     condition_iterator = self._preequilibration_arrays[1]
             generated_code.extend(bytes('    println("Defining pre-equilibration constraints...")\n', 'utf8'))
@@ -1166,7 +1168,7 @@ class DisFitProblem(object):
             for specie in species: # For every species
                 # Non-preequilibrated conditions 
                 if cond_without_preequ:
-                        generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[cond_without_preequ[j], length(t_sim)+1] == 0) # Dummy preequilibration for these conditions\n'.format(len(cond_without_preequ), specie), 'utf8')) # Dummy preequilibration
+                        generated_code.extend(bytes('    @constraint(m, [j in cond_without_preequ], {}[j, length(t_sim)+1] == 0) # Dummy preequilibration for these conditions\n'.format(specie), 'utf8')) # Dummy preequilibration
                 
                 # Preequilibrated conditions                
                 if species[specie]: # Species has reaction
@@ -1193,7 +1195,7 @@ class DisFitProblem(object):
                      generated_code.extend(bytes('    @constraint(m, [j in {}], {}[j, length(t_sim)+1] == 0) # Dummy preequilibration\n'.format(condition_iterator, specie), 'utf8')) # Dummy preequilibration
         else: # Just a dummy to fill the last time value that will never be used.
             for specie in species:
-                generated_code.extend(bytes('    @constraint(m, [j in 1:{}], {}[j, length(t_sim)+1] == 0) # Dummy preequilibration\n'.format(self._n_conditions, specie), 'utf8'))
+                generated_code.extend(bytes('    @constraint(m, [j in cond_without_preequ], {}[j, length(t_sim)+1] == 0) # Dummy preequilibration\n'.format(specie), 'utf8')) # Todo: I think if else block is superfluous
 
         generated_code.extend(bytes('\n', 'utf8'))
 
@@ -1290,16 +1292,16 @@ class DisFitProblem(object):
 
             if noise_distribution == 'normal' and scale == 'lin':
                 sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string)) # 1:length(dfg[j][:, :time])
-            # elif noise_distribution == 'normal' and scale == 'log':
-            #     sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2) + 0.5*((log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
-            # elif noise_distribution == 'normal' and scale == 'log10':
-            #     sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(data{3}[k, :{0}])^2*log(10)^2) + 0.5*((log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1}))^2 for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
-            # elif noise_distribution == 'laplace' and scale == 'lin':
-            #     sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, k_to_time_idx[j][k]]-data{3}[k, :{0}])/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
-            # elif noise_distribution == 'laplace' and scale == 'log':
-            #     sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]) + abs(log({0}[j, k_to_time_idx[j][k]])-log(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
-            # elif noise_distribution == 'laplace' and scale == 'log10':
-            #     sums_of_nllhs.append('sum(log(2*{1}*data{3}[k, :{0}]*log(10)) + abs(log10({0}[j, k_to_time_idx[j][k]])-log10(data{3}[k, :{0}]))/({1})) for j in 1:{2} for k in 1:length(t_exp))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))               
+            elif noise_distribution == 'normal' and scale == 'log':
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(m_exp["{0}"][j][k])^2) + 0.5*((log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+            elif noise_distribution == 'normal' and scale == 'log10':
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(m_exp["{0}"][j][k])^2*log(10)^2) + 0.5*((log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+            elif noise_distribution == 'laplace' and scale == 'lin':
+                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+            elif noise_distribution == 'laplace' and scale == 'log':
+                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]) + abs(log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+            elif noise_distribution == 'laplace' and scale == 'log10':
+                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]*log(10)) + abs(log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))               
 
 
         # priors = []
@@ -1427,6 +1429,7 @@ class DisFitProblem(object):
                 j = 0
                 for cond, arr in data_1.items():
                     j += 1
+                    j = self._condition2index[cond]+1
                     for k, pars in enumerate(arr):
                         if str_3:
                             str_3 = f', {k+1}'
