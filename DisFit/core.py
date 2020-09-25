@@ -275,7 +275,7 @@ class DisFitProblem(object):
         #     raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
 
         if np.inf in list(petab_problem.measurement_df['time']):
-            raise NotImplementedError('Fitting steady state problems is not possible (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+            raise NotImplementedError('Fitting steady state problems is not implemented.') # Todo: consider implementing it.
         
         t_conds = []
         for obs, data_1 in petab_problem.measurement_df.groupby('observableId'):
@@ -739,9 +739,11 @@ class DisFitProblem(object):
 
         assignments = {}
         for a in mod.getListOfRules():
-            if a.getMath().getName() == None:
+            if (a.getMath().getName() == None) or (a.getMath().getName() == 'piecewise'):
                 raise NotImplementedError('Assignment rules are not implemented.')
             assignments[a.getId()] = a.getMath().getName()
+        print('assignments')
+        print(assignments)
 
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
@@ -1204,6 +1206,9 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Define observables\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining observables...")\n', 'utf8'))
         for observable in self.petab_problem.observable_df.index:
+            if observable not in list(self.petab_problem.measurement_df['observableId']):
+                warnings.warn(f'Observable {observable} is not in the PEtab measurement table and will be omitted during optimization.')
+                continue
             min_exp_val = np.min(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             max_exp_val = np.max(self.petab_problem.measurement_df.loc[self.petab_problem.measurement_df.loc[:, 'observableId'] == observable, 'measurement'])
             diff = max_exp_val - min_exp_val
@@ -1255,6 +1260,9 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    @NLobjective(m, Min, ', 'utf8'))
         sums_of_nllhs = []
         for observable in self.petab_problem.observable_df.index:
+
+            if observable not in list(self.petab_problem.measurement_df['observableId']):
+                continue
             
             sigma = '( '+str(self.petab_problem.observable_df.loc[observable, 'noiseFormula'])+' )'
             for noise_par_name in set_of_noise_params:

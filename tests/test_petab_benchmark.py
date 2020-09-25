@@ -27,7 +27,7 @@ def test_petab_benchmark():
     i = 0
     for case in os.listdir(CASES_DIR):
         i += 1
-        if i != 6: # 6: Ask Sungho why NLP Error again. # 8: What is the memory problem? # 10 Takes to long to be run. Process is killed (at least if run from python)
+        if i != 11: # 2 Input Error: Incorrect initial partitioning scheme. # 6: Ask Sungho why NLP Error again. # 8: EXIT: Restoration Failed! # 10 Takes to long to be run. Process is killed (at least if run from python)
             # 14: Why is the process killed? 18: EXIT: Restoration Failed!.
             continue
         print(case)
@@ -45,7 +45,7 @@ def test_petab_benchmark():
 def execute_case(case):
     """Wrapper for _execute_case for handling test outcomes"""
     try:
-        _execute_case(case)
+        _execute_case0(case)
     except Exception as e:
         if isinstance(e, NotImplementedError) \
                 or 'Unrecognized function "piecewise" used in nonlinear expression.' in str(e): \
@@ -62,7 +62,7 @@ def execute_case(case):
             raise e
 
 
-def _execute_case(case):
+def _execute_case0(case):
     """Run a single PEtab test suite case"""
     logger.info(f"Case {case}")
 
@@ -82,7 +82,7 @@ def _execute_case(case):
     yaml_file = os.path.join(case_dir, f'{case}.yaml')
 
     # simulate
-    problem = core.DisFitProblem(yaml_file, infer_ic_from_sbml=False)
+    problem = core.DisFitProblem(yaml_file, optimizer_options={'linear_solver': 'MA57'}, infer_ic_from_sbml=False)
     problem.write_jl_file()
     problem.optimize()
 
@@ -91,6 +91,8 @@ def _execute_case(case):
     simulation_df = problem.petab_problem.simulation_df.rename(columns={petab.MEASUREMENT: petab.SIMULATION})
     chi2 = results['chi2']
     llh = - results['fval']
+    for c in [c for c, c_ind in problem._condition2index.items() if c_ind+1 in problem._j_to_parameters[0]]:
+        problem.plot_results(c, path=os.path.join(., 'plots', f'plot_{case}_'+c+'.pdf'))
 
     # check if matches
     # chi2s_match = petabtests.evaluate_chi2(chi2, gt_chi2, tol_chi2)
