@@ -69,6 +69,7 @@ for obs_dict in t_exp
         cond_idx = cond_dict[1]
         push!(obs2conds[obs_name], cond_idx)
     end
+    sort!(obs2conds[obs_name])
 end
 
 results = Dict()
@@ -83,8 +84,11 @@ cond_with_preequ = [2]
 preequ = [3]
 
 i_start = 1
-    m = Model(with_optimizer(Ipopt.Optimizer))
 
+    species_dict = Dict()
+    obs_dict = Dict()
+
+    m = Model(with_optimizer(Ipopt.Optimizer))
 
     # Define global parameters
     println("Defining global parameters...")
@@ -119,8 +123,8 @@ i_start = 1
 
     # Model species
     println("Defining species...")
-    @variable(m, 0.0 <= A[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
-    @variable(m, 0.0 <= B[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
+    species_dict["A"] = @variable(m, 0.0 <= A[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
+    species_dict["B"] = @variable(m, 0.0 <= B[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
 
     # Model initial assignments
     println("Defining initial assignments...")
@@ -138,12 +142,12 @@ i_start = 1
 
     # Pre-equilibration constraints
     println("Defining pre-equilibration constraints...")
-    @constraint(m, [j in 1:1], A[cond_without_preequ[j], length(t_sim)+1] == 0) # Dummy preequilibration for these conditions
+    @constraint(m, [j in cond_without_preequ], A[j, length(t_sim)+1] == 0) # Dummy preequilibration for these conditions
     println("A")
     @NLconstraint(m, [j in 1:1],
         -1.0*( compartment * k1[preequ[j]] * A[cond_with_preequ[j], length(t_sim)+1] ) +1.0*( compartment * k2 * B[cond_with_preequ[j], length(t_sim)+1] )  == 0 )
     @constraint(m, [j in 1:1], A[cond_with_preequ[j], length(t_sim)+1] == A[cond_with_preequ[j], 1])
-    @constraint(m, [j in 1:1], B[cond_without_preequ[j], length(t_sim)+1] == 0) # Dummy preequilibration for these conditions
+    @constraint(m, [j in cond_without_preequ], B[j, length(t_sim)+1] == 0) # Dummy preequilibration for these conditions
     println("B")
     @NLconstraint(m, [j in 1:1],
         +1.0*( compartment * k1[preequ[j]] * A[cond_with_preequ[j], length(t_sim)+1] ) -1.0*( compartment * k2 * B[cond_with_preequ[j], length(t_sim)+1] )  == 0 )
@@ -151,9 +155,9 @@ i_start = 1
 
     # Define observables
     println("Defining observables...")
-    @variable(m, -0.4096061150000001 <= obs_a[j in obs2conds["obs_a"], k in 1:length(t_exp["obs_a"][j])] <= 1.8169054180000002, start=1.)
+    obs_dict["obs_a"] = @variable(m, -0.4096061150000001 <= obs_a[j in obs2conds["obs_a"], k in 1:length(t_exp["obs_a"][j])] <= 1.8169054180000002, start=1.)
     @NLconstraint(m, [j in obs2conds["obs_a"], k in 1:length(t_exp["obs_a"][j])], obs_a[j, k] == A[j, t_sim_to_exp["obs_a"][j][k]])
-    @variable(m, -0.6546633489999999 <= obs_b[j in obs2conds["obs_b"], k in 1:length(t_exp["obs_b"][j])] <= 3.059816594, start=1.)
+    obs_dict["obs_b"] = @variable(m, -0.6546633489999999 <= obs_b[j in obs2conds["obs_b"], k in 1:length(t_exp["obs_b"][j])] <= 3.059816594, start=1.)
     @NLconstraint(m, [j in obs2conds["obs_b"], k in 1:length(t_exp["obs_b"][j])], obs_b[j, k] == offset_B+scaling_B*B[j, t_sim_to_exp["obs_b"][j][k]])
 
     # Defining objectivePriors
@@ -221,10 +225,10 @@ i_start = 1
     end
 
     species_names = ["A", "B", ]
-    species_values = Dict(string(spec)=>Dict(cond_idx=>[value(eval(Symbol(spec))[cond_idx, val_idx]) for val_idx=1:length(t_sim)]
+    species_values = Dict(string(spec)=>Dict(cond_idx=>[value(species_dict[spec][cond_idx, val_idx]) for val_idx=1:length(t_sim)]
         for cond_idx in 1:length(keys(df_by_c))) for spec in species_names)
 
-    observable_values = Dict(obs=>Dict(cond_idx=>[value(eval(Symbol(obs))[cond_idx, val_idx]) for val_idx=1:length(list)]
+    observable_values = Dict(obs=>Dict(cond_idx=>[value(obs_dict[obs][cond_idx, val_idx]) for val_idx=1:length(list)]
         for (cond_idx, list) in dict) for (obs, dict) in m_exp)
 
     objective_val = objective_value(m)

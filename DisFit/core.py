@@ -1006,8 +1006,10 @@ class DisFitProblem(object):
         if self.n_starts > 1:
             generated_code.extend(bytes('for i_start in 1:{}\n'.format(self._n_starts), 'utf8'))  
         else:
-            generated_code.extend(bytes('i_start = 1\n', 'utf8'))
-        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n\n', 'utf8'))
+            generated_code.extend(bytes('i_start = 1\n\n', 'utf8'))
+        generated_code.extend(bytes('    species_dict = Dict()\n', 'utf8'))
+        generated_code.extend(bytes('    obs_dict = Dict()\n\n', 'utf8'))
+        generated_code.extend(bytes('    m = Model(with_optimizer(Ipopt.Optimizer))\n', 'utf8'))
         for k, v in self.optimizer_options.items():
             if isinstance(v, str):
                 generated_code.extend(bytes('    set_optimizer_attribute(m,"{}","{}")\n'.format(k, v), 'utf8'))
@@ -1089,16 +1091,15 @@ class DisFitProblem(object):
         n_j = len(self._j_to_parameters[0])
         generated_code.extend(bytes('    # Model species\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
-        global_str = ''
         for specie in species.keys():
             if self.n_starts > 1:
                 global_str = f'global {specie} = '
             if species[specie]:
                 lb = self.petab_problem.species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == self.petab_problem.species_df.index
                 ub = self.petab_problem.species_df.loc[specie, 'upperBound']
-                generated_code.extend(bytes('    {}@variable(m, {} <= {}[j in 1:{}, k in 1:(length(t_sim)+1)] <= {})\n'.format(global_str, lb, specie, n_j, ub), 'utf8'))
+                generated_code.extend(bytes('    species_dict["{}"] = @variable(m, {} <= {}[j in 1:{}, k in 1:(length(t_sim)+1)] <= {})\n'.format(specie, lb, specie, n_j, ub), 'utf8'))
             else:
-                generated_code.extend(bytes('    {}@variable(m, {}[j in 1:{}, k in 1:(length(t_sim)+1)])\n'.format(global_str, specie, n_j), 'utf8'))
+                generated_code.extend(bytes('    species_dict["{}"] = @variable(m, {}[j in 1:{}, k in 1:(length(t_sim)+1)])\n'.format(specie, specie, n_j), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
 
@@ -1221,9 +1222,9 @@ class DisFitProblem(object):
                 lb = 'NaN'
             if np.isnan(ub):
                 ub = 'NaN'
-            if self.n_starts > 1:
-                global_str = f'global {observable} = '
-            generated_code.extend(bytes(f'    {global_str}@variable(m, {lb} <= {observable}[j in obs2conds["{observable}"], k in 1:length(t_exp["{observable}"][j])] <= {ub}, start=1.)\n', 'utf8'))
+            # if self.n_starts > 1:
+            #     global_str = f'global {observable} = '
+            generated_code.extend(bytes(f'    obs_dict["{observable}"] = @variable(m, {lb} <= {observable}[j in obs2conds["{observable}"], k in 1:length(t_exp["{observable}"][j])] <= {ub}, start=1.)\n', 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             formula = ' '+''.join(formula)+' '
             for spec in species.keys():
@@ -1348,7 +1349,7 @@ class DisFitProblem(object):
         for specie in species:
             generated_code.extend(bytes('"'+specie+'", ', 'utf8'))
         generated_code.extend(bytes(']\n', 'utf8'))
-        generated_code.extend(bytes('    species_values = Dict(string(spec)=>Dict(cond_idx=>[value(eval(Symbol(spec))[cond_idx, val_idx]) for val_idx=1:length(t_sim)]\n', 'utf8'))
+        generated_code.extend(bytes('    species_values = Dict(string(spec)=>Dict(cond_idx=>[value(species_dict[spec][cond_idx, val_idx]) for val_idx=1:length(t_sim)]\n', 'utf8'))
         generated_code.extend(bytes('        for cond_idx in 1:length(keys(df_by_c))) for spec in species_names)\n\n', 'utf8'))
 
         # generated_code.extend(bytes('    species_values = Dict()\n', 'utf8'))
@@ -1369,7 +1370,7 @@ class DisFitProblem(object):
         # generated_code.extend(bytes('        end\n', 'utf8'))
         # generated_code.extend(bytes('        observable_values[split(string(o[1,1]), "[")[1]] = tmp\n', 'utf8'))
         # generated_code.extend(bytes('    end\n\n', 'utf8'))
-        generated_code.extend(bytes('    observable_values = Dict(obs=>Dict(cond_idx=>[value(eval(Symbol(obs))[cond_idx, val_idx]) for val_idx=1:length(list)]\n', 'utf8'))
+        generated_code.extend(bytes('    observable_values = Dict(obs=>Dict(cond_idx=>[value(obs_dict[obs][cond_idx, val_idx]) for val_idx=1:length(list)]\n', 'utf8'))
         generated_code.extend(bytes('        for (cond_idx, list) in dict) for (obs, dict) in m_exp)\n\n', 'utf8'))
 
         generated_code.extend(bytes('    objective_val = objective_value(m)\n\n', 'utf8'))
