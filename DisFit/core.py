@@ -596,12 +596,7 @@ class DisFitProblem(object):
                     for condition, i in self._condition2index.items():
                         if i+1 in self._j_to_parameters[0]:
                             dfg = df.get_group(condition)
-                            if var_type == 'species':
-                                print(dfg)
                             dfg = dfg.set_index(['time', Id]) #.drop_duplicates()
-                            print('dropped duplicates')
-                            if var_type == 'species':
-                                print(dfg)
                             dfg = dfg.unstack()
                             dfg = dfg.loc[:, 'simulation']
                             dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
@@ -742,8 +737,6 @@ class DisFitProblem(object):
             if (a.getMath().getName() == None) or (a.getMath().getName() == 'piecewise'):
                 raise NotImplementedError('Assignment rules are not implemented.')
             assignments[a.getId()] = a.getMath().getName()
-        print('assignments')
-        print(assignments)
 
         initial_assignments = {}
         for a in mod.getListOfInitialAssignments():
@@ -1092,8 +1085,8 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    # Model species\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
         for specie in species.keys():
-            if self.n_starts > 1:
-                global_str = f'global {specie} = '
+            # if self.n_starts > 1:
+            #     global_str = f'global {specie} = '
             if species[specie]:
                 lb = self.petab_problem.species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == self.petab_problem.species_df.index
                 ub = self.petab_problem.species_df.loc[specie, 'upperBound']

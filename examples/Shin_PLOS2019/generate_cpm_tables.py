@@ -9,18 +9,18 @@ basedir = os.path.dirname(os.path.abspath(__file__))
 out_path = os.path.join(basedir, 'condition_table.tsv')
 with open(out_path, 'wt') as f:
     tsv_writer = csv.writer(f, delimiter='\t')
-    tsv_writer.writerow(['conditionId', 'mu_a', 'mu_b', 'alpha_ab', 'alpha_ba', 'A', 'B'])
+    tsv_writer.writerow(['conditionId', 'mu_a', 'mu_b', 'alpha_ab', 'alpha_ba', 'alpha_aa', 'alpha_bb'])
 
     # Write single species conditions
     for i in range(1, 13):
         simulationConditionId = f'c_{i}'
         mu_a = f'mu_{i}'
-        mu_b = f'mu_{i}'
-        alpha_ab = f'alpha_{i}_{i}'
-        alpha_ba = f'alpha_{i}_{i}'
-        A = f'initA_c_{i}'
-        B = f'initA_c_{i}'
-        tsv_writer.writerow([simulationConditionId, mu_a, mu_b, alpha_ab, alpha_ba, A, B])
+        mu_b = '0'
+        alpha_ab = '0'
+        alpha_ba = '0'
+        alpha_aa = f'alpha_{i}_{i}'
+        alpha_bb = '0'
+        tsv_writer.writerow([simulationConditionId, mu_a, mu_b, alpha_ab, alpha_ba, alpha_aa, alpha_bb])
 
     # Write double species conditions
     for i in range(1, 13):
@@ -29,14 +29,11 @@ with open(out_path, 'wt') as f:
             mu_b = f'mu_{j}'
             alpha_ab = f'alpha_{i}_{j}'
             alpha_ba = f'alpha_{j}_{i}'
-            A = f'initA_c_{i}_{j}'
-            B = f'initB_c_{i}_{j}'
+            alpha_aa = f'alpha_{i}_{i}'
+            alpha_bb = f'alpha_{j}_{j}'
             for rep in ['i', 'ii', 'iii']:
                 simulationConditionId = f'c_{i}_{j}_{rep}'
-                if rep != 'i':
-                    A = ''
-                    B = ''
-                tsv_writer.writerow([simulationConditionId, mu_a, mu_b, alpha_ab, alpha_ba, A, B])
+                tsv_writer.writerow([simulationConditionId, mu_a, mu_b, alpha_ab, alpha_ba, alpha_aa, alpha_bb])
 
 print(f'Wrote to `{out_path}`.')
 
@@ -44,64 +41,50 @@ print(f'Wrote to `{out_path}`.')
 ## Write parameter table
 out_path = os.path.join(basedir, 'parameter_table.tsv')
 with open(out_path, 'wt') as f:
+    parameterScale = 'lin'
+    estimate = 1
+    objectivePriorType = 'normal'
+    objectivePriorParameters = f'0.0; {1/50**0.5}' # Todo: @Sungho: What L2 priors and bounds have you used?
+
     tsv_writer = csv.writer(f, delimiter='\t')
     tsv_writer.writerow(['parameterId', 'parameterScale', 'lowerBound', 'upperBound', 'nominalValue', 'estimate', 'objectivePriorType', 'objectivePriorParameters'])
 
     # Write mu
-    parameterScale = 'lin'
     lowerBound = 0
     upperBound = 2
     nominalValue = 0.1
-    estimate = 1
-    objectivePriorType = 'normal'
-    objectivePriorParameters = f'0.0; {2}' # Todo: @Sungho: What L2 priors and bounds have you used?
     for i in range(1, 13):
         parameterId = f'mu_{i}'
         tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
-    # Write alpha
+    # Write alpha_ab and alpha_ba
     lowerBound = -2
-    upperBound = 2
-    nominalValue = 0
+    upperBound = 0
+    nominalValue = -0.1
     for i in range(1, 13):
-        for j in range(i, 13):
-            if i == j:
-                upperBound = 0
-            else:
-                upperBound = 2
+        for j in range(i+1, 13):
             parameterId = f'alpha_{i}_{j}'
             tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
-            if i < j:
-                parameterId = f'alpha_{j}_{i}'
-                tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
+            parameterId = f'alpha_{j}_{i}'
+            tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
 
-    # Write init
-    parameterScale = 'lin'
-    lowerBound = 0
-    upperBound = 0.03
-    nominalValue = 0.01
-    estimate = 1
-    objectivePriorType = 'normal'
-    objectivePriorParameters = '0.01; 0.1'
+    # Write alpha_aa and alpha_bb
+    lowerBound = -2
+    upperBound = 0
+    nominalValue = -0.1
     for i in range(1, 13):
-        parameterId = f'initA_c_{i}'
+        parameterId = f'alpha_{i}_{i}'
         tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
-        for j in range(i+1, 13):
-            parameterId = f'initA_c_{i}_{j}'
-            tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
-            parameterId = f'initB_c_{i}_{j}'
-            tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
-
 
     # Write sigma
-    parameterId = 'sigma'
     lowerBound = 0
     upperBound = 2
     nominalValue = 1
     estimate = 0
     objectivePriorType = ''
     objectivePriorParameters = ''
+    parameterId = 'sigma'
     tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
 print(f'Wrote to `{out_path}`.')
