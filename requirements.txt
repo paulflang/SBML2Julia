@@ -3,11 +3,8 @@ python-libsbml==5.18.0
 matplotlib
 numpy
 openpyxl
-os
 pandas
 petab
-re
 scipy
 setuptools
-sys
 julia
