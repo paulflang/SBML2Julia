@@ -50,16 +50,16 @@ with open(out_path, 'wt') as f:
     tsv_writer.writerow(['parameterId', 'parameterScale', 'lowerBound', 'upperBound', 'nominalValue', 'estimate', 'objectivePriorType', 'objectivePriorParameters'])
 
     # Write mu
-    lowerBound = 0
-    upperBound = 2
+    lowerBound = -5
+    upperBound = 5
     nominalValue = 0.1
     for i in range(1, 13):
         parameterId = f'mu_{i}'
         tsv_writer.writerow([parameterId, parameterScale, lowerBound, upperBound, nominalValue, estimate, objectivePriorType, objectivePriorParameters])
 
     # Write alpha_ab and alpha_ba
-    lowerBound = -2
-    upperBound = 0
+    lowerBound = -5
+    upperBound = 5
     nominalValue = -0.1
     for i in range(1, 13):
         for j in range(i+1, 13):
@@ -70,8 +70,8 @@ with open(out_path, 'wt') as f:
 
 
     # Write alpha_aa and alpha_bb
-    lowerBound = -2
-    upperBound = 0
+    lowerBound = -5
+    upperBound = 5
     nominalValue = -0.1
     for i in range(1, 13):
         parameterId = f'alpha_{i}_{i}'
@@ -80,7 +80,7 @@ with open(out_path, 'wt') as f:
     # Write sigma
     lowerBound = 0
     upperBound = 2
-    nominalValue = 1
+    nominalValue = 0.1
     estimate = 0
     objectivePriorType = ''
     objectivePriorParameters = ''
