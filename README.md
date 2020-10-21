@@ -1,6 +1,6 @@
 [![Documentation](https://readthedocs.org/projects/sbml2juliamp/badge/?version=latest)](https://sbml2juliamp.readthedocs.io/en/latest/)
 [![Test results](https://circleci.com/gh/paulflang/SBML2JuliaMP.svg?style=shield)](https://app.circleci.com/pipelines/github/paulflang/SBML2JuliaMP)
-[![License](https://img.shields.io/github/license/paulflang/sbml2juliamp.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/paulflang/SBML2JuliaMP.svg)](LICENSE)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # `SBML2JuliaMP`
