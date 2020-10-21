@@ -18,7 +18,7 @@ from julia.api import Julia
 importlib.reload(libsbml)
 
 
-class DisFitProblem(object):
+class SBML2JuliaMPProblem(object):
 
     def __init__(self, sbml_path, data_path, t_ratio=2, fold_change=2, n_starts=1):
         """        
@@ -216,7 +216,7 @@ class DisFitProblem(object):
             self._files_written = True
 
     def optimize(self):
-        """Optimize DisFitProblem
+        """Optimize SBML2JuliaMPProblem
         
         Returns:
             :obj:`dict`: Results in a dict with keys 'states', 'x' and 'x_best'
@@ -282,7 +282,7 @@ class DisFitProblem(object):
         plt.ylim(0, 1.1 * max(values.max()))
         plt.xlabel(x_label, fontsize=18)
         plt.ylabel(y_label, fontsize=18)
-        plt.title('DisFit time course')
+        plt.title('SBML2JuliaMP time course')
 
         plt.savefig(path)
         plt.close()

@@ -1,4 +1,4 @@
-""" Test of DisFit.core
+""" Test of SBML2JuliaMP.core
 :Author: Paul F Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-16
 :Copyright: 2020, Paul F Lang
@@ -13,7 +13,7 @@ import re
 import shutil
 import tempfile
 import unittest
-from DisFit import core
+from SBML2JuliaMP import core
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
@@ -25,10 +25,10 @@ DATA_PATH = os.path.join(FIXTURES, 'G2M_copasi.csv')
 jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(jl_file_gold, 'r') as f:
     JL_CODE_GOLD = f.read()
-JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures',
     FIXTURES, JL_CODE_GOLD)
 
-class DisFitProblemTestCase(unittest.TestCase):
+class SBML2JuliaMPProblemTestCase(unittest.TestCase):
     
     def setUp(self):
         self.dirname = tempfile.mkdtemp()
@@ -37,10 +37,10 @@ class DisFitProblemTestCase(unittest.TestCase):
         shutil.rmtree(self.dirname)
 
     def test_constructor(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
 
     def test_sbml_path_setter(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         problem.sbml_path = SBML_PATH
         self.assertEqual(problem.sbml_path, SBML_PATH)
         with self.assertRaises(ValueError):
@@ -51,7 +51,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             problem.sbml_path = FIXTURES
 
     def test_data_path_setter(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         problem.data_path = DATA_PATH
         self.assertEqual(problem.data_path, DATA_PATH)
         with self.assertRaises(ValueError): 
@@ -62,7 +62,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             problem.data_path = FIXTURES
     
     def test_t_ratio_setter(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         self.assertEqual(problem.t_ratio, 2)
         with self.assertRaises(ValueError):
             problem.t_ratio = 0
@@ -73,7 +73,7 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
     def test_fold_change_setter(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         self.assertEqual(problem.fold_change, 2)
         with self.assertRaises(ValueError):
             problem.fold_change = 1.0
@@ -84,7 +84,7 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
     def test_n_starts_setter(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         self.assertEqual(problem.n_starts, 1)
         with self.assertRaises(ValueError):
             problem.n_starts = 1.1
@@ -95,11 +95,11 @@ class DisFitProblemTestCase(unittest.TestCase):
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
     def test_julia_code(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
     def test_write_jl_file(self):
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         problem.write_jl_file(path=os.path.join(self.dirname, 'jl_code.jl'))
         with open(os.path.join(self.dirname, 'jl_code.jl'), 'r') as f:
             jl_code = f.read()
@@ -108,7 +108,7 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_optimize_results_plot(self):
 
         # test_optimize()
-        problem = core.DisFitProblem(SBML_PATH, DATA_PATH)
+        problem = core.SBML2JuliaMPProblem(SBML_PATH, DATA_PATH)
         problem.optimize()
 
         results = problem.results

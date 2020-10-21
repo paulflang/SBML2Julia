@@ -3,14 +3,14 @@
 Python API
 ----------
 
-The following tutorial illustrates how to use the `DisFit` Python API.
+The following tutorial illustrates how to use the `SBML2JuliaMP` Python API.
 
-Importing `DisFit`
+Importing `SBML2JuliaMP`
 ^^^^^^^^^^^^^^^^^^^
 
-Run this command to import `DisFit`::
+Run this command to import `SBML2JuliaMP`::
 
-    >>> import DisFit
+    >>> import SBML2JuliaMP
 
 
 Specifying an optimization problem
@@ -29,9 +29,9 @@ Optionally, you can also set
 
 The problem is then specified as::
 
-    >>> problem = DisFit.DisFitProblem(sbml_path, csv_path, t_ratio=2, fold_change=2, n_starts=1)
+    >>> problem = SBML2JuliaMP.SBML2JuliaMPProblem(sbml_path, csv_path, t_ratio=2, fold_change=2, n_starts=1)
 
-Once the problem is specified, `DisFit` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
+Once the problem is specified, `SBML2JuliaMP` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
 
     >>> code = problem.julia_code
 
@@ -39,7 +39,7 @@ or written to a file via::
 
     >>> problem.write_jl_file(path='path_to_jl_file.jl')
 
-If you want to change the optimization problem in a way that is not yet supported by `DisFit`, you can manually modify the julia code and run the optimization in julia yourself.
+If you want to change the optimization problem in a way that is not yet supported by `SBML2JuliaMP`, you can manually modify the julia code and run the optimization in julia yourself.
 
 Running the optimization
 ^^^^^^^^^^^^^^^^^^^^^^^^

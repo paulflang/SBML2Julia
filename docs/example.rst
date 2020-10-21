@@ -1,16 +1,16 @@
 Example
 =======
 
-The `DisFit GitHub repository <https://github.com/paulflang/DisFit/tree/master/tests/fixtures>`_ contains a version of the `Vinod et Novak model <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ of the G2/M cell cycle transition, along with simulated experimental data.
+The `SBML2JuliaMP GitHub repository <https://github.com/paulflang/SBML2JuliaMP/tree/master/tests/fixtures>`_ contains a version of the `Vinod et Novak model <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ of the G2/M cell cycle transition, along with simulated experimental data.
 
 Using the Python API
 --------------------
 
-The `DisFit` problem can be created using the Python API (and assuming that the current working directory is the `DisFit` root directory) via::
+The `SBML2JuliaMP` problem can be created using the Python API (and assuming that the current working directory is the `SBML2JuliaMP` root directory) via::
 
-	>>> import DisFit
+	>>> import SBML2JuliaMP
 
-	>>> problem = DisFit.DisFitProblem('tests/fixtures/G2M_copasi.xml', 'tests/fixtures/G2M_copasi.csv')
+	>>> problem = SBML2JuliaMP.SBML2JuliaMPProblem('tests/fixtures/G2M_copasi.xml', 'tests/fixtures/G2M_copasi.csv')
 
 and solved by::
 
@@ -41,6 +41,6 @@ Using the command line interface
 
 Similarly, the same example problem can be solved from the comand line interface::
 
-	user@bash:/DisFit$ DisFit optimize 'tests/fixtures/G2M_copasi.xml' 'tests/fixtures/G2M_copasi.csv' -o './DisFit_results'
+	user@bash:/SBML2JuliaMP$ SBML2JuliaMP optimize 'tests/fixtures/G2M_copasi.xml' 'tests/fixtures/G2M_copasi.csv' -o './SBML2JuliaMP_results'
 
 The results can be found in the output directory given to the ``-o`` argument.

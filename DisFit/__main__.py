@@ -1,12 +1,12 @@
-""" DisFit command line interface
+""" SBML2JuliaMP command line interface
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-26
 :Copyright: 2020, Paul F Lang
 :License: MIT
 """
 
-from .core import DisFitProblem
-import DisFit
+from .core import SBML2JuliaMPProblem
+import SBML2JuliaMP
 import cement
 import os
 import re
@@ -18,10 +18,10 @@ class BaseController(cement.Controller):
 
     class Meta:
         label = 'base'
-        description = "DisFit"
-        help = "DisFit"
+        description = "SBML2JuliaMP"
+        help = "SBML2JuliaMP"
         arguments = [
-            (['-v', '--version'], dict(action='version', version=DisFit.__version__)),
+            (['-v', '--version'], dict(action='version', version=SBML2JuliaMP.__version__)),
         ]
 
     # @cement.ex(hide=False)
@@ -47,7 +47,7 @@ class OptimizeController(cement.Controller):
                             help='fold change window of parameter search range wrt sbml parameters')),
             (['-n', '--n_starts'], dict(default=1, type=int,
                             help='number of multistarts')),
-            (['-o', '--out_dir'], dict(default='./DisFit_results', type=str,
+            (['-o', '--out_dir'], dict(default='./SBML2JuliaMP_results', type=str,
                             help='output directory for julia_code, results and plot')),
             (['-p', '--plot_vars'], dict(default='[]', type=str,
                             help='list of variables to be plotted'))
@@ -59,7 +59,7 @@ class OptimizeController(cement.Controller):
 
         try:
             print('--- Generating optimization problem ---')
-            problem = DisFitProblem(args.sbml_file, args.data_file, t_ratio=args.t_ratio, 
+            problem = SBML2JuliaMPProblem(args.sbml_file, args.data_file, t_ratio=args.t_ratio, 
                 fold_change=args.fold_change, n_starts=args.n_starts)
         except Exception as error:
             raise SystemExit('Error occured: {}'.format(str(error)))
@@ -99,7 +99,7 @@ class OptimizeController(cement.Controller):
 class App(cement.App):
     """ Command line application """
     class Meta:
-        label = 'DisFit'
+        label = 'SBML2JuliaMP'
         base_controller = 'base'
         handlers = [
             BaseController,

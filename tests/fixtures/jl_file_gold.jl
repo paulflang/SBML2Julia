@@ -6,7 +6,7 @@ fc = 2.0 # Setting parameter search span
 t_ratio = 2 # Setting number of ODE discretisation steps
 
 # Data
-data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures/G2M_copasi.csv"
+data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures/G2M_copasi.csv"
 df = CSV.read(data_path)
 t_exp = Vector(df[!, :t]) # set of simulation times.)
 t_sim = range(0, stop=t_exp[end], length=t_exp[end]*t_ratio+1)
