@@ -21,3 +21,7 @@ Alternatively, the `DisFit` dependencies can be installed on Ubuntu machines as 
 	git clone https://github.com/paulflang/DisFit.git
 	python3 -m pip install -e DisFit
 	DisFit -h
+
+`DisFit` uses nonlinear optimization solver `IPOPT` as a core optimization engine. The performance of optimization solver `IPOPT` critically relies on the efficiency of lienar solver that is used within the solver. In order to use efficient HSL linear solver libraries, custom installation of `IPOPT` is necessary. This option is recommended if the estimation problem faces intractability. For custom installation of `IPOPT` with HSL libraries, follow the instructions in `Ipopt.jl` repository (https://github.com/JuliaOpt/Ipopt.jl) and `IPOPT` documentation (https://coin-or.github.io/Ipopt/INSTALL.html). After custom installation of IPOPT, HSL solvers can be used, for example, by::
+
+	problem = DisFit.DisFitProblem('tests/fixtures/G2M_copasi.xml', 'tests/fixtures/G2M_copasi.csv',optimizer_options={"linear_solver":"ma57"})
