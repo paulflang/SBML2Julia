@@ -1372,6 +1372,7 @@ class DisFitProblem(object):
         generated_code.extend(bytes('    results["species"][string(i_start)] = species_values\n', 'utf8'))
         generated_code.extend(bytes('    results["observables"][string(i_start)] = observable_values\n\n', 'utf8'))
         if self.n_starts > 1:
+            generated_code.extend(bytes('    println("--------------------Finished $i_start. iteration.--------------------")\n', 'utf8'))
             generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('results', 'utf8'))
