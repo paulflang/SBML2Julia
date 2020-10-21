@@ -1,5 +1,5 @@
 cement >= 3.0.0
-libsbml
+python-libsbml==5.18.0
 matplotlib
 numpy
 openpyxl
