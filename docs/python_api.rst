@@ -3,22 +3,22 @@
 Python API
 ----------
 
-The following tutorial illustrates how to use the `DisFit` Python API.
+The following tutorial illustrates how to use the `SBML2JuliaMP` Python API.
 
-Importing `DisFit`
+Importing `SBML2JuliaMP`
 ^^^^^^^^^^^^^^^^^^^
 
-Run this command to import `DisFit`::
+Run this command to import `SBML2JuliaMP`::
 
-    >>> import DisFit
+    >>> import SBML2JuliaMP
 
 
 Specifying an optimization problem
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-DisFit uses the PEtab format for specifying biological parameter estimation problems. PEtab is built around SBML and based on tab-separated values (TSV) files. Please visit the `PEtab documentation <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_ and have a look at the `PEtab examples <https://github.com/PEtab-dev/petab_test_suite/tree/master/cases>`_ for detailed instructions on how to specify an optimization problem in PEtab.
+SBML2JuliaMP uses the PEtab format for specifying biological parameter estimation problems. PEtab is built around SBML and based on tab-separated values (TSV) files. Please visit the `PEtab documentation <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_ and have a look at the `PEtab examples <https://github.com/PEtab-dev/petab_test_suite/tree/master/cases>`_ for detailed instructions on how to specify an optimization problem in PEtab.
 
-DisFit also contains the following optimization hyperparameters:
+SBML2JuliaMP also contains the following optimization hyperparameters:
 
 * **t_ratio**: ratio between experimental observation intervals and simulation time-discretization intervals. Default ``2``.
 * **n_starts**: number of multistarts. Default ``1``.
@@ -26,9 +26,9 @@ DisFit also contains the following optimization hyperparameters:
 
 The problem is then specified as::
 
-    >>> problem = DisFit.DisFitProblem(my_petab_promlem.yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False)
+    >>> problem = SBML2JuliaMP.SBML2JuliaMPProblem(my_petab_promlem.yaml, t_ratio=2, n_starts=1, infer_ic_from_sbml=False)
 
-Once the problem is specified, `DisFit` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
+Once the problem is specified, `SBML2JuliaMP` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
 
     >>> code = problem.julia_code
 
@@ -36,7 +36,7 @@ or written to a file via::
 
     >>> problem.write_jl_file(path='path_to_jl_file.jl')
 
-If you want to change the optimization problem in a way that is not yet supported by `DisFit`, you can manually modify the julia code and run the optimization in julia yourself.
+If you want to change the optimization problem in a way that is not yet supported by `SBML2JuliaMP`, you can manually modify the julia code and run the optimization in julia yourself.
 
 Running the optimization
 ^^^^^^^^^^^^^^^^^^^^^^^^

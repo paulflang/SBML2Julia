@@ -1,7 +1,7 @@
 import setuptools
 import os
 
-name = 'DisFit'
+name = 'SBML2JuliaMP'
 with open("README.md", "r") as fh:
     long_description = fh.read()
 # dirname = os.path.dirname(__file__)
@@ -46,7 +46,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'DisFit = DisFit.__main__:main', 
+            'SBML2JuliaMP = SBML2JuliaMP.__main__:main', 
         ],
-    }, # The entry_point says that when I type into the console "DisFit", what will be executed is the function main in calc.__main__.py
+    }, # The entry_point says that when I type into the console "SBML2JuliaMP", what will be executed is the function main in calc.__main__.py
 ) #

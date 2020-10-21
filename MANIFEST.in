@@ -2,7 +2,7 @@
 README.rst
 
 # version
-include DisFit/VERSION
+include SBML2JuliaMP/VERSION
 
 # license
 include LICENSE

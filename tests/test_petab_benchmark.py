@@ -1,7 +1,7 @@
 """Execute petab test suite."""
 
 import petabtests
-from DisFit import core
+from SBML2JuliaMP import core
 import importlib
 importlib.reload(core)
 import sys
@@ -82,7 +82,7 @@ def _execute_case0(case):
     yaml_file = os.path.join(case_dir, f'{case}.yaml')
 
     # simulate
-    problem = core.DisFitProblem(yaml_file, optimizer_options={'linear_solver': 'MA57'}, infer_ic_from_sbml=False)
+    problem = core.SBML2JuliaMPProblem(yaml_file, optimizer_options={'linear_solver': 'MA57'}, infer_ic_from_sbml=False)
     problem.write_jl_file()
     problem.optimize()
 

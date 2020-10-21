@@ -1,4 +1,4 @@
-""" Tests of DisFit command line interface (DisFit.__main__)
+""" Tests of SBML2JuliaMP command line interface (SBML2JuliaMP.__main__)
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-26
 :Copyright: 2020, Paul F Lang
@@ -6,7 +6,7 @@
 """
 
 import capturer
-import DisFit
+import SBML2JuliaMP
 import mock
 import os
 import pkg_resources
@@ -14,14 +14,14 @@ import re
 import shutil
 import tempfile
 import unittest
-from DisFit import __main__
+from SBML2JuliaMP import __main__
 
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 YAML_PATH = os.path.join(FIXTURES, '0015_objectivePrior', '_0015_objectivePrior.yaml')
 jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(jl_file_gold, 'r') as f:
     JL_CODE_GOLD = f.read()
-JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures',
     FIXTURES, JL_CODE_GOLD)
 
 class CliVersionTestCase(unittest.TestCase):
@@ -30,14 +30,14 @@ class CliVersionTestCase(unittest.TestCase):
             with capturer.CaptureOutput(merged=False, relay=False) as captured:
                 with self.assertRaises(SystemExit):
                     app.run()
-                self.assertEqual(captured.stdout.get_text(), DisFit.__version__)
+                self.assertEqual(captured.stdout.get_text(), SBML2JuliaMP.__version__)
                 self.assertEqual(captured.stderr.get_text(), '')
 
         with __main__.App(argv=['--version']) as app:
             with capturer.CaptureOutput(merged=False, relay=False) as captured:
                 with self.assertRaises(SystemExit):
                     app.run()
-                self.assertEqual(captured.stdout.get_text(), DisFit.__version__)
+                self.assertEqual(captured.stdout.get_text(), SBML2JuliaMP.__version__)
                 self.assertEqual(captured.stderr.get_text(), '')
 
 
@@ -51,10 +51,10 @@ class CliTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir_2)
 
     def test_cli(self):
-        with mock.patch('sys.argv', ['DisFit', '--help']):
+        with mock.patch('sys.argv', ['SBML2JuliaMP', '--help']):
             with self.assertRaises(SystemExit) as context:
                 __main__.main()
-                self.assertRegex(context.Exception, 'usage: DisFit')
+                self.assertRegex(context.Exception, 'usage: SBML2JuliaMP')
 
     def test_help(self):
         with self.assertRaises(SystemExit):

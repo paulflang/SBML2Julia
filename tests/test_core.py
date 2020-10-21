@@ -1,4 +1,4 @@
-""" Test of DisFit.core
+""" Test of SBML2JuliaMP.core
 :Author: Paul F Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-16
 :Copyright: 2020, Paul F Lang
@@ -16,7 +16,7 @@ import re
 import shutil
 import tempfile
 import unittest
-from DisFit import core
+from SBML2JuliaMP import core
 from julia.api import Julia
 import importlib
 importlib.reload(core)
@@ -31,7 +31,7 @@ PETAB_YAML = os.path.join(FIXTURES, '0015_objectivePrior', '_0015_objectivePrior
 JL_FILE_GOLD = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(JL_FILE_GOLD, 'r') as f:
     JL_CODE_GOLD = f.read()
-JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures',
     FIXTURES, JL_CODE_GOLD)
 with open(os.path.join('.', 'substituted_code.jl'), 'w') as f:
     f.write(JL_CODE_GOLD)
@@ -39,13 +39,13 @@ with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
     RESULTS_GOLD = pickle.load(f)
 
 
-class Mock(core.DisFitProblem):
+class Mock(core.SBML2JuliaMPProblem):
     def __init__(self):
         self._initialization = True
         self._jl = Julia(compiled_modules=False)
 
 
-class DisFitProblemTestCase(unittest.TestCase):
+class SBML2JuliaMPProblemTestCase(unittest.TestCase):
     
     def setUp(self):
         self.dirname = tempfile.mkdtemp()
@@ -56,7 +56,7 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
     def test_constructor(self):
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
 
 
     def test_petab_yaml_dict(self):
@@ -104,7 +104,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             problem.infer_ic_from_sbml = 1
         
         # Test resetting
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_infer_ic_from_sbml_setter.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         # problem.infer_ic_from_sbml = True # Todo: add species to SBML for this test case
@@ -119,7 +119,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             problem.optimizer_options = 1
         
         # Test resetting
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         # problem.write_jl_file(path=os.path.join('.', 'test_optimizer_options_setter.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         problem.optimizer_options = {'linear_solver': 'MA27'}
@@ -139,7 +139,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             problem.custom_code_dict = {'abc': 1}
         
         # Test resetting
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         problem.optimizer_options = {'# Write global parameters': '# Write global parameters1'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
@@ -160,7 +160,7 @@ class DisFitProblemTestCase(unittest.TestCase):
     def test_import_julia_code(self):
         problem = Mock()
         problem.import_julia_code(JL_FILE_GOLD)
-        problem._julia_code = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures',
+        problem._julia_code = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures',
             FIXTURES, problem._julia_code)
         # problem.write_jl_file(path=os.path.join('.', 'test_import_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
@@ -266,7 +266,7 @@ class DisFitProblemTestCase(unittest.TestCase):
             return (np.allclose(df1.select_dtypes(exclude=[object]), df2.select_dtypes(exclude=[object]))\
                 & df1.select_dtypes(include=[object]).equals(df2.select_dtypes(include=[object])))
 
-        problem = core.DisFitProblem(PETAB_YAML, n_starts=3)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML, n_starts=3)
         results = problem.optimize()
 
         self.assertTrue(problem._best_iter in ['1', '2', '3'])
@@ -283,28 +283,28 @@ class DisFitProblemTestCase(unittest.TestCase):
         
     def test_prior_code(self):
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'a0' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1' # , '0.1; 1', '-1.1; 1', '-0.4; 2'
         problem._set_julia_code()
         results_shifted = problem.optimize()
         self.assertTrue(results_shifted['par_best'].loc[0, 'par_best'] > RESULTS_GOLD['par_best'].loc[0, 'par_best'])
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'b0' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[1] = '0.05; 1'
         problem._set_julia_code()
         results_shifted = problem.optimize()
         self.assertTrue(results_shifted['par_best'].loc[1, 'par_best'] > RESULTS_GOLD['par_best'].loc[1, 'par_best'])
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'k1_free' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[2] = '1; 0.1'
         problem._set_julia_code()
         results_shifted = problem.optimize()
         self.assertTrue(results_shifted['par_best'].loc[2, 'par_best'] > RESULTS_GOLD['par_best'].loc[2, 'par_best'])
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'k2' else 1) for k in problem._global_pars.keys()}
         problem._petab_problem.parameter_df['objectivePriorParameters'].iloc[3] = '-0.4; 0.01'
         problem._set_julia_code()
@@ -413,7 +413,7 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
     def test_set_julia_code(self):
-        problem = core.DisFitProblem(PETAB_YAML) #failed
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML) #failed
         problem.write_jl_file(path=os.path.join('.', 'test_set_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -451,18 +451,18 @@ class DisFitProblemTestCase(unittest.TestCase):
 
 
     def test_resetting(self):
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_resetting.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
         problem.t_steps = 3
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.n_starts = 2
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-        problem = core.DisFitProblem(PETAB_YAML)
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         # problem.infer_ic_from_sbml # Todo: implement another species with initial condition inferred from sbml
         # self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)

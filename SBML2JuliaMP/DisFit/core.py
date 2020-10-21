@@ -22,7 +22,7 @@ from julia.api import Julia
 importlib.reload(libsbml)
 
 
-class DisFitProblem(object):
+class SBML2JuliaMPProblem(object):
 
     def __init__(self, petab_yaml, t_steps=None, n_starts=1, infer_ic_from_sbml=False,
         optimizer_options={}, custom_code_dict={}):
@@ -272,7 +272,7 @@ class DisFitProblem(object):
     def _check_for_not_implemented_features(self, petab_problem):
         
         # if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
-        #     raise NotImplementedError('Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
+        #     raise NotImplementedError('Preequilibration is not implemented (SBML2JuliaMP does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
 
         if np.inf in list(petab_problem.measurement_df['time']):
             raise NotImplementedError('Fitting steady state problems is not implemented.') # Todo: consider implementing it.
@@ -403,7 +403,7 @@ class DisFitProblem(object):
 
 
     def optimize(self):
-        """Optimize DisFitProblem
+        """Optimize SBML2JuliaMPProblem
         
         Returns:
             :obj:`dict`: Results in a dict with keys 'species', 'observables', 'parameters' and 'par_best'
@@ -670,7 +670,7 @@ class DisFitProblem(object):
         plt.ylim(0, 1.05 * max(values.max().max(), exp_data.max().max()))
         plt.xlabel(x_label, fontsize=18)
         plt.ylabel(y_label, fontsize=18)
-        plt.title('DisFit time course')
+        plt.title('SBML2JuliaMP time course')
 
         plt.savefig(path)
         plt.close()

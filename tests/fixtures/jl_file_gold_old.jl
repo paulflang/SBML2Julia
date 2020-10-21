@@ -7,7 +7,7 @@ t_ratio = 2 # Setting number of ODE discretisation steps
 
 # Data
 println("Reading measurement data...")
-data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/DisFit/tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv"
+data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures/G2M_copasi/measurementData_G2M_copasi.tsv"
 df = CSV.read(data_path)
 dfg = groupby(df, :simulationConditionId)
 data = []

@@ -1,7 +1,7 @@
 """Execute petab test suite."""
 
 import petabtests
-from DisFit import core
+from SBML2JuliaMP import core
 import importlib
 importlib.reload(core)
 import sys
@@ -45,7 +45,7 @@ def execute_case(case):
     except Exception as e:
         if isinstance(e, NotImplementedError) \
                 or "BoundsError: attempt to access 2×2 DataFrame" in str(e) \
-                or "NotImplementedError: Preequilibration is not implemented (DisFit does not simulate ODEs. Therefore it cannot determine the time until equilibration)." in str(e) \
+                or "NotImplementedError: Preequilibration is not implemented (SBML2JuliaMP does not simulate ODEs. Therefore it cannot determine the time until equilibration)." in str(e) \
                 or "CHI2: simulated: nan, expected: 0.7918379836848569, match = False" in str(e):
                 # cases (0008), (0009, 0010)
             print('-------------------------------------------------------')
@@ -81,7 +81,7 @@ def _execute_case(case):
     t_steps = 11
     if case == '0006' or '0009' or '0010':
     	t_steps = 3001
-    problem = core.DisFitProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
+    problem = core.SBML2JuliaMPProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
     problem.write_jl_file()
     problem.optimize()
     problem.plot_results('c0')

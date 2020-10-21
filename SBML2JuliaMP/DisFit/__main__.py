@@ -1,12 +1,12 @@
-""" DisFit command line interface
+""" SBML2JuliaMP command line interface
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-26
 :Copyright: 2020, Paul F Lang
 :License: MIT
 """
 
-from .core import DisFitProblem
-import DisFit
+from .core import SBML2JuliaMPProblem
+import SBML2JuliaMP
 import cement
 import os
 import re
@@ -18,10 +18,10 @@ class BaseController(cement.Controller):
 
     class Meta:
         label = 'base'
-        description = "DisFit"
-        help = "DisFit"
+        description = "SBML2JuliaMP"
+        help = "SBML2JuliaMP"
         arguments = [
-            (['-v', '--version'], dict(action='version', version=DisFit.__version__)),
+            (['-v', '--version'], dict(action='version', version=SBML2JuliaMP.__version__)),
         ]
 
     # @cement.ex(hide=False)
@@ -50,7 +50,7 @@ class OptimizeController(cement.Controller):
                             help='optimization solver options')),
             (['-c', '--custom_code_dict'], dict(default='{}', type=str,
                             help='dict with replaced code as keys and replacement code as values')),
-            (['-d', '--out_dir'], dict(default='./DisFit_results', type=str,
+            (['-d', '--out_dir'], dict(default='./SBML2JuliaMP_results', type=str,
                             help='output directory for julia_code, results and plot')),
             (['-p', '--plot_obs'], dict(default='[]', type=str,
                             help='list of observables to be plotted'))
@@ -75,7 +75,7 @@ class OptimizeController(cement.Controller):
                 custom_code_dict = {}
             else:
                 custom_code_dict = {re.split(':', item)[0]: re.split(':', item)[1].lstrip() for item in items}
-            problem = DisFitProblem(args.petab_yaml, t_steps=t_steps,
+            problem = SBML2JuliaMPProblem(args.petab_yaml, t_steps=t_steps,
                 n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml,
                 optimizer_options=optimizer_options,
                 custom_code_dict=custom_code_dict)
@@ -123,7 +123,7 @@ class OptimizeController(cement.Controller):
 class App(cement.App):
     """ Command line application """
     class Meta:
-        label = 'DisFit'
+        label = 'SBML2JuliaMP'
         base_controller = 'base'
         handlers = [
             BaseController,
