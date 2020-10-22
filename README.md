@@ -4,11 +4,11 @@
 
 # `SBML2JuliaMP`
 
-`SBML2JuliaMP` is a tool to for optimizing parameters of an ordinary differential equation (ODE) model in sbml format.
+`SBML2JuliaMP` is a tool to for optimizing parameters of an ordinary differential equation (ODE) model. `SBML2JuliaMP` translates a model from SBML/[PEtab](https://petab.readthedocs.io/en/stable/) format into Julia for Mathematical Programming ([JuMP](https://jump.dev/JuMP.jl/stable/)), performes the optimization task and returns the results.
 
 ## Optimization method
 
-`SBML2JuliaMP` uses the optimization method presented in [Scalable nonlinear programming framework for parameter estimation in dynamic biological system models](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828). In brief, contrary to typical parameter optimization methods for ODE systems, `SBML2JuliaMP` does not rely on simulation of the ODE system. Instead `SBML2JuliaMP` uses an implicit Euler scheme to time-discretize an ODE system of n equations into m time steps. This transforms the ODE system into a system of n * (m - 1) algebraic equations with n * m variables. These n * m variables (or a subset thereof) can then be cast into an objective function. Per default, `SBML2JuliaMP` uses a least square objective. `SBML2JuliaMP` then uses interior-point optimization implemented in the Julia language to minimize the objective function constraint to the n * (m - 1) algebraic equations.
+`SBML2JuliaMP` uses the optimization method presented in [Scalable nonlinear programming framework for parameter estimation in dynamic biological system models](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828). In brief, contrary to typical parameter optimization methods for ODE systems, `SBML2JuliaMP` does not rely on simulation of the ODE system. Instead `SBML2JuliaMP` uses an implicit Euler scheme to time-discretize an ODE system of n equations into m time steps. This transforms the ODE system into a system of n * (m - 1) algebraic equations with n * m variables. These n * m variables (or a subset thereof) can then be cast into an objective function. `SBML2JuliaMP` then uses interior-point optimization implemented in the Julia language to minimize the objective function constraint to the n * (m - 1) algebraic equations.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Please see the [documentation](https://sbml2juliamp.readthedocs.io/en/latest/ind
 The package is released under the [MIT license](LICENSE).
 
 ## Development team
-This package was developed by the [Paul F. Lang](https://www.linkedin.com/in/paul-lang-7b54a81a3/) at the University of Oxford, UK.
+This package was developed by [Paul F. Lang](https://www.linkedin.com/in/paul-lang-7b54a81a3/) at the University of Oxford, UK.
 
 
 ## Questions and comments
