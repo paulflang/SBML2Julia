@@ -45,7 +45,7 @@ class OptimizeController(cement.Controller):
             (['-n', '--n_starts'], dict(default=1, type=int,
                             help='number of multistarts')),
             (['-i', '--infer_ic_from_sbml'], dict(default=False, type=bool,
-                            help='if missing initial conditions shall be infered from SBML model')),
+                            help='infer missing initial conditions from SBML')),
             (['-o', '--optimizer_options'], dict(default='{}', type=str,
                             help='optimization solver options')),
             (['-c', '--custom_code_dict'], dict(default='{}', type=str,
