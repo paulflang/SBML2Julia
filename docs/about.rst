@@ -20,7 +20,7 @@ This package was developed by the `Paul F. Lang <https://www.linkedin.com/in/pau
 Acknowledgements
 ----------------------
 
-We would like to thank `Frank T. Bergmann <https://www.cos.uni-heidelberg.de/index.php/f.bergmann?l=_e>`_ for sharing `his code <https://groups.google.com/forum/#!topic/sbml-discuss/inS4Lzp3Ri8>`_ to parse sbml files. This work was supported by a the Engineering and Physical Sciences Research Council [grant number 2105279].
+We would like to thank `Frank T. Bergmann <https://www.cos.uni-heidelberg.de/index.php/f.bergmann?l=_e>`_ for sharing `his code <https://groups.google.com/forum/#!topic/sbml-discuss/inS4Lzp3Ri8>`_ to parse SBML files. This work was supported by a the Engineering and Physical Sciences Research Council [grant number 2105279].
 
 ----------------------
 Questions and comments

@@ -3,7 +3,7 @@
 Contributing to `SBML2JuliaMP`
 -------------------------
 
-We welcome contributions to `SBML2JuliaMP`, including to the software, unit tests and documentation. Please use GitHub pull requests to contribute to `SBML2JuliaMP` or contact us by email.
+We welcome contributions to `SBML2JuliaMP`, including to the software, tests and documentation. Please use GitHub pull requests to contribute to `SBML2JuliaMP` or contact us by email.
 
 #. Create a fork of the `SBML2JuliaMP` Git repository. Please see the `GitHub documentation <https://help.github.com/articles/fork-a-repo/>`_ for more information.
 #. Edit the code, unit tests or documentation.
