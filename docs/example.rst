@@ -10,7 +10,7 @@ The `SBML2JuliaMP` problem can be created using the Python API (and assuming tha
 
 	>>> import SBML2JuliaMP
 
-	>>> problem = SBML2JuliaMP.SBML2JuliaMPProblem('tests/fixtures/G2M_copasi/G2M_copasi.yaml')
+	>>> problem = SBML2JuliaMP.SBML2JuliaMPProblem('examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml')
 
 and solved by::
 
@@ -49,8 +49,8 @@ The results are then available under ``problem.results``, which returns a dictio
 Using the command line interface
 --------------------------------
 
-Similarly, the same example problem can be solved from the comand line interface::
+Similarly, the same example problem can be solved from the command line interface::
 
-	user@bash:/SBML2JuliaMP$ SBML2JuliaMP optimize 'tests/fixtures/G2M_copasi/G2M_copasi.yaml' -o './SBML2JuliaMP_results'
+	user@bash:/SBML2JuliaMP$ SBML2JuliaMP optimize 'examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml' -d './SBML2JuliaMP_results'
 
-The results can be found in the output directory given to the ``-o`` argument.
+The results can be found in the output directory given to the ``-d`` argument.
