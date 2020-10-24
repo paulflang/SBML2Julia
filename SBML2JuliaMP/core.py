@@ -29,8 +29,9 @@ class SBML2JuliaMPProblem(object):
         """        
         Args:
             petab_yaml (:obj:`str`): path petab yaml file
-            t_steps (:obj:`int` or `float`, optional): number of time-discretiation steps per time unit
+            t_steps (:obj:`int`, optional): number of time-discretiation steps
             n_starts (:obj:`int`): number of multistarts
+            infer_ic_from_sbml (:obj:`bool`): infer missing initial conditions from SBML
             optimizer_options (:obj:`dict`): optimization solver options
             custom_code_dict (:obj:`dict`): dict with replaced code as keys and replacement code as values
         """
@@ -80,7 +81,7 @@ class SBML2JuliaMPProblem(object):
         """Get t_steps
         
         Returns:
-            :obj:`int` or `float`: number of time discretiation steps per time unit
+            t_steps (:obj:`int`, optional): number of time-discretiation steps
         """
         return self._t_steps
 
@@ -90,10 +91,10 @@ class SBML2JuliaMPProblem(object):
         """Set t_steps
         
         Args:
-            value (:obj:`int` or `float`): number of time discretiation steps per time unit
+            value (:obj:`int`, optional): number of time-discretiation steps
         
         Raises:
-            ValueError: if t_steps is not a positive real number.
+            ValueError: if t_steps is not a positive integer.
         """
         if value == None:
             n_exp = len(set(self.petab_problem.measurement_df['time']))
@@ -171,13 +172,13 @@ class SBML2JuliaMPProblem(object):
 
     @optimizer_options.setter
     def optimizer_options(self,value):
-        """Set n_starts
+        """Set optimizer_options
         
         Args:
-            value (:obj:`int`): number of multistarts
+            value (:obj:`dict`): optimization solver options
         
         Raises:
-            ValueError: if n_starts is not a positive integer
+            ValueError: if optimizer_options is not a dict
         """
         if not isinstance(value, dict):
             raise ValueError('`optimizer_options` must be a dictionary')
@@ -268,8 +269,19 @@ class SBML2JuliaMPProblem(object):
             self._n_conditions, self._condition_specific_pars, self._global_pars =\
             self._get_translation_vars(petab_yaml, petab_problem)
 
-        
+
     def _check_for_not_implemented_features(self, petab_problem):
+        """Checks if the petab_problem contains not implemented features
+        
+        Args:
+            petab_problem (:obj:`petab.problem.Problem`): PEtab problem
+        
+        Raises:
+            NotImplementedError: if the measurement table contains `Inf` in the `time` column
+            NotImplementedError: if some simulation conditions contain preequilibration conditions and others do not
+            NotImplementedError: if some conditions are used for both, simulation and preequilibration
+            NotImplementedError: if priors for NoiseParameters or ObservableParameters are provided
+        """
         
         # if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
         #     raise NotImplementedError('Preequilibration is not implemented (SBML2JuliaMP does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
@@ -313,6 +325,15 @@ class SBML2JuliaMPProblem(object):
                     raise NotImplementedError('Priors for observableParameter overrides are not implemented.')
 
     def _sort_condition_df_problem(self, petab_problem):
+        """Sorts the rows of the contition table based on the first
+        occurence of the respective condition in the measurement table
+        
+        Args:
+            petab_problem (:obj:`petab.problem.Problem`): PEtab problem
+        
+        Returns:
+            :obj:`petab.problem.Problem`: PEtab problem
+        """
 
         idx = 1e6*np.ones(len(petab_problem.condition_df.index))
         for i, cond in enumerate(petab_problem.measurement_df['simulationConditionId'].drop_duplicates()):
