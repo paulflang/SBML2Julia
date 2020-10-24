@@ -50,7 +50,7 @@ Selected observables of the optimized simulation of a given simulation condition
 
     >>> problem.plot_results(condition='wt', observables=['obs_Cb', 'obs_pCb', 'obs_B55'])
 
-.. image:: ./plot_Cb_pCb_B55.pdf
+.. image:: ./plot_Cb_pCb_B55.png
   :width: 400
   :alt: Time course of obs_Cb, obs_pCb and obs_B55
 
