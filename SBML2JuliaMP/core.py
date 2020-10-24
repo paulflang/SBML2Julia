@@ -55,6 +55,7 @@ class SBML2JuliaMPProblem(object):
         self.custom_code_dict = custom_code_dict 
 
         self._initialization = False
+        print('Problem initialized.')
 
     @property
     def petab_yaml_dict(self):
