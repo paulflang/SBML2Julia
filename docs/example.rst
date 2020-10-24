@@ -18,7 +18,8 @@ and solved by::
 
 The results are then available under ``problem.results``, which returns a dictionary containing ``'par_best'`` (the best found parameter set), ``'species'``, ``'observables'``, ``'fval'`` (the negative log-likelihood) and ``'chi2'`` (chi2 values of residuals). For example, to access the best parameter set, type::
 
->>> problem.results['x_best']                                                                        
+>>> problem.results['x_best']
+
                 Name    par_0   par_best  par_best_to_par_0
  0            kDpEnsa   0.0500   0.048840           0.976807
  1              kPhGw   1.0000   0.955727           0.955727
@@ -45,6 +46,13 @@ The results are then available under ``problem.results``, which returns a dictio
  22    kPhEnsa_Cb_low   0.1000   0.101325           1.013248
  23  kPhEnsa_pGw_weak   0.0900   0.090801           1.008902
 
+Selected observables of the optimized simulation of a given simulation condition can be plotted via::
+
+    >>> problem.plot_results(condition='wt', observables=['obs_Cb', 'obs_pCb', 'obs_B55'])
+
+.. image:: ./plot_Cb_pCb_B55.pdf
+  :width: 400
+  :alt: Time course of obs_Cb, obs_pCb and obs_B55
 
 Using the command line interface
 --------------------------------
