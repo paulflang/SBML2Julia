@@ -20,7 +20,7 @@ SBML2JuliaMP uses the PEtab format for specifying biological parameter estimatio
 
 SBML2JuliaMP also contains the following optimization hyperparameters:
 
-* **t_steps**: ratio between experimental observation intervals and simulation time-discretization intervals. Default ``None``.
+* **t_steps**: number of time-discretization steps. Default ``None``.
 * **n_starts**: number of multistarts. Default ``1``.
 * **infer_ic_from_sbml**: infer missing initial conditions from SBML. Default ``False``.
 * **optimizer_options**: optimization solver options. Default ``{}``.
