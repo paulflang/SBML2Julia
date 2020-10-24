@@ -45,7 +45,7 @@ Please see the [documentation](https://sbml2juliamp.readthedocs.io/en/latest/ind
 The package is released under the [MIT license](LICENSE).
 
 ## Development team
-This package was developed by [Paul F. Lang](https://www.linkedin.com/in/paul-lang-7b54a81a3/) at the University of Oxford, UK.
+This package was developed by [Paul F. Lang](https://www.linkedin.com/in/paul-lang-7b54a81a3/) at the University of Oxford, UK and [Sungho Shin](https://www.sunghoshin.com/) at the University of Wisconsin-Madison, USA..
 
 
 ## Questions and comments
