@@ -3,7 +3,7 @@
 Command line interface
 ----------------------
 
-To excecute a parameter fitting problem from the command line interface (CLI) you need to specify your optimization problem in the `PEtab format <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_, which is built around SBML and TSV files. If you want to customise upper and lower boudaries for model species, you can provide an additional species table (see `species_Vinod_FEBS2015.tsv <https://github.com/paulflang/SBML2JuliaMP/blob/main/examples/Vinod_FEBS2015/species_Vinod_FEBS2015.tsv>`_ as an example)
+To excecute a parameter fitting problem from the command line interface (CLI) you need to specify your optimization problem in the `PEtab format <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_, which is built around SBML and TSV files. If you also want to customise upper and lower boundaries for model species, you can provide an additional species table (see `species_Vinod_FEBS2015.tsv <https://github.com/paulflang/SBML2JuliaMP/blob/main/examples/Vinod_FEBS2015/species_Vinod_FEBS2015.tsv>`_ as an example).
 
 The `SBML2JuliaMP` CLI allows you to specify the following optimization options:
 
