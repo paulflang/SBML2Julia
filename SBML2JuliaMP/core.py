@@ -28,7 +28,7 @@ class SBML2JuliaMPProblem(object):
         optimizer_options={}, custom_code_dict={}):
         """        
         Args:
-            petab_yaml (:obj:`str`): path petab yaml file
+            petab_yaml (:obj:`str`): path to petab yaml file
             t_steps (:obj:`int`, optional): number of time-discretiation steps
             n_starts (:obj:`int`): number of multistarts
             infer_ic_from_sbml (:obj:`bool`): infer missing initial conditions from SBML
@@ -251,7 +251,7 @@ class SBML2JuliaMPProblem(object):
         """Converts petab yaml to dict and creates petab.problem.Problem object
         
         Args:
-            petab_yaml (:obj:`str`): path petab yaml file
+            petab_yaml (:obj:`str`): path to petab yaml file
         
         Raises:
             SystemExit: if petab yaml file cannot be loaded.
@@ -282,7 +282,6 @@ class SBML2JuliaMPProblem(object):
             NotImplementedError: if some conditions are used for both, simulation and preequilibration
             NotImplementedError: if priors for NoiseParameters or ObservableParameters are provided
         """
-        
         # if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
         #     raise NotImplementedError('Preequilibration is not implemented (SBML2JuliaMP does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
 
@@ -324,17 +323,18 @@ class SBML2JuliaMPProblem(object):
                 if par in observableParameter_names and isinstance(petab_problem.parameter_df['objectivePriorType'][l], str):
                     raise NotImplementedError('Priors for observableParameter overrides are not implemented.')
 
+
     def _sort_condition_df_problem(self, petab_problem):
         """Sorts the rows of the contition table based on the first
         occurence of the respective condition in the measurement table
         
         Args:
+            petab_yaml (:obj:`str`): path to petab yaml file
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
         
         Returns:
             :obj:`petab.problem.Problem`: PEtab problem
         """
-
         idx = 1e6*np.ones(len(petab_problem.condition_df.index))
         for i, cond in enumerate(petab_problem.measurement_df['simulationConditionId'].drop_duplicates()):
             for j, c in enumerate(petab_problem.condition_df.index):
@@ -347,7 +347,15 @@ class SBML2JuliaMPProblem(object):
 
 
     def _get_translation_vars(self, petab_yaml, petab_problem):
+        """Gets variables required for translation from PEtab to JuMP
         
+        Args:
+            petab_yaml (:obj:`string`): path to petab yaml file
+            petab_problem (:obj:`petab.problem.Problem`): PEtab problem
+        
+        Returns:
+            :obj:`tuple`: (yaml_dict, condition2index, j_to_parameters, n_conditions, condition_specific_pars, global_pars)
+        """        
         with open(petab_yaml, 'r') as f:
             try:
                 yaml_dict = yaml.safe_load(f)
@@ -404,6 +412,14 @@ class SBML2JuliaMPProblem(object):
         
 
     def insert_custom_code(self, custom_code_dict):
+        """Inserts custom code into Julia code
+        
+        Args:
+            custom_code_dict (:obj:`dict`): dict with replaced code as keys and replacement code as values
+        
+        Returns:
+            :obj:`str`: auto-generated Julia code containing inserted custom code
+        """
         positions = custom_code_dict.keys()
         code = self.julia_code
         for pos in positions:
@@ -415,7 +431,7 @@ class SBML2JuliaMPProblem(object):
         """Write code to julia file
         
         Args:
-            path (:obj:`str`, optional): path to output julia file
+            path (:obj:`str`, optional): path to output Julia file
         """
         with open(path, 'w') as f:
             f.write(self.julia_code)
@@ -476,6 +492,11 @@ class SBML2JuliaMPProblem(object):
 
 
     def _get_param_ratios(self, par_dict):
+        """Get ratios between optimized and nominal parameters
+        
+        Returns:
+            :obj:`pandas.DataFrame`: Dataframe with optimized and nominal parameters and the ratio between them
+        """
         
         par_best = par_dict[str(self._best_iter)]
         par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
@@ -578,7 +599,6 @@ class SBML2JuliaMPProblem(object):
         return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
 
 
-
     # def _set_simulation_df(self):
 
     #     simulation_df = self.results['observables']
@@ -628,6 +648,8 @@ class SBML2JuliaMPProblem(object):
 
 
     def write_optimized_parameter_table(self):
+        """Writes a new parameter table were nominal values are replaced with optimized values
+        """
         df = self.petab_problem.parameter_df
         df['nominalValue'] = list(self.results['par_best']['par_best'])
         out_file = os.path.join(self._petab_dirname, 'post_fit_parameters.tsv')
@@ -806,8 +828,6 @@ class SBML2JuliaMPProblem(object):
         #         species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
 
-
-
         for i in range(mod.getNumReactions()): 
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()
@@ -870,10 +890,6 @@ class SBML2JuliaMPProblem(object):
             #         print('continueing')
             #         continue
             #     species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId()))) # if rate law already there, take differece
-
-
-
-
 
 
         parameters = {}
@@ -1411,7 +1427,14 @@ class SBML2JuliaMPProblem(object):
 
 
     def _write_overrides(self, var_type):
-
+        """Write observableParameter or noiseParameter overrides
+        
+        Args:
+            var_type (:obj:`str`): 'observable' or 'noise'
+        
+        Returns:
+            :obj:`tuple`: (override_code.decode(), set_of_params)
+        """
         set_of_params = set()
         override_code = bytearray('', 'utf8')
         override_code.extend(bytes('    # Define '+var_type+' overrides\n', 'utf8'))
@@ -1471,7 +1494,14 @@ class SBML2JuliaMPProblem(object):
 
 
     def _write_prior_code(self):
-
+        """Write code for objectivePriors
+        
+        Raises:
+            NotImplementedError: if objectivePriorType in parameter table is not `normal`, `laplace`, `logNormal` or `logLaplace`
+        
+        Returns:
+            :obj:`str`: prior code
+        """
         prior_code = bytearray('', 'utf8')
         idx_with_prior_1 = list(~self.petab_problem.parameter_df['objectivePriorType'].isna())
         idx_with_prior_2 = list(~self.petab_problem.parameter_df['objectivePriorParameters'].isna())
@@ -1503,7 +1533,6 @@ class SBML2JuliaMPProblem(object):
 
         # prior_code.extend(bytes(f'    @variable(m, n_occurences[l in 1:{n_par_with_prior}])\n', 'utf8')) # Todo: remove n_occurences
 
-        
 
         # for l, par in enumerate(parameter_df.index):
             # n_occurences = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_without_preequ)-1, :] == par, axis=1) > 0)
