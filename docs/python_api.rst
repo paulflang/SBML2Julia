@@ -16,7 +16,7 @@ Run this command to import `SBML2JuliaMP`::
 Specifying an optimization problem
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-SBML2JuliaMP uses the PEtab format for specifying biological parameter estimation problems. PEtab is built around SBML and based on tab-separated values (TSV) files. Please visit the `PEtab documentation <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_ and have a look at the `PEtab examples <https://github.com/PEtab-dev/petab_test_suite/tree/master/cases>`_ for detailed instructions on how to specify an optimization problem in PEtab.
+SBML2JuliaMP uses the PEtab format for specifying biological parameter estimation problems. PEtab is built around SBML and based on tab-separated values (TSV) files. Please visit the `PEtab documentation <https://petab.readthedocs.io/en/stable/documentation_data_format.html>`_ and have a look at the `PEtab examples <https://github.com/PEtab-dev/petab_test_suite/tree/master/cases>`_ for detailed instructions on how to specify an optimization problem in PEtab. If you also want to customise upper and lower boundaries for the model species, you can provide an additional species table (see `species_Vinod_FEBS2015.tsv <https://github.com/paulflang/SBML2JuliaMP/blob/main/examples/Vinod_FEBS2015/species_Vinod_FEBS2015.tsv>`_ as an example).
 
 SBML2JuliaMP also contains the following optimization hyperparameters:
 
