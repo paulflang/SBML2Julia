@@ -1,7 +1,20 @@
+.. image:: https://circleci.com/gh/paulflang/SBML2JuliaMP.svg?style=shield
+   :target: https://app.circleci.com/pipelines/github/paulflang/SBML2JuliaMP
+   :alt: Build status
+.. image:: https://readthedocs.org/projects/SBML2JuliaMP/badge/?version=latest
+   :target: https://sbml2juliamp.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation status
+.. image:: https://img.shields.io/github/license/paulflang/SBML2JuliaMP.svg)
+   :target: https://github.com/paulflang/SBML2JuliaMP/blob/main/LICENSE
+   :alt: License
+
 Welcome to `SBML2JuliaMP`'s documentation!
-====================================
+==========================================
 
 `SBML2JuliaMP` is a tool to for optimizing parameters of ordinary differential equation (ODE) models. `SBML2JuliaMP` translates a model from SBML/`PEtab <https://petab.readthedocs.io/en/stable/>`_ format into Julia for Mathematical Programming (`JuMP <https://jump.dev/JuMP.jl/stable/>`_), performes the optimization task and returns the results.
+
+| Version: |version|
+| Source code: https://github.com/paulflang/SBML2JuliaMP
 
 Optimization method
 -------------------
