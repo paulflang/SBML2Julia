@@ -4,7 +4,7 @@
 .. image:: https://readthedocs.org/projects/sbml2juliamp/badge/?version=latest
    :target: https://sbml2juliamp.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-.. image:: https://img.shields.io/github/license/paulflang/SBML2JuliaMP.svg)
+.. image:: https://img.shields.io/github/license/paulflang/SBML2JuliaMP.svg
    :target: LICENSE
    :alt: License
 
