@@ -1,9 +1,9 @@
 .. image:: https://circleci.com/gh/paulflang/SBML2JuliaMP.svg?style=shield
    :target: https://app.circleci.com/pipelines/github/paulflang/SBML2JuliaMP
    :alt: Build status
-.. image:: https://readthedocs.org/projects/SBML2JuliaMP/badge/?version=latest
+.. image:: https://readthedocs.org/projects/sbml2juliamp/badge/?version=latest
    :target: https://sbml2juliamp.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation status
+   :alt: Documentation Status
 .. image:: https://img.shields.io/github/license/paulflang/SBML2JuliaMP.svg)
    :target: https://github.com/paulflang/SBML2JuliaMP/blob/main/LICENSE
    :alt: License
