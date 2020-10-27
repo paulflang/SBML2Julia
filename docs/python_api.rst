@@ -28,7 +28,7 @@ SBML2JuliaMP also contains the following optimization hyperparameters:
 
 The problem is then specified as::
 
-    >>> problem = SBML2JuliaMP.SBML2JuliaMPProblem(my_petab_promlem.yaml, t_steps=100, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}, custom_code_dict={})
+    >>> problem = SBML2JuliaMP.SBML2JuliaMPProblem('my_petab_promlem.yaml', t_steps=100, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}, custom_code_dict={})
 
 Once the problem is specified, `SBML2JuliaMP` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
 
