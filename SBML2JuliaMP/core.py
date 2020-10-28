@@ -444,7 +444,7 @@ class SBML2JuliaMPProblem(object):
         """Optimize SBML2JuliaMPProblem
         
         Returns:
-            :obj:`dict`: Results in a dict with keys 'species', 'observables', 'parameters' and 'par_best'
+            :obj:`dict`: Results in a dict with keys 'species', 'observables', 'parameters' and 'par_est'
         """
         print('Entering Julia for optimization...')
         self._results_all = self._jl.eval(self.julia_code)
@@ -453,7 +453,7 @@ class SBML2JuliaMPProblem(object):
         self._best_iter = min(self._results_all['objective_value'], key=self._results_all['objective_value'].get)
 
         self._results = {}
-        self._results['par_best'] = self._get_param_ratios(self._results_all['parameters'])
+        self._results['par_est'] = self._get_param_ratios(self._results_all['parameters'])
         self._results['species'] = self._results_to_frame(self._results_all['species'][self._best_iter], variable_type='speciesId')
         # self._results['species'] = df.sort_values(['speciesId', 'simulationConditionId', 'time'])
         self._results['observables'] = self._results_to_frame(self._results_all['observables'][self._best_iter], variable_type='observableId')
@@ -494,13 +494,16 @@ class SBML2JuliaMPProblem(object):
 
     def _get_param_ratios(self, par_dict):
         """Get ratios between optimized and nominal parameters
+
+        Args:
+            par_dict (:obj:`dict`): dict with parameter values
         
         Returns:
             :obj:`pandas.DataFrame`: Dataframe with optimized and nominal parameters and the ratio between them
         """
         
-        par_best = par_dict[str(self._best_iter)]
-        par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
+        # par_est = par_dict[str(self._best_iter)]
+        # par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
 
         local_par_names = {}
         for par_type in self.petab_problem.condition_df.columns:
@@ -508,28 +511,58 @@ class SBML2JuliaMPProblem(object):
                 for i in range(self._n_conditions):
                     local_par_names[self.petab_problem.condition_df.iloc[i][par_type]] = (par_type, i)
 
-        par_best_to_par_0_col = []
-        par_best_col = []
-        for key in par_0.keys():
-            if key in par_best.keys():
-                if par_0[key] != 0:
-                    par_best_to_par_0_col.append(par_best[key] / par_0[key])
-                else:
-                    par_best_to_par_0_col.append('NA (diff={})'.format(par_best[key]-par_0[key]))
-                par_best_col.append(par_best[key])
+        # par_est_to_par_0_col = []
+        # par_est_col = []
+        # for key in par_0.keys():
+        #     if key in par_est.keys():
+        #         if par_0[key] != 0:
+        #             par_est_to_par_0_col.append(par_est[key] / par_0[key])
+        #         else:
+        #             par_est_to_par_0_col.append('NA (diff={})'.format(par_est[key]-par_0[key]))
+        #         par_est_col.append(par_est[key])
+        #     else:
+        #         par_type, i = local_par_names[key]
+        #         par_est_to_par_0_col.append(par_est[par_type][i] / par_0[key])
+        #         par_est_col.append(par_est[par_type][i])
+
+        # name_col = [str(key) for key in par_0.keys()]
+        # par_0_col = [par_0[str(key)] for key in par_0.keys()]
+
+        # df = pd.DataFrame(list(zip(name_col, par_0_col, par_est_col, par_est_to_par_0_col)),
+        #     columns=['Name', 'par_0', 'par_est', 'par_est_to_par_0']).set_index('Name')
+        # # df = df.sort_values(by=['Name']).reset_index(drop=True)
+        # df = df.loc[list(self.petab_problem.parameter_df.index), :]
+        # df = df.reset_index()
+
+
+        par_est = par_dict[str(self._best_iter)]
+        par_est_col = []
+        par_est_to_nom_col = []
+        for parameterId in list(self.petab_problem.parameter_df.index):
+            if self.petab_problem.parameter_df.loc[parameterId, 'estimate'] == 0:
+                par_est_col.append['']
+                par_est_to_nom_col.append['']
+                continue
+            nominal = self.petab_problem.parameter_df.loc[parameterId, 'nominalValue']
+            if parameterId in par_est.keys():
+                estimated = par_est[parameterId]
             else:
-                par_type, i = local_par_names[key]
-                par_best_to_par_0_col.append(par_best[par_type][i] / par_0[key])
-                par_best_col.append(par_best[par_type][i])
+                par_type, i = local_par_names[parameterId]
+                estimated = par_est[par_type][i]
+            par_est_col.append(estimated)
+            if nominal == 0:
+                par_est_to_nom_col.append(f'NA (diff={estimated})')
+            else:
+                par_est_to_nom_col.append(estimated/nominal)
 
-        name_col = [str(key) for key in par_0.keys()]
-        par_0_col = [par_0[str(key)] for key in par_0.keys()]
+        df = self.petab_problem.parameter_df.copy()
+        df['estimatedValue'] = par_est_col
+        df['estimate_to_nominal'] = par_est_to_nom_col
+        # df = pd.DataFrame(list(zip(par_est_col, par_est_to_nom_col)),
+        #     columns=['Name', 'par_0', 'par_est', 'par_est_to_par_0']).set_index('Name')
 
-        df = pd.DataFrame(list(zip(name_col, par_0_col, par_best_col, par_best_to_par_0_col)),
-            columns=['Name', 'par_0', 'par_best', 'par_best_to_par_0']).set_index('Name')
-        # df = df.sort_values(by=['Name']).reset_index(drop=True)
-        df = df.loc[list(self.petab_problem.parameter_df.index), :]
-        df = df.reset_index()
+        #     if self.petab_problem.parameter_df.loc[parameterId, 'nominalValue'] == 0:
+        #     par_est_col.append(par_est[parameterId])
 
         return df
 
@@ -618,41 +651,62 @@ class SBML2JuliaMPProblem(object):
     #     self.petab_problem.simulation_df = simulation_df.rename(columns={'simulation': 'measurement'})
 
 
-    def write_results(self, path=os.path.join('.', 'results.xlsx'), df_format='wide'):
+    def write_results(self, path=os.path.join('.', 'results'), df_format='long'):
         """Write results to excel file
         
         Args:
             path (:obj:`str`, optional): path of excel file to write results to.
+            df_format (:obj:`str, optional): long or wide table format
         """
         if df_format not in ['long', 'wide']:
-            warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `wide`.')
-            df_format = 'wide'
+            warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `long`.')
+            df_format = 'long'
 
         pd.set_option("display.max_rows", None)
-        with pd.ExcelWriter(path) as writer:
-            self.results['par_best'].to_excel(writer, sheet_name='par_best', index=False)
+        sheets = {'parameters': self.results['par_est']}
+        if df_format == 'wide':
+            for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
+                df = self.results[var_type].groupby('simulationConditionId')
+                for condition, i in self._condition2index.items():
+                    if i+1 in self._j_to_parameters[0]:
+                        dfg = df.get_group(condition)
+                        dfg = dfg.set_index(['time', Id]) #.drop_duplicates()
+                        dfg = dfg.unstack()
+                        dfg = dfg.loc[:, 'simulation']
+                        sheets[var_type+'_'+condition] = dfg
+                        # dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
+        elif df_format == 'long':
+            for var_type in ['species', 'observables']:
+                df = self.results[var_type]
+                sheets[var_type] = df
+                # df.to_excel(writer, sheet_name=var_type, index=True)
 
-            if df_format == 'wide':
-                for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
-                    df = self.results[var_type].groupby('simulationConditionId')
-                    for condition, i in self._condition2index.items():
-                        if i+1 in self._j_to_parameters[0]:
-                            dfg = df.get_group(condition)
-                            dfg = dfg.set_index(['time', Id]) #.drop_duplicates()
-                            dfg = dfg.unstack()
-                            dfg = dfg.loc[:, 'simulation']
-                            dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
-            else:
-                for var_type in ['species', 'observables']:
-                    df = self.results[var_type]
-                    df.to_excel(writer, sheet_name=var_type, index=True)
+        name, ext = os.path.splitext(path)
+        if ext in ('.xlsx', '.xls'):
+            with pd.ExcelWriter(path) as writer:
+                # self.results['par_est'].to_excel(writer, sheet_name='par_est', index=False)
+                for sheet_name, df in sheets.items():
+                    write_idx = True
+                    if (df_format == 'long') and (sheet_name != 'parameters'):
+                        write_idx = False
+                    df.to_excel(writer, sheet_name=sheet_name, index=write_idx)
+        elif ext == '':
+            if not os.path.isdir(path):
+                os.mkdir(path)
+            for sheet_name, df in sheets.items():
+                write_idx = True
+                if (df_format == 'long') and (sheet_name != 'parameters'):
+                    write_idx = False
+                df.to_csv(os.path.join(path, sheet_name+'.tsv'), sep='\t', index=write_idx)
+        else:
+            raise ValueError('`path` must be a directory or excel file.')
 
 
     def write_optimized_parameter_table(self):
         """Writes a new parameter table were nominal values are replaced with optimized values
         """
         df = self.petab_problem.parameter_df
-        df['nominalValue'] = list(self.results['par_best']['par_best'])
+        df['nominalValue'] = list(self.results['par_est']['estimatedValue'])
         out_file = os.path.join(self._petab_dirname, 'post_fit_parameters.tsv')
         df.to_csv(out_file, sep='\t')
         warnings.warn('Wrote post_fit_parameters.tsv. Please edit `yaml` file accordingly if it shall be added to the petab problem.')

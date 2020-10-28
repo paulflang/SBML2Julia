@@ -270,9 +270,10 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         results = problem.optimize()
 
         self.assertTrue(problem._best_iter in ['1', '2', '3'])
-        self.assertEqual(set(results.keys()), set(['par_best', 'species', 'observables', 'fval', 'chi2']))
+        self.assertEqual(set(results.keys()), set(['par_est', 'species', 'observables', 'fval', 'chi2']))
 
-        _assert_frame_almost_equal(results['par_best'], RESULTS_GOLD['par_best'])
+        print(results['par_est'])
+        _assert_frame_almost_equal(results['par_est'], RESULTS_GOLD['par_est'])
         _assert_frame_almost_equal(results['species'], RESULTS_GOLD['species'])
         _assert_frame_almost_equal(results['observables'], RESULTS_GOLD['observables'])
         self.assertAlmostEqual(results['fval'], RESULTS_GOLD['fval'], delta=1.)
@@ -288,28 +289,28 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1' # , '0.1; 1', '-1.1; 1', '-0.4; 2'
         problem._set_julia_code()
         results_shifted = problem.optimize()
-        self.assertTrue(results_shifted['par_best'].loc[0, 'par_best'] > RESULTS_GOLD['par_best'].loc[0, 'par_best'])
+        self.assertTrue(results_shifted['par_est'].loc['a0', 'estimatedValue'] > RESULTS_GOLD['par_est'].loc['a0', 'estimatedValue'])
 
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'b0' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[1] = '0.05; 1'
         problem._set_julia_code()
         results_shifted = problem.optimize()
-        self.assertTrue(results_shifted['par_best'].loc[1, 'par_best'] > RESULTS_GOLD['par_best'].loc[1, 'par_best'])
+        self.assertTrue(results_shifted['par_est'].loc['b0', 'estimatedValue'] > RESULTS_GOLD['par_est'].loc['b0', 'estimatedValue'])
 
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'k1_free' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[2] = '1; 0.1'
         problem._set_julia_code()
         results_shifted = problem.optimize()
-        self.assertTrue(results_shifted['par_best'].loc[2, 'par_best'] > RESULTS_GOLD['par_best'].loc[2, 'par_best'])
+        self.assertTrue(results_shifted['par_est'].loc['k1_free', 'estimatedValue'] > RESULTS_GOLD['par_est'].loc['k1_free', 'estimatedValue'])
 
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'k2' else 1) for k in problem._global_pars.keys()}
         problem._petab_problem.parameter_df['objectivePriorParameters'].iloc[3] = '-0.4; 0.01'
         problem._set_julia_code()
         results_shifted = problem.optimize()
-        self.assertTrue(results_shifted['par_best'].loc[3, 'par_best'] > RESULTS_GOLD['par_best'].loc[3, 'par_best'])
+        self.assertTrue(results_shifted['par_est'].loc['k2', 'estimatedValue'] > RESULTS_GOLD['par_est'].loc['k2', 'estimatedValue'])
 
 
     def test_get_param_ratios(self):
@@ -320,13 +321,15 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
 
         par_dict = {'1':
-            {'a0': 1, 'b0': 0, 'k1_free': 0.8, 'k2': 0.6, 'noise_A1': 0.1,
-            'noise_A2': 0.5, 'noise_B': 0.1, 'offset_B': 0.5, 'scaling_B': 2}
+            {'a0': 1, 'b0': 0, 'k1_free': 0.8, 'k2': 0.6, 'noise_A1': 0.05,
+            'noise_A2': 0.1, 'noise_B': 0.1, 'offset_B': 0.5, 'scaling_B': 1}
             }
 
-
-        par_best = problem._get_param_ratios(par_dict)
-        # assert_frame_equal(par_best, RESULTS_GOLD['par_best'])
+        par_est = problem._get_param_ratios(par_dict)
+        par_gold = problem._petab_problem.parameter_df.copy()
+        par_gold['estimatedValue'] = [1, 0, 0.8, 0.6, 0.05, 0.1, 0.1, 0.5, 1]
+        par_gold['estimate_to_nominal'] = [1., 'NA (diff=0)', 1., 1., 1., 1., 1., 1., 0.5]
+        assert_frame_equal(par_est, par_gold)
 
 
     def test_results_to_frame(self):
@@ -379,8 +382,16 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         problem.write_results(path=os.path.join(self.dirname, 'results_1.xlsx'))
         self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results_1.xlsx')))
 
-        problem.write_results(path=os.path.join(self.dirname, 'results_2.xlsx'), df_format='long')
+        problem.write_results(path=os.path.join(self.dirname, 'results_2.xlsx'), df_format='wide')
         self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results_2.xlsx')))
+
+        problem.write_results(path=os.path.join(self.dirname, 'results'))
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results', 'species.tsv')))
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results', 'observables.tsv')))
+        self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'results', 'parameters.tsv')))
+
+        with self.assertRaises(ValueError):
+            problem.write_results(path=os.path.join(self.dirname, 'results.docx'))
 
     def test_write_optimized_parameter_table(self):
         problem = Mock()
