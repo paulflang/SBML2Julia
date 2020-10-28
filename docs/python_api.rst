@@ -58,9 +58,10 @@ The results can be accessed via::
 
     >>> results = problem.results
 
-and written to an excel file via::
+and written to TSV and Excel files via::
 
-    >>> problem.write_results(path='path_to_results.xlsx')
+    >>> problem.write_results(path='./tsv_results/')
+    >>> problem.write_results(path='results.xlsx')
 
 Time courses for the optimal solution of condition ``cond`` and corresponding experimental datapoints can be plotted by::
 

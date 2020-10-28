@@ -682,7 +682,7 @@ class SBML2JuliaMPProblem(object):
                 # df.to_excel(writer, sheet_name=var_type, index=True)
 
         name, ext = os.path.splitext(path)
-        if ext in ('.xlsx', '.xls'):
+        if ext == '.xlsx':
             with pd.ExcelWriter(path) as writer:
                 # self.results['par_est'].to_excel(writer, sheet_name='par_est', index=False)
                 for sheet_name, df in sheets.items():
