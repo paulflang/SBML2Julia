@@ -663,7 +663,9 @@ class SBML2JuliaMPProblem(object):
             df_format = 'long'
 
         pd.set_option("display.max_rows", None)
-        sheets = {'parameters': self.results['par_est']}
+        sheets = {'parameters': self.results['par_est'],
+            'fval_chi2': pd.DataFrame({'value': [self._results['fval'], self._results['chi2']]},
+            index = ['fval', 'chi2'])}
         if df_format == 'wide':
             for var_type, Id in [('species', 'speciesId'), ('observables', 'observableId')]:
                 df = self.results[var_type].groupby('simulationConditionId')
@@ -687,7 +689,7 @@ class SBML2JuliaMPProblem(object):
                 # self.results['par_est'].to_excel(writer, sheet_name='par_est', index=False)
                 for sheet_name, df in sheets.items():
                     write_idx = True
-                    if (df_format == 'long') and (sheet_name != 'parameters'):
+                    if (df_format == 'long') and (sheet_name not in ('parameters', 'fval_chi2')):
                         write_idx = False
                     df.to_excel(writer, sheet_name=sheet_name, index=write_idx)
         elif ext == '':
@@ -695,7 +697,7 @@ class SBML2JuliaMPProblem(object):
                 os.mkdir(path)
             for sheet_name, df in sheets.items():
                 write_idx = True
-                if (df_format == 'long') and (sheet_name != 'parameters'):
+                if (df_format == 'long') and (sheet_name not in ('parameters', 'fval_chi2')):
                     write_idx = False
                 df.to_csv(os.path.join(path, sheet_name+'.tsv'), sep='\t', index=write_idx)
         else:
