@@ -99,7 +99,6 @@ class OptimizeController(cement.Controller):
 
         try:
             print('\n--- Plotting results ---')
-            # if args.plot_obs != 'None':
             if not os.path.isdir(os.path.join(args.out_dir, 'plots')):
                 print('Creating {}'.format(os.path.join(args.out_dir, 'plots')))
                 os.makedirs(os.path.join(args.out_dir, 'plots'))

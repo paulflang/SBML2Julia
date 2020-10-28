@@ -52,7 +52,7 @@ class SBML2JuliaMPProblem(object):
         self.optimizer_options = optimizer_options
         self.infer_ic_from_sbml = infer_ic_from_sbml
         self._set_julia_code()
-        self.custom_code_dict = custom_code_dict 
+        self.custom_code_dict = custom_code_dict
 
         self._initialization = False
         print('Problem initialized.')
@@ -260,7 +260,7 @@ class SBML2JuliaMPProblem(object):
         petab_problem = petab.problem.Problem()                                                                                                                                                                          
         petab_problem = petab_problem.from_yaml(petab_yaml)
         
-        petab.lint.lint_problem(petab_problem) # Returns `False` if no error occured and raises exception otherwise.
+        petab.lint.lint_problem(petab_problem) # Returns `False` if no error occured. Raises exception otherwise.
         self._check_for_not_implemented_features(petab_problem)
         petab_problem = self._sort_condition_df_problem(petab_problem)
 
@@ -283,18 +283,12 @@ class SBML2JuliaMPProblem(object):
             NotImplementedError: if some conditions are used for both, simulation and preequilibration
             NotImplementedError: if priors for NoiseParameters or ObservableParameters are provided
         """
-        # if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not self.petab_problem.measurement_df['preequilibrationConditionId'].empty:
-        #     raise NotImplementedError('Preequilibration is not implemented (SBML2JuliaMP does not simulate ODEs. Therefore it cannot determine the time until equilibration).')
-
         if np.inf in list(petab_problem.measurement_df['time']):
             raise NotImplementedError('Fitting steady state problems is not implemented.') # Todo: consider implementing it.
         
         t_conds = []
         for obs, data_1 in petab_problem.measurement_df.groupby('observableId'):
             t_conds.append(tuple(data_1['time']))
-        # if len(set(t_conds)) != 1:
-        #     raise NotImplementedError('Measurement time points differ between conditions. This is not implemented.')
-
         if 'preequilibrationConditionId' in petab_problem.measurement_df.columns and not petab_problem.measurement_df['preequilibrationConditionId'].empty:
             p2c = petab_problem.measurement_df.loc[:, ['preequilibrationConditionId', 'simulationConditionId']].drop_duplicates()
             for sCId, data in p2c.groupby('simulationConditionId'):
@@ -316,7 +310,6 @@ class SBML2JuliaMPProblem(object):
                 pars = str(vals).rstrip(';').split(';')
                 for par in pars:
                     observableParameter_names.add(par.strip())
-
         if 'objectivePriorType' in petab_problem.parameter_df.columns:
             for l, par in enumerate(petab_problem.parameter_df.index):
                 if par in noiseParameter_names and isinstance(petab_problem.parameter_df['objectivePriorType'][l], str):
@@ -371,32 +364,7 @@ class SBML2JuliaMPProblem(object):
             p2c = self.petab_problem.measurement_df.loc[:, ['preequilibrationConditionId', 'simulationConditionId']].drop_duplicates()
             simulationConditionIdx = [condition2index[c]+1 for c in p2c['simulationConditionId']]
             preequilibrationConditionIdx = [condition2index[c]+1 if isinstance(c, str) else '' for c in p2c['preequilibrationConditionId']]
-            # cond_to_precond = {}
-            # for _, row in p2c.iterrows():
-            #     cond_to_precond[row['simulationConditionId']] = row['preequilibrationConditionIdon']
         j_to_parameters = (simulationConditionIdx, preequilibrationConditionIdx)
-
-        #     unique_p = p2c['preequilibrationConditionId'].drop_duplicates()
-        #     print(1111111111)
-        #     if isinstance(unique_p, pd.core.series.Series):
-        #         unique_p = unique_p.to_frame()
-        #     print(121212)
-        #     unique_p['preequilibration_idx'] = [i+1 for i in range(len(p2c.index))]
-        #     print(2222222222222)
-        #     # print(unique_p)
-        #     # print(type(unique_p.loc['preequilibration_idx']))
-        #     p2c = p2c.merge(unique_p, on='preequilibrationConditionId', how='left')
-            
-        #     print(121212)
-        #     preequilibration_idx = list(p2c['preequilibration_idx'])
-        #     conditions_with_preequilibration = [isinstance(v, str) for v in p2c.loc[:, 'preequilibrationConditionId']]
-        #     print(3333)
-        #     conditions_with_preequilibration = np.arange(len(conditions_with_preequilibration))[conditions_with_preequilibration]+1
-        #     print(4444444444)
-        #     preequilibration_arrays = (preequilibration_idx, conditions_with_preequilibration)
-
-        # print('preequilibration_arrays')
-        # print(preequilibration_arrays)
 
         n_conditions = len(petab_problem.condition_df.index)
 
@@ -455,10 +423,8 @@ class SBML2JuliaMPProblem(object):
         self._results = {}
         self._results['par_est'] = self._get_param_ratios(self._results_all['parameters'])
         self._results['species'] = self._results_to_frame(self._results_all['species'][self._best_iter], variable_type='speciesId')
-        # self._results['species'] = df.sort_values(['speciesId', 'simulationConditionId', 'time'])
         self._results['observables'] = self._results_to_frame(self._results_all['observables'][self._best_iter], variable_type='observableId')
-        # self._results['observables'] = df.sort_values(['observableId', 'simulationConditionId', 'time'])
-        # self._set_simulation_df()
+
         self.petab_problem.simulation_df = self._results['observables']
         # Todo: remove the removal of the `observableParamters` column once the bug it causes in petab.calculate_llh is fixed.
         cols = [not b for b in self.petab_problem.measurement_df.columns.isin(['observableParameters'])] #, 'noiseParameters'])]
@@ -466,16 +432,10 @@ class SBML2JuliaMPProblem(object):
         if 'noiseParameters' in self.petab_problem.measurement_df.columns:
             ndf = self.petab_problem.measurement_df['noiseParameters']
         try:
-            # print('printing dfs')
-            # print(self.petab_problem.measurement_df.loc[:, cols])
-            # print(pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1))
-            # print(self.petab_problem.observable_df)
-            # print(self.petab_problem.parameter_df)
-
             self._results['fval'] = -petab.calculate_llh(self.petab_problem.measurement_df.loc[:, cols],
                 pd.concat([self.petab_problem.simulation_df.rename(columns={'measurement': 'simulation'}), ndf], axis=1),
                 self.petab_problem.observable_df,
-                self.petab_problem.parameter_df) # self._results_all['objective_value'][self._best_iter]
+                self.petab_problem.parameter_df)
             if not ('objectivePriorType' in self.petab_problem.parameter_df.columns \
                 or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns):
                 if not np.isclose(self._results['fval'], self._results_all['objective_value'][self._best_iter]):
@@ -501,47 +461,19 @@ class SBML2JuliaMPProblem(object):
         Returns:
             :obj:`pandas.DataFrame`: Dataframe with optimized and nominal parameters and the ratio between them
         """
-        
-        # par_est = par_dict[str(self._best_iter)]
-        # par_0 = dict(zip(list(self.petab_problem.parameter_df.index), self.petab_problem.parameter_df.loc[:, 'nominalValue']))
-
         local_par_names = {}
         for par_type in self.petab_problem.condition_df.columns:
             if str(self.petab_problem.condition_df[par_type].dtype) == 'object':
                 for i in range(self._n_conditions):
                     local_par_names[self.petab_problem.condition_df.iloc[i][par_type]] = (par_type, i)
 
-        # par_est_to_par_0_col = []
-        # par_est_col = []
-        # for key in par_0.keys():
-        #     if key in par_est.keys():
-        #         if par_0[key] != 0:
-        #             par_est_to_par_0_col.append(par_est[key] / par_0[key])
-        #         else:
-        #             par_est_to_par_0_col.append('NA (diff={})'.format(par_est[key]-par_0[key]))
-        #         par_est_col.append(par_est[key])
-        #     else:
-        #         par_type, i = local_par_names[key]
-        #         par_est_to_par_0_col.append(par_est[par_type][i] / par_0[key])
-        #         par_est_col.append(par_est[par_type][i])
-
-        # name_col = [str(key) for key in par_0.keys()]
-        # par_0_col = [par_0[str(key)] for key in par_0.keys()]
-
-        # df = pd.DataFrame(list(zip(name_col, par_0_col, par_est_col, par_est_to_par_0_col)),
-        #     columns=['Name', 'par_0', 'par_est', 'par_est_to_par_0']).set_index('Name')
-        # # df = df.sort_values(by=['Name']).reset_index(drop=True)
-        # df = df.loc[list(self.petab_problem.parameter_df.index), :]
-        # df = df.reset_index()
-
-
         par_est = par_dict[str(self._best_iter)]
         par_est_col = []
         par_est_to_nom_col = []
         for parameterId in list(self.petab_problem.parameter_df.index):
             if self.petab_problem.parameter_df.loc[parameterId, 'estimate'] == 0:
-                par_est_col.append['']
-                par_est_to_nom_col.append['']
+                par_est_col.append('')
+                par_est_to_nom_col.append('')
                 continue
             nominal = self.petab_problem.parameter_df.loc[parameterId, 'nominalValue']
             if parameterId in par_est.keys():
@@ -558,59 +490,8 @@ class SBML2JuliaMPProblem(object):
         df = self.petab_problem.parameter_df.copy()
         df['estimatedValue'] = par_est_col
         df['estimate_to_nominal'] = par_est_to_nom_col
-        # df = pd.DataFrame(list(zip(par_est_col, par_est_to_nom_col)),
-        #     columns=['Name', 'par_0', 'par_est', 'par_est_to_par_0']).set_index('Name')
-
-        #     if self.petab_problem.parameter_df.loc[parameterId, 'nominalValue'] == 0:
-        #     par_est_col.append(par_est[parameterId])
 
         return df
-
-
-    # def _results_to_frame3(self, simulation_dict, variable_type='observableId'):
-
-    #     t_max = self.petab_problem.measurement_df['time'].max()
-    #     t_sim = np.linspace(start=0, stop=t_max, num=self.t_steps)
-    #     # print(next(self.petab_problem.measurement_df.groupby('simulationConditionId')))
-    #     # mg = self.petab_problem.measurement_df.groupby('simulationConditionId')
-    #     # t_exp = {}
-    #     # for cond, data in mg:
-    #     #     t_exp[cond] = (list(data['time']))
-    #     t_exp = list(self.petab_problem.measurement_df['time'].drop_duplicates())
-    #     res_dict = {variable_type: [], 'simulationConditionId': [], 'time': [], 'simulation': []}
-    #     index2condition = {v: k for k, v in self._condition2index.items()}
-    #     for variable in simulation_dict[self._best_iter].keys():
-    #         # for c, i in self._condition2index.items():
-    #         for j, c_idx in enumerate(self._j_to_parameters[0]):
-
-    #         # for c in self._condition2index.keys():
-    #         #     for variable in simulation_dict[self._best_iter].keys():
-    #             try:
-    #                 if variable_type == 'speciesId':
-    #                     print('simulation_dict_s')
-    #                     print(simulation_dict)
-    #                     value = simulation_dict[self._best_iter][variable][j][:-1]
-    #                 elif variable_type == 'observableId':
-    #                     print('simulation_dict_o')
-    #                     print(simulation_dict)
-    #                     value = simulation_dict[self._best_iter][variable][j]
-    #             except IndexError:
-    #                 print('continueing')
-    #                 continue
-    #             res_dict['simulationConditionId'] = res_dict['simulationConditionId'] + [index2condition[c_idx-1]]*len(value)
-    #             res_dict[variable_type] = res_dict[variable_type] + [variable]*len(value)
-    #             if variable_type == 'speciesId':
-    #                 res_dict['time'] = res_dict['time'] + list(t_sim)
-    #             elif variable_type == 'observableId':
-    #                 res_dict['time'] = res_dict['time'] + t_exp #[index2condition[c_idx-1]]
-    #             res_dict['simulation'] = res_dict['simulation'] + list(value)
-    #             # print('res_dict')
-    #             # print(res_dict)
-    #     for k, v in res_dict.items():
-    #         print(k)
-    #         print(len(v))
-                
-    #     return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
 
 
     def _results_to_frame(self, simulation_dict, variable_type='observableId'):
@@ -631,24 +512,6 @@ class SBML2JuliaMPProblem(object):
                 res_dict['simulation'] = res_dict['simulation'] + list(simulation)
 
         return pd.DataFrame(res_dict).sort_values(['simulationConditionId', variable_type, 'time']).reset_index(drop=True)
-
-
-    # def _set_simulation_df(self):
-
-    #     simulation_df = self.results['observables']
-    #     print('simulation_df')
-    #     print(simulation_df)
-    #     # t_sim_to_gt_sim = []
-    #     # idx = -1
-    #     # for i in range(len(self.petab_problem.measurement_df.index)): # Todo: expand this for all dataframes in gt_simulation_dfs
-    #     #     print(simulation_df.loc[(idx+1):, 'time'])
-    #     #     print(self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])
-    #     #     idx = np.argmin(abs(simulation_df.loc[(idx+1):, 'time']
-    #     #         - self.petab_problem.measurement_df.loc[:, 'time'].iloc[i])) + idx+1
-    #     #     t_sim_to_gt_sim.append(idx)
-    #     # simulation_df = simulation_df.iloc[t_sim_to_gt_sim, :].reset_index(drop=True)
-    #     # simulation_df[petab.TIME] = simulation_df[petab.TIME].astype(int)
-    #     self.petab_problem.simulation_df = simulation_df.rename(columns={'simulation': 'measurement'})
 
 
     def write_results(self, path=os.path.join('.', 'results'), df_format='long'):
@@ -676,17 +539,14 @@ class SBML2JuliaMPProblem(object):
                         dfg = dfg.unstack()
                         dfg = dfg.loc[:, 'simulation']
                         sheets[var_type+'_'+condition] = dfg
-                        # dfg.to_excel(writer, sheet_name=var_type+'_'+condition, index=True)
         elif df_format == 'long':
             for var_type in ['species', 'observables']:
                 df = self.results[var_type]
                 sheets[var_type] = df
-                # df.to_excel(writer, sheet_name=var_type, index=True)
 
         name, ext = os.path.splitext(path)
         if ext == '.xlsx':
             with pd.ExcelWriter(path) as writer:
-                # self.results['par_est'].to_excel(writer, sheet_name='par_est', index=False)
                 for sheet_name, df in sheets.items():
                     write_idx = True
                     if (df_format == 'long') and (sheet_name not in ('parameters', 'fval_chi2')):
@@ -795,12 +655,6 @@ class SBML2JuliaMPProblem(object):
         """
         #----------------------------------------------------------------------#
 
-        NEG_LLH_DICT = {'normal': '0.5 * (log(2*pi*{2}^2) + {2}^(-2) * ({0}{3} - {1})^2)',
-            'laplace': 'log(2*{2}) + abs({0}{3} - {1})/{2}',
-            'logNormal': 'log({0}{3}*{2}*sqrt(2*pi)) + (log({0}{3}) - {1})^2/(2*{2}^2)',
-            # 'logLaplace': '{1} + log(sqrt(2)*{2}) - min((sqrt(2)/{2} - {1})*(log({0}{3}) - {1}) , (sqrt(2)/{2} + {1})*(-log({0}{3}) + {1}))'
-            }
-
         if self._calling_function == '_execute_case':
             warnings.warn('Problem is called from PEtab test suite. Simulating with nominal parameter values.')
 
@@ -846,8 +700,7 @@ class SBML2JuliaMPProblem(object):
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)
             kinetics = reaction.getKineticLaw()
-            kinetic_components = kinetics.getFormula() #.split(' * ')[1:]
-            # kinetic_components = re.sub('compartment \* ', '', kinetic_components)
+            kinetic_components = kinetics.getFormula()
             reactions[reaction.getId()] = kinetic_components #jump_formula
 
         species = {} # dict of species and stoichiometry-reactionId tuple they are involved in
@@ -856,34 +709,6 @@ class SBML2JuliaMPProblem(object):
             if specie.getBoundaryCondition() == True or (specie.getId() in species):
                 continue
             species[specie.getId()] = []
-
-        # for i in range(mod.getNumReactions()): 
-        #     reaction = mod.getReaction(i)
-        #     kinetics = reaction.getKineticLaw()
-        #     print('kinetics')
-        #     print(kinetics) 
-        #     for j in range(reaction.getNumReactants()): 
-        #         ref = reaction.getReactant(j)
-        #         specie = mod.getSpecies(ref.getSpecies())
-        #         products = [r.getSpecies() for r in reaction.getListOfProducts()]
-        #         print('products')
-        #         print(products)
-        #         if (specie.getBoundaryCondition() == True) or (specie.getName() in products):
-        #             print('continueing...')
-        #             continue
-        #         species[specie.getId()].append(('-'+str(ref.getStoichiometry()), reaction.getId()))
-        #         # print('added reaction {} to specie {}'.format(reaction.getID(), specie))
-        #     for j in range(reaction.getNumProducts()): 
-        #         ref = reaction.getProduct(j)
-        #         specie = mod.getSpecies(ref.getSpecies())
-        #         reactants = [r.getSpecies() for r in reaction.getListOfReactants()]
-        #         print('reactants')
-        #         print(reactants)
-        #         if (specie.getBoundaryCondition() == True) or (specie.getName() in reactants): 
-        #             print('continueing')
-        #             continue
-        #         species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
-
 
         for i in range(mod.getNumReactions()): 
             reaction = mod.getReaction(i)
@@ -918,37 +743,6 @@ class SBML2JuliaMPProblem(object):
                     continue
                 species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId())))
 
-
-            # for j in range(reaction.getNumReactants()): 
-            #     r_ref = reaction.getReactant(j)
-            #     r_specie = mod.getSpecies(ref.getSpecies())
-            #     products = [r.getSpecies() for r in reaction.getListOfProducts()]
-
-            # for j in range(reaction.getNumProducts()): 
-            #     p_ref = reaction.getProduct(j)
-            #     p_specie = mod.getSpecies(ref.getSpecies())
-            #     reactants = [r.getSpecies() for r in reaction.getListOfReactants()]
-
-
-            #     print('products')
-            #     print(products)
-            #     if (specie.getBoundaryCondition() == True) or (specie.getName() in products):
-            #         print('continueing...')
-            #         continue
-            #     species[specie.getId()].append(('-'+str(ref.getStoichiometry()), reaction.getId()))
-            #     # print('added reaction {} to specie {}'.format(reaction.getID(), specie))
-            # for j in range(reaction.getNumProducts()): 
-            #     ref = reaction.getProduct(j)
-            #     specie = mod.getSpecies(ref.getSpecies())
-            #     reactants = [r.getSpecies() for r in reaction.getListOfReactants()]
-            #     print('reactants')
-            #     print(reactants)
-            #     if (specie.getBoundaryCondition() == True) or (specie.getName() in reactants): 
-            #         print('continueing')
-            #         continue
-            #     species[specie.getId()].append((('+'+str(ref.getStoichiometry()), reaction.getId()))) # if rate law already there, take differece
-
-
         parameters = {}
         for i in range(mod.getNumParameters()):
             par = mod.getParameter(i)
@@ -971,7 +765,6 @@ class SBML2JuliaMPProblem(object):
         generated_code.extend(bytes('using Ipopt\n', 'utf8'))
         generated_code.extend(bytes('using JuMP\n\n', 'utf8'))
 
-        # generated_code.extend(bytes('t_steps = {} # Setting number of ODE discretisation steps\n\n'.format(self.t_steps), 'utf8'))
         generated_code.extend(bytes('n_steps = {} # Setting number of ODE discretisation steps\n\n'.format(self.t_steps), 'utf8'))
  
         generated_code.extend(bytes('# Data\n', 'utf8'))
@@ -979,8 +772,7 @@ class SBML2JuliaMPProblem(object):
         generated_code.extend(bytes('data_path = "{}"\n'.format(os.path.join(self._petab_dirname, self.petab_yaml_dict['problems'][0]['measurement_files'][0])), 'utf8'))
         generated_code.extend(bytes('df = CSV.read(data_path)\n', 'utf8')) #@Sungho: use_mmap=false is said to be slow, but I need to release the file somehow. Alternetive suggestions?
         generated_code.extend(bytes('insert!(df, 1, (1:length(df[:,1])), :id)\n\n', 'utf8'))
-        
-        # New time encoding starts here:
+
         generated_code.extend(bytes('df_by_o = groupby(df, :observableId)\n', 'utf8'))
         generated_code.extend(bytes('df_by_c = groupby(df, :simulationConditionId)\n\n', 'utf8'))
 
@@ -1041,35 +833,6 @@ class SBML2JuliaMPProblem(object):
         generated_code.extend(bytes('    end\n', 'utf8'))
         generated_code.extend(bytes('    sort!(obs2conds[obs_name])\n', 'utf8'))
         generated_code.extend(bytes('end\n\n', 'utf8'))
-        
-        # generated_code.extend(bytes('dfg = groupby(df, :simulationConditionId)\n', 'utf8'))
-        # generated_code.extend(bytes('data = []\n', 'utf8'))
-        # generated_code.extend(bytes('for condition in keys(dfg)\n', 'utf8'))
-        # generated_code.extend(bytes('    push!(data,unstack(dfg[condition], :time, :observableId, :measurement))\n', 'utf8')) # [:id, :time]
-        # generated_code.extend(bytes('end\n\n', 'utf8'))
-
-        # generated_code.extend(bytes('k_to_time_idx = []\n', 'utf8'))
-        # generated_code.extend(bytes('for c in 1:length(keys(dfg))\n', 'utf8'))
-        # generated_code.extend(bytes('    push!(k_to_time_idx, [])\n', 'utf8'))
-        # generated_code.extend(bytes('    j = 0\n', 'utf8'))
-        # generated_code.extend(bytes('    prev = "a"\n', 'utf8'))
-        # generated_code.extend(bytes('    for t in dfg[c][:, :time]\n', 'utf8'))
-        # generated_code.extend(bytes('        if t != prev\n', 'utf8'))
-        # generated_code.extend(bytes('            j = j+1\n', 'utf8'))
-        # generated_code.extend(bytes('        end\n', 'utf8'))
-        # generated_code.extend(bytes('        push!(k_to_time_idx[c], j)\n', 'utf8'))
-        # generated_code.extend(bytes('        prev = t\n', 'utf8'))
-        # generated_code.extend(bytes('    end\n', 'utf8'))
-        # generated_code.extend(bytes('end\n\n', 'utf8'))
-
-        # generated_code.extend(bytes('t_exp = Vector(DataFrame(groupby(dfg[1], :observableId)[1])[!, :time])\n', 'utf8')) # dfg[1][:, :time]\n', 'utf8'))
-        # # generated_code.extend(bytes('t_exp = unique(dfg[1][:, :time])\n', 'utf8'))
-        # generated_code.extend(bytes('t_sim = range(0, stop=t_exp[end], length=t_steps)\n', 'utf8'))
-        # generated_code.extend(bytes('t_sim_to_exp = []\n', 'utf8'))
-        # generated_code.extend(bytes('for i in 1:length(t_exp)\n', 'utf8'))
-        # generated_code.extend(bytes('    idx = argmin(abs.(t_exp[i] .- t_sim))\n', 'utf8'))
-        # generated_code.extend(bytes('    append!(t_sim_to_exp, idx)\n', 'utf8'))
-        # generated_code.extend(bytes('end\n\n', 'utf8'))
 
         generated_code.extend(bytes('results = Dict()\n', 'utf8'))
         generated_code.extend(bytes('results["objective_value"] = Dict()\n', 'utf8'))
@@ -1084,8 +847,6 @@ class SBML2JuliaMPProblem(object):
         cond_with_preequ = [item for item, b in zip(self._j_to_parameters[0], preequ_bool) if b]
         preequ = [item for item, b in zip(self._j_to_parameters[1], preequ_bool) if b]
 
-
-        # if any(isinstance(item, int) for item in self._j_to_parameters[1]):
         generated_code.extend(bytes(f'cond_without_preequ = {cond_without_preequ}\n', 'utf8'))
         generated_code.extend(bytes(f'cond_with_preequ = {cond_with_preequ}\n', 'utf8'))
         generated_code.extend(bytes(f'preequ = {preequ}\n\n', 'utf8'))
@@ -1143,7 +904,6 @@ class SBML2JuliaMPProblem(object):
                     if self._calling_function == '_execute_case': # The test cases always simulate from the nominal value
                         estimate = 0
                     if estimate == 1:
-                        # generated_code.extend(bytes('    @constraint(m, {} <= {}[{}] <= {})\n'.format(lb, k, i+1, ub), 'utf8'))
                         generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, par), 'utf8'))
                     elif estimate  == 0:
                         generated_code.extend(bytes('    @constraint(m, {}[{}] == {})\n'.format(k, i+1, nominal), 'utf8'))
@@ -1179,8 +939,6 @@ class SBML2JuliaMPProblem(object):
         generated_code.extend(bytes('    # Model species\n', 'utf8'))
         generated_code.extend(bytes('    println("Defining species...")\n', 'utf8'))
         for specie in species.keys():
-            # if self.n_starts > 1:
-            #     global_str = f'global {specie} = '
             if species[specie]:
                 lb = self.petab_problem.species_df.loc[specie, 'lowerBound'] #Todo: write somhere a linter that check that the set of sbml model species == self.petab_problem.species_df.index
                 ub = self.petab_problem.species_df.loc[specie, 'upperBound']
@@ -1245,13 +1003,8 @@ class SBML2JuliaMPProblem(object):
         # Write pre-equilibration constraints
         generated_code.extend(bytes('    # Pre-equilibration constraints\n', 'utf8'))
         condition_iterator = f'1:{len(cond_with_preequ)}'
-        # if any(isinstance(item, int) for item in self._j_to_parameters[1]):
         if cond_with_preequ or preequ:
-            # if len(self._preequilibration_arrays[0]) != len(self._preequilibration_arrays[1]):
-            #     condition_iterator = self._preequilibration_arrays[1]
             generated_code.extend(bytes('    println("Defining pre-equilibration constraints...")\n', 'utf8'))
-            # patterns = [par for par in self.petab_problem.condition_df.columns if par not in species.keys()]       
-            # generated_code.extend(bytes(f'    preequilibration_idx = {self._preequilibration_arrays[0]}\n', 'utf8'))
             if self._calling_function == '_execute_case':
                 generated_code.extend(bytes('    @constraint(m, [j in {}], A[j, length(t_sim)+1] + B[j, length(t_sim)+1] == 1)\n       '.format(condition_iterator), 'utf8'))
 
@@ -1264,7 +1017,6 @@ class SBML2JuliaMPProblem(object):
                 if species[specie]: # Species has reaction
                     generated_code.extend(bytes('    println("{}")\n'.format(specie), 'utf8'))
                     generated_code.extend(bytes('    @NLconstraint(m, [j in {}],\n       '.format(condition_iterator), 'utf8'))
-                    # generated_code.extend(bytes('        {}[j, k+1] == {}[j, k] + ('.format(specie, specie), 'utf8'))
                     for (coef, reaction_name) in species[specie]: # For every reaction
                         reaction_formula = ' {}*( {} )'.format(coef, reactions[reaction_name])
                         for pattern in patterns: # Add iterator `[preequilibration_idx[j]` to condition-defined and local parameters
@@ -1309,8 +1061,7 @@ class SBML2JuliaMPProblem(object):
                 lb = 'NaN'
             if np.isnan(ub):
                 ub = 'NaN'
-            # if self.n_starts > 1:
-            #     global_str = f'global {observable} = '
+
             generated_code.extend(bytes(f'    obs_dict["{observable}"] = @variable(m, {lb} <= {observable}[j in obs2conds["{observable}"], k in 1:length(t_exp["{observable}"][j])] <= {ub}, start=1.)\n', 'utf8'))
             formula = self.petab_problem.observable_df.loc[observable, 'observableFormula'].split()
             formula = ' '+''.join(formula)+' '
@@ -1383,9 +1134,6 @@ class SBML2JuliaMPProblem(object):
                 raise ValueError(f'`noiseDistribution` must be `normal` or `laplace` but is {noise_distribution}.')
                 
             condition_idx_string = '[j]'
-            # if len(self._obs_to_conditions[observable]) < self._n_conditions:
-            #     condition_idx_string = f'[{self._obs_to_conditions[observable]}[j]]'
-
             if noise_distribution == 'normal' and scale == 'lin':
                 sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string)) # 1:length(dfg[j][:, :time])
             elif noise_distribution == 'normal' and scale == 'log':
@@ -1397,20 +1145,7 @@ class SBML2JuliaMPProblem(object):
             elif noise_distribution == 'laplace' and scale == 'log':
                 sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]) + abs(log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
             elif noise_distribution == 'laplace' and scale == 'log10':
-                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]*log(10)) + abs(log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))               
-
-
-        # priors = []
-        # if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
-        #     or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
-        #     for index, row in self.petab_problem.parameter_df.iterrows():
-        #         prior_type = row['objectivePriorType']
-        #         prior_parameters = [par.strip() for par in row['objectivePriorParameters'].split(';')]
-        #         if index in self._global_pars.keys():
-        #             priors.append(str(self._n_conditions)+' * '+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '')+'\n')
-        #         else: # For condition-specific parameters that are in the parameter table (i.e. local parameters)
-        #             priors.append('sum('+NEG_LLH_DICT[prior_type].format(index, prior_parameters[0], prior_parameters[1], '[j]')+' for j in 1:{})\n'.format(self._n_conditions))
-
+                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]*log(10)) + abs(log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
 
         generated_code.extend(bytes('        + '.join(sums_of_nllhs), 'utf8'))
         generated_code.extend(bytes(f'        {nlp})\n\n', 'utf8'))
@@ -1439,24 +1174,6 @@ class SBML2JuliaMPProblem(object):
         generated_code.extend(bytes('    species_values = Dict(string(spec)=>Dict(cond_idx=>[value(species_dict[spec][cond_idx, val_idx]) for val_idx=1:length(t_sim)]\n', 'utf8'))
         generated_code.extend(bytes('        for cond_idx in 1:length(keys(df_by_c))) for spec in species_names)\n\n', 'utf8'))
 
-        # generated_code.extend(bytes('    species_values = Dict()\n', 'utf8'))
-        # generated_code.extend(bytes('    for s in species_names\n', 'utf8'))
-        # generated_code.extend(bytes('        species_values[split(string(s[1]), "[")[1]] = JuMP.value.(s)\n', 'utf8')) # Todo: maybe replace `Vector` with `Array`
-        # generated_code.extend(bytes('    end\n\n', 'utf8'))
-
-        # generated_code.extend(bytes('    observable_names = [', 'utf8'))
-        # for observable in self.petab_problem.observable_df.index:
-        #     generated_code.extend(bytes(observable+', ', 'utf8'))
-        # generated_code.extend(bytes(']\n', 'utf8'))
-        # generated_code.extend(bytes('    observable_values = Dict()\n', 'utf8'))
-        # generated_code.extend(bytes('    for o in observable_names\n', 'utf8'))
-        # generated_code.extend(bytes('        tmp = []\n', 'utf8'))
-        # generated_code.extend(bytes('        results = JuMP.value.(o)\n', 'utf8'))
-        # generated_code.extend(bytes('        for val in results\n', 'utf8'))
-        # generated_code.extend(bytes('            push!(tmp, val)\n', 'utf8'))
-        # generated_code.extend(bytes('        end\n', 'utf8'))
-        # generated_code.extend(bytes('        observable_values[split(string(o[1,1]), "[")[1]] = tmp\n', 'utf8'))
-        # generated_code.extend(bytes('    end\n\n', 'utf8'))
         generated_code.extend(bytes('    observable_values = Dict(obs=>Dict(cond_idx=>[value(obs_dict[obs][cond_idx, val_idx]) for val_idx=1:length(list)]\n', 'utf8'))
         generated_code.extend(bytes('        for (cond_idx, list) in dict) for (obs, dict) in m_exp)\n\n', 'utf8'))
 
@@ -1587,25 +1304,6 @@ class SBML2JuliaMPProblem(object):
         for l, par in enumerate(parameter_df.index):
             prior_code.extend(bytes(f'    @constraint(m, par_est[{l+1}] == {par})\n', 'utf8'))
         prior_code.extend(bytes('\n', 'utf8'))
-
-        # prior_code.extend(bytes(f'    @variable(m, n_occurences[l in 1:{n_par_with_prior}])\n', 'utf8')) # Todo: remove n_occurences
-
-
-        # for l, par in enumerate(parameter_df.index):
-            # n_occurences = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_without_preequ)-1, :] == par, axis=1) > 0)
-            # print('cond_with_preequ')
-            # print(cond_with_preequ)
-            # print(np.array(cond_with_preequ))
-            # print(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par)
-            # n_occurences_in_preequ = np.sum(np.sum(self.petab_problem.condition_df.iloc[np.array(cond_with_preequ)-1, :] == par))
-            # print(n_occurences_in_preequ)
-            # if n_occurences_in_preequ != 0:
-            #     warnings.warn(f'PEtab specifies objectivePriors for the preequilibration parameter {par}, but parameter priors will not be added to the objective function for preequilibration conditions.')
-        #     if n_occurences == 0:
-        #         prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {len(cond_without_preequ)})\n', 'utf8'))
-        #     else:
-        #         prior_code.extend(bytes(f'    @constraint(m, n_occurences[{l+1}] == {n_occurences})\n', 'utf8'))
-        # prior_code.extend(bytes('\n', 'utf8'))
 
         prior_types = {'normal': [], 'laplace': [], 'logNormal': [], 'logLaplace': []}
         for l, prior_type in enumerate(parameter_df['objectivePriorType']):

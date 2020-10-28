@@ -23,7 +23,7 @@ importlib.reload(core)
 from numpy.testing import assert_allclose
 from pandas.testing import assert_frame_equal
 
-#Todo: write resimulations test
+
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 PETAB_YAML = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
@@ -120,8 +120,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         
         # Test resetting
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
-        # problem.write_jl_file(path=os.path.join('.', 'test_optimizer_options_setter.jl'))
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.optimizer_options = {'linear_solver': 'MA27'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -140,7 +139,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         
         # Test resetting
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.optimizer_options = {'# Write global parameters': '# Write global parameters1'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -162,7 +161,6 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         problem.import_julia_code(JL_FILE_GOLD)
         problem._julia_code = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures',
             FIXTURES, problem._julia_code)
-        # problem.write_jl_file(path=os.path.join('.', 'test_import_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
 
@@ -192,23 +190,11 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         print(c.exception)
         self.assertTrue('steady state' in str(c.exception))
 
-        # petab_problem_wrong = copy.deepcopy(petab_problem)
-        # petab_problem_wrong.measurement_df.loc[0, 'time'] = 1
-        # with self.assertRaises(NotImplementedError) as c:
-        #     problem._check_for_not_implemented_features(petab_problem_wrong)
-        # self.assertTrue('Measurement time points' in str(c.exception))
-
         petab_problem_wrong = copy.deepcopy(petab_problem)
         petab_problem_wrong.measurement_df['preequilibrationConditionId'] = 1*['p1']+43*['p2']
         with self.assertRaises(NotImplementedError) as c:
             problem._check_for_not_implemented_features(petab_problem_wrong)
         self.assertTrue('with <=1 preequilibrationConditionIds' in str(c.exception))
-
-        # petab_problem_wrong = copy.deepcopy(petab_problem)
-        # petab_problem_wrong.measurement_df['noiseParameters'] = 1*['k']+43*['']
-        # with self.assertRaises(NotImplementedError) as c:
-        #     problem._check_for_not_implemented_features(petab_problem_wrong)
-        # self.assertTrue('Parameter overrides are not implemented' in str(c.exception))
 
 
     def test_sort_condition_df_problem(self):
@@ -286,7 +272,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
 
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'a0' else 1) for k in problem._global_pars.keys()}
-        problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1' # , '0.1; 1', '-1.1; 1', '-0.4; 2'
+        problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1'
         problem._set_julia_code()
         results_shifted = problem.optimize()
         self.assertTrue(results_shifted['par_est'].loc['a0', 'estimatedValue'] > RESULTS_GOLD['par_est'].loc['a0', 'estimatedValue'])
@@ -342,8 +328,6 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         res_dict_gold = {'speciesId': 11*['A']+11*['B']+11*['A']+11*['B'],
             'simulationConditionId': 22*['c0'] + 22*['c1'],
             'time': 4*[float(i) for i in range(0, 11)], 'simulation': list(range(1, 45))}
-        # simulation_dict = {1: {'A': [list(range(1, 13)), list(range(23, 35))],
-        #     'B': [list(range(12,24)), list(range(34, 46))]}}
 
         simulation_dict = {'A': {1: list(range(1, 12)), 2: list(range(23, 34))},
             'B': {1: list(range(12,23)), 2: list(range(34, 45))}}
@@ -353,24 +337,6 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         df = problem._results_to_frame(simulation_dict, variable_type='speciesId')
 
         assert_frame_equal(df, problem._petab_problem.measurement_df)
-
-
-    # def test_set_simulation_df(self):
-    #     problem = Mock()
-    #     problem._petab_problem = petab.problem.Problem()                                                                                                                                                                          
-    #     problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
-
-    #     problem._petab_problem.measurement_df = pd.DataFrame({'observableId': ['obs_a', 'obs_a'],
-    #         'simulationConditionId': ['c0', 'c0'], 'time': [0, 10], 'measurement': [0.7, 0.1]})
-    #     df = pd.DataFrame({'observableId': ['obs_a'], 'simulationConditionId': ['c0'],
-    #         'time': [10.1], 'measurement': [1]})
-    #     problem._results = {'observables': problem._petab_problem.measurement_df.append(df).reset_index(drop=True)}
-    #     print(problem.results)
-
-    #     problem._set_simulation_df()
-
-    #     simulation_df_gold = copy.deepcopy(problem._petab_problem.measurement_df)
-    #     assert_frame_equal(problem._petab_problem.simulation_df, simulation_df_gold)
 
 
     def test_write_results(self):
@@ -399,7 +365,6 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         problem._petab_problem = problem._petab_problem.from_yaml(PETAB_YAML)
         problem._petab_dirname = os.path.dirname(PETAB_YAML)
         problem._results = RESULTS_GOLD
-        # problem._condition2index = {'c0': 1, 'c1': 2, 'c2': 2, 'p1': 3}
 
         problem.write_optimized_parameter_table()
         out_path = os.path.join(FIXTURES, '0015_objectivePrior', 'post_fit_parameters.tsv')
@@ -424,7 +389,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
 
 
     def test_set_julia_code(self):
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML) #failed
+        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_set_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -457,14 +422,12 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         print('code')
         print(code)
         self.assertTrue(code in JL_CODE_GOLD)
-    #     self.assertEqual(set_of_params, set())
-    # change mu in every condition
 
 
     def test_resetting(self):
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_resetting.jl'))
-        self.assertEqual(problem.julia_code, JL_CODE_GOLD) #Failed
+        self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.t_steps = 3
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -475,5 +438,3 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
 
         problem = core.SBML2JuliaMPProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
-        # problem.infer_ic_from_sbml # Todo: implement another species with initial condition inferred from sbml
-        # self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
