@@ -32,3 +32,4 @@ test_manual.py
 venv/
 plots/
 */.vscode/
+venv/
