@@ -1,3 +1,0 @@
-observableId	observableFormula	noiseFormula
-obs_a	A	0.5
-obs_b	offset_obs_b+scaling_obs_b*B	offset_noise+scaling_noise*B

@@ -24,4 +24,9 @@ docs/Makefile
 
 # raw data
 examples/Shin_PLOS2019/raw_data
-# examples/Shin_PLOS2019/generate_cpm_tables.py
+examples/Shin_PLOS2019/generate_cpm_tables.py
+
+#
+run_flake8.sh
+test_manual.py
+venv/

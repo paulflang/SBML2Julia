@@ -25,8 +25,6 @@ from pandas.testing import assert_frame_equal
 
 
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
-PETAB_YAML = os.path.join(FIXTURES, 'G2M_copasi', 'G2M_copasi.yaml')
-FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 PETAB_YAML = os.path.join(FIXTURES, '0015_objectivePrior', '_0015_objectivePrior.yaml')
 JL_FILE_GOLD = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(JL_FILE_GOLD, 'r') as f:
