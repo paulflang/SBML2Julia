@@ -1111,10 +1111,10 @@ class SBML2JuliaMPProblem(object):
             
             for spec in species.keys():
                 sigma = re.sub('[^a-zA-Z0-9_]'+spec+'[^a-zA-Z0-9_]',
-                    lambda matchobj: matchobj.group(0)[:-1]+'[j, t_sim_to_exp[k]]'+matchobj.group(0)[-1:],
+                    lambda matchobj: matchobj.group(0)[:-1]+f'[t_sim_to_exp["{observable}"][j][k]]'+matchobj.group(0)[-1:],
                     sigma)
             for obs in self.petab_problem.observable_df.index:
-                sigma = re.sub('[^a-zA-Z0-9_]'+obs+'[^a-zA-Z0-9_]',
+                sigma = re.sub('[^a-zA-Z0-9_"]'+obs+'[^a-zA-Z0-9_"]',
                     lambda matchobj: matchobj.group(0)[:-1]+'[j, k]'+matchobj.group(0)[-1:],
                     sigma)
             scale = 'lin'
