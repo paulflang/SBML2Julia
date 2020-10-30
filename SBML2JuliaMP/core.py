@@ -542,7 +542,7 @@ class SBML2JuliaMPProblem(object):
         """Write results to excel file
 
         Args:
-            path (:obj:`str`, optional): path of excel file to write results to.
+            path (:obj:`str`, optional): path of excel file to write results to
             df_format (:obj:`str, optional): long or wide table format
         """
         if df_format not in ['long', 'wide']:
