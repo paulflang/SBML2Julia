@@ -1,14 +1,14 @@
 """Execute petab test suite."""
 
-import petabtests
-from SBML2JuliaMP import core
 import importlib
-importlib.reload(core)
-import sys
+import logging
 import os
+import petabtests
 import pytest
 from _pytest.outcomes import Skipped
-import logging
+from SBML2JuliaMP import core
+
+importlib.reload(core)
 
 try:
     import petab
@@ -73,7 +73,7 @@ def _execute_case(case):
     # simulate
     t_steps = 11
     if case == '0006' or '0009' or '0010':
-    	t_steps = 3001
+        t_steps = 3001
     problem = core.SBML2JuliaMPProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
     problem.write_jl_file()
     problem.optimize()
@@ -81,7 +81,8 @@ def _execute_case(case):
 
     # extract results
     results = problem.results
-    simulation_df = problem.petab_problem.simulation_df.rename(columns={petab.MEASUREMENT: petab.SIMULATION})
+    simulation_df = problem.petab_problem.simulation_df.rename(
+        columns={petab.MEASUREMENT: petab.SIMULATION})
     print('simulation_df')
     print([simulation_df])
     print(gt_simulation_dfs)
@@ -92,7 +93,7 @@ def _execute_case(case):
     chi2s_match = petabtests.evaluate_chi2(chi2, gt_chi2, tol_chi2)
     llhs_match = petabtests.evaluate_llh(llh, gt_llh, tol_llh)
     simulations_match = petabtests.evaluate_simulations(
-        [simulation_df], gt_simulation_dfs, tol_simulations)   
+        [simulation_df], gt_simulation_dfs, tol_simulations)
 
     # log matches
     logger.log(logging.INFO if chi2s_match else logging.ERROR,
@@ -110,5 +111,6 @@ def _execute_case(case):
                              "expectations")
 
     logger.info(f"Case {case} passed.")
+
 
 test_petab_suite()

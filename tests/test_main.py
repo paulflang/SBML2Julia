@@ -6,11 +6,11 @@
 """
 
 import capturer
-import SBML2JuliaMP
 import mock
 import os
 import pkg_resources
 import re
+import SBML2JuliaMP
 import shutil
 import tempfile
 import unittest
@@ -21,8 +21,9 @@ YAML_PATH = os.path.join(FIXTURES, '0015_objectivePrior', '_0015_objectivePrior.
 jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(jl_file_gold, 'r') as f:
     JL_CODE_GOLD = f.read()
-JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/tests/fixtures',
-    FIXTURES, JL_CODE_GOLD)
+JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/'
+                      'df_software/SBML2JuliaMP/tests/fixtures', FIXTURES, JL_CODE_GOLD)
+
 
 class CliVersionTestCase(unittest.TestCase):
     def test_version(self):
@@ -67,7 +68,7 @@ class CliTestCase(unittest.TestCase):
 
     def test_optimize(self):
         with __main__.App(argv=['optimize', YAML_PATH, '-n', '1', '-i', 'False', '-o', '{}',
-        	'-c', '{}', '-d', self.tempdir_1, '-p', '[obs_a, obs_b]']) as app:
+                                '-c', '{}', '-d', self.tempdir_1, '-p', '[obs_a, obs_b]']) as app:
             app.run()
 
             # test that the CLI produced the correct output
@@ -78,15 +79,15 @@ class CliTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
 
         with __main__.App(argv=['optimize', YAML_PATH, '-t', '101', '-n', '2',
-            '-i', 'True', '-o', '{linear_solver: MA27}',
-            '-c', '{# Write global parameters: # Write global parameters1}',
-            '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
+                                '-i', 'True', '-o', '{linear_solver: MA27}',
+                                '-c', '{# Write global parameters: # Write global parameters1}',
+                                '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
             app.run()
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
 
         with __main__.App(argv=['optimize', 'a', '-t', '3', '-n', '2', '-i', 'True',
-            '-o', '{linear_solver: MA27}',
-            '-c', '{# Write global parameters: # Write global parameters1}',
-            '-d', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
+                                '-o', '{linear_solver: MA27}',
+                                '-c', '{# Write global parameters: # Write global parameters1}',
+                                '-d', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
             with self.assertRaises(SystemExit):
                 app.run()

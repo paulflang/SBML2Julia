@@ -1,21 +1,8 @@
 import setuptools
-import os
 
 name = 'SBML2JuliaMP'
 with open("README.md", "r") as fh:
     long_description = fh.read()
-# dirname = os.path.dirname(__file__)
-# package_data = {
-#     name: [
-#         'VERSION',
-#     ],
-# }
-
-# # get package metadata
-# md = pkg_utils.get_package_metadata(dirname, name, package_data_filename_patterns=package_data) # md is a PackageMetadata object that has attributes like version (as extracted from the VERSION file).
-# print(20)
-# print(dir(md))
-# print(md.version)
 
 # install package
 setuptools.setup(
@@ -28,13 +15,19 @@ setuptools.setup(
     author="paulflang",
     author_email="paul.lang@wolfson.ox.ac.uk",
     license='MIT',
-    keywords='Parameter fitting, ODE discretization',
-    packages=setuptools.find_packages(exclude=['tests', 'tests.*']), # include all packages (i.e. folders, wit __inti__.py files) except tests
-    install_requires=['cement >= 3.0.0', 'python-libsbml', 'matplotlib', 'numpy', 'openpyxl',
-        # 'os',
-        'pandas', # 're',
-        'scipy', 'setuptools', # 'sys', 'tempfile', 'yaml'
-        'julia', 'petab'], # installs dependencies that are on PyPI
+    keywords='Parameter fitting, ODE discretization, Julia, JuMP',
+    packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
+    install_requires=['cement >= 3.0.0',
+                      'julia',
+                      'matplotlib',
+                      'numpy',
+                      'openpyxl',
+                      'pandas',
+                      'petab',
+                      'python-libsbml',
+                      'scipy',
+                      'setuptools',
+                      ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
@@ -46,7 +39,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'SBML2JuliaMP = SBML2JuliaMP.__main__:main', 
+            'SBML2JuliaMP = SBML2JuliaMP.__main__:main',
         ],
-    }, # The entry_point says that when I type into the console "SBML2JuliaMP", what will be executed is the function main in calc.__main__.py
-) #
+    },
+)

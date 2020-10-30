@@ -1098,23 +1098,21 @@ class SBML2JuliaMPProblem(object):
                                  formula)
             for obs_par_name in set_of_observable_params:
                 formula = re.sub('[^a-zA-Z0-9_]'+obs_par_name[0]+'[^a-zA-Z0-9_]',
-                                 lambda matchobj: matchobj.group(0)[:-1]+f'[j{obs_par_name[1]}]'+matchobj.group(0)[-1:], # Todo: not sure if this is correct
+                                 lambda matchobj: matchobj.group(0)[:-1]+f'[j{obs_par_name[1]}]'+matchobj.group(0)[-1:],  # Todo: not sure if this is correct
                                  formula)
             formula = formula.strip()
 
             generated_code.extend(bytes(f'    @NLconstraint(m, [j in obs2conds["{observable}"], k in 1:length(t_exp["{observable}"][j])], {observable}[j, k] == {formula})\n', 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
-
         # Write priors
         nlp = ''
         if 'objectivePriorType' in self.petab_problem.parameter_df.columns \
-            or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
+                or 'objectivePriorParameters' in self.petab_problem.parameter_df.columns:
             prior_code = self._write_prior_code()
             generated_code.extend(bytes(prior_code, 'utf8'))
             if prior_code:
                 nlp = '+ neg_log_priors'
-
 
         # Write objective
         generated_code.extend(bytes('    # Define objective\n', 'utf8'))
@@ -1156,26 +1154,24 @@ class SBML2JuliaMPProblem(object):
             if noise_distribution not in ['normal', 'laplace']:
                 raise ValueError(f'`noiseDistribution` must be `normal` or `laplace` but is {noise_distribution}.')
 
-            condition_idx_string = '[j]'
             if noise_distribution == 'normal' and scale == 'lin':
-                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string)) # 1:length(dfg[j][:, :time])
+                sums_of_nllhs.append('sum(0.5 * log(2*pi*({1})^2) + 0.5*(({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma))  # 1:length(dfg[j][:, :time])
             elif noise_distribution == 'normal' and scale == 'log':
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(m_exp["{0}"][j][k])^2) + 0.5*((log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(m_exp["{0}"][j][k])^2) + 0.5*((log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma))
             elif noise_distribution == 'normal' and scale == 'log10':
-                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(m_exp["{0}"][j][k])^2*log(10)^2) + 0.5*((log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(0.5*log(2*pi*({1})^2*(m_exp["{0}"][j][k])^2*log(10)^2) + 0.5*((log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1}))^2 for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma))
             elif noise_distribution == 'laplace' and scale == 'lin':
-                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}) + abs({0}[j, deduplicated_time_idx["{0}"][j][k]]-m_exp["{0}"][j][k])/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma))
             elif noise_distribution == 'laplace' and scale == 'log':
-                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]) + abs(log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]) + abs(log({0}[j, deduplicated_time_idx["{0}"][j][k]])-log(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma))
             elif noise_distribution == 'laplace' and scale == 'log10':
-                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]*log(10)) + abs(log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma, len(self._obs_to_conditions[observable]), condition_idx_string))
+                sums_of_nllhs.append('sum(log(2*{1}*m_exp["{0}"][j][k]*log(10)) + abs(log10({0}[j, deduplicated_time_idx["{0}"][j][k]])-log10(m_exp["{0}"][j][k]))/({1})) for j in obs2conds["{0}"] for k in 1:length(t_exp["{0}"][j]))\n'.format(observable, sigma))
 
         generated_code.extend(bytes('        + '.join(sums_of_nllhs), 'utf8'))
         generated_code.extend(bytes(f'        {nlp})\n\n', 'utf8'))
 
         generated_code.extend(bytes('    println("Optimizing:")\n', 'utf8'))
         generated_code.extend(bytes('    optimize!(m)\n\n', 'utf8'))
-
 
         # Write code to get the solution
         julia_pars = list(self._global_pars.keys())
@@ -1228,7 +1224,7 @@ class SBML2JuliaMPProblem(object):
         
         Args:
             var_type (:obj:`str`): 'observable' or 'noise'
-        
+
         Returns:
             :obj:`tuple`: (override_code.decode(), set_of_params)
         """
@@ -1249,7 +1245,7 @@ class SBML2JuliaMPProblem(object):
                         params[obs][cond] = [data_2[var_type+'Parameters'].values[0]]
                     else:
                         params[obs][cond] = data_2[var_type+'Parameters'].values
-            
+
             str_1 = ''
             str_2 = ''
             str_3 = ''
@@ -1292,10 +1288,10 @@ class SBML2JuliaMPProblem(object):
 
     def _write_prior_code(self):
         """Write code for objectivePriors
-        
+
         Raises:
             NotImplementedError: if objectivePriorType in parameter table is not `normal`, `laplace`, `logNormal` or `logLaplace`
-        
+
         Returns:
             :obj:`str`: prior code
         """
@@ -1308,7 +1304,7 @@ class SBML2JuliaMPProblem(object):
         n_par_with_prior = sum(idx_with_prior_1)
         if sum(idx_with_prior_1) == 0:
             return prior_code.decode()
-        
+
         prior_code.extend(bytes('    # Defining objectivePriors\n', 'utf8'))
         prior_code.extend(bytes('    println("Defining objectivePriors")\n', 'utf8'))
         prior_code.extend(bytes(f'    @variable(m, prior_mean[l in 1:{n_par_with_prior}], start=1.)\n', 'utf8'))
