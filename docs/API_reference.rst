@@ -1,4 +1,5 @@
 API reference
 =============
 
-.. automodule:: SBML2JuliaMP.core
+.. autoclass:: SBML2JuliaMP.core
+   :members:
