@@ -36,5 +36,6 @@ Contents
    tutorial.rst
    example.rst
    known_limitations.rst
+   API_reference.rst
    contributing.rst
    about.rst
