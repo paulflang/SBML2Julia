@@ -1,4 +1,4 @@
-""" Class to fit PEtab problem via time discretization in Julia
+"""Class to fit PEtab problem via time discretization in Julia
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-15
 :Copyright: 2020, Paul F Lang
@@ -22,6 +22,9 @@ importlib.reload(libsbml)
 
 class SBML2JuliaMPProblem(object):
 
+    """Class to create and solve an optimization and retreive the results
+    """
+    
     def __init__(self, petab_yaml, t_steps=None, n_starts=1, infer_ic_from_sbml=False,
                  optimizer_options={}, custom_code_dict={}):
         """
@@ -58,7 +61,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def petab_yaml_dict(self):
         """Get petab_yaml_dict
-
+        
         Returns:
             :obj:`dict`: petab_yaml_dict
         """
@@ -67,7 +70,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def petab_problem(self):
         """Get petab_problem
-
+        
         Returns:
             :obj:`petab.problem.Problem`: petab problem
         """
@@ -76,7 +79,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def t_steps(self):
         """Get t_steps
-
+        
         Returns:
             t_steps (:obj:`int`, optional): number of time-discretiation steps
         """
@@ -85,10 +88,10 @@ class SBML2JuliaMPProblem(object):
     @t_steps.setter
     def t_steps(self, value):
         """Set t_steps
-
+        
         Args:
             value (:obj:`int`, optional): number of time-discretiation steps
-
+        
         Raises:
             ValueError: if t_steps is not a positive integer.
         """
@@ -107,7 +110,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def n_starts(self):
         """Get n_starts
-
+        
         Returns:
             :obj:`int`: number of multistarts
         """
@@ -116,10 +119,10 @@ class SBML2JuliaMPProblem(object):
     @n_starts.setter
     def n_starts(self, value):
         """Set n_starts
-
+        
         Args:
             value (:obj:`int`): number of multistarts
-
+        
         Raises:
             ValueError: if n_starts is not a positive integer
         """
@@ -132,7 +135,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def infer_ic_from_sbml(self):
         """Get infer_ic_from_sbml
-
+        
         Returns:
             :obj:`bool`: if missing initial conditions shall be infered from SBML model
         """
@@ -141,10 +144,10 @@ class SBML2JuliaMPProblem(object):
     @infer_ic_from_sbml.setter
     def infer_ic_from_sbml(self, value):
         """Set infer_ic_from_sbml
-
+        
         Args:
             value (:obj:`bool): if missing initial conditions shall be infered from SBML model
-
+        
         Raises:
             ValueError: if infer_ic_from_sbml is not boolean
         """
@@ -157,7 +160,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def optimizer_options(self):
         """Get optimizer_options
-
+        
         Returns:
             :obj:`dict`: optimization solver options
         """
@@ -166,10 +169,10 @@ class SBML2JuliaMPProblem(object):
     @optimizer_options.setter
     def optimizer_options(self, value):
         """Set optimizer_options
-
+        
         Args:
             value (:obj:`dict`): optimization solver options
-
+        
         Raises:
             ValueError: if optimizer_options is not a dict
         """
@@ -182,7 +185,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def custom_code_dict(self):
         """Get custom_code_dict
-
+        
         Returns:
             :obj:`dict`: custom code dict
         """
@@ -191,10 +194,10 @@ class SBML2JuliaMPProblem(object):
     @custom_code_dict.setter
     def custom_code_dict(self, value):
         """Set custom_code_dict
-
+        
         Args:
             value (:obj:`dict`): custom code dict
-
+        
         Raises:
             ValueError: if custom_code_dict is not a dict
         """
@@ -218,7 +221,7 @@ class SBML2JuliaMPProblem(object):
     @property
     def julia_code(self):
         """Get julia_code
-
+        
         Returns:
             :obj:`str`: julia code for optimization
         """
@@ -227,23 +230,28 @@ class SBML2JuliaMPProblem(object):
     @property
     def results(self):
         """Get results
-
+        
         Returns:
             :obj:`dict`: optimization results
         """
         return self._results
 
     def import_julia_code(self, file):
+        """Summary
+        
+        Args:
+            file (TYPE): Description
+        """
         with open(file, 'r') as f:
             self._julia_code = f.read()
 
     def _set_petab_problem(self, petab_yaml):
         """Converts petab yaml to dict and creates petab.problem.Problem object
-
+        
         Args:
             petab_yaml (:obj:`str`): path to petab yaml file
-
-        Raises:
+        
+        No Longer Raises:
             SystemExit: if petab yaml file cannot be loaded.
         """
         petab_problem = petab.problem.Problem()
@@ -261,16 +269,11 @@ class SBML2JuliaMPProblem(object):
 
     def _check_for_not_implemented_features(self, petab_problem):
         """Checks if the petab_problem contains not implemented features
-
+        
         Args:
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
-
+        
         Raises:
-            NotImplementedError: if the measurement table contains `Inf` in the `time` column
-            NotImplementedError: if some simulation conditions contain preequilibration conditions
-                                 and others do not
-            NotImplementedError: if some conditions are used for both,
-                                 simulation and preequilibration
             NotImplementedError: if priors for NoiseParameters or ObservableParameters are provided
         """
         if np.inf in list(petab_problem.measurement_df['time']):
@@ -321,13 +324,15 @@ class SBML2JuliaMPProblem(object):
     def _sort_condition_df_problem(self, petab_problem):
         """Sorts the rows of the contition table based on the first
         occurence of the respective condition in the measurement table
-
+        
         Args:
-            petab_yaml (:obj:`str`): path to petab yaml file
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
-
+        
         Returns:
             :obj:`petab.problem.Problem`: PEtab problem
+        
+        Deleted Parameters:
+            petab_yaml (:obj:`str`): path to petab yaml file
         """
         idx = 1e6*np.ones(len(petab_problem.condition_df.index))
         for i, cond in enumerate(petab_problem.measurement_df['simulationConditionId']
@@ -343,14 +348,17 @@ class SBML2JuliaMPProblem(object):
 
     def _get_translation_vars(self, petab_yaml, petab_problem):
         """Gets variables required for translation from PEtab to JuMP
-
+        
         Args:
             petab_yaml (:obj:`string`): path to petab yaml file
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
-
+        
         Returns:
             :obj:`tuple`: (yaml_dict, condition2index, j_to_parameters, n_conditions,
                            condition_specific_pars, global_pars)
+        
+        Raises:
+            SystemExit: Description
         """
         with open(petab_yaml, 'r') as f:
             try:
@@ -389,12 +397,12 @@ class SBML2JuliaMPProblem(object):
 
     def insert_custom_code(self, custom_code_dict):
         """Inserts custom code into Julia code
-
+        
         Args:
             custom_code_dict (:obj:`dict`): dict with replaced code as keys
                                             and replacement code as values
-
-        Returns:
+        
+        No Longer Returned:
             :obj:`str`: auto-generated Julia code containing inserted custom code
         """
         positions = custom_code_dict.keys()
@@ -405,7 +413,7 @@ class SBML2JuliaMPProblem(object):
 
     def write_jl_file(self, path=os.path.join('.', 'julia_code.jl')):
         """Write code to julia file
-
+        
         Args:
             path (:obj:`str`, optional): path to output Julia file
         """
@@ -416,7 +424,7 @@ class SBML2JuliaMPProblem(object):
 
     def optimize(self):
         """Optimize SBML2JuliaMPProblem
-
+        
         Returns:
             :obj:`dict`: Results in a dict with keys 'species',
                          'observables', 'parameters' and 'par_est'
@@ -473,10 +481,10 @@ class SBML2JuliaMPProblem(object):
 
     def _get_param_ratios(self, par_dict):
         """Get ratios between optimized and nominal parameters
-
+        
         Args:
             par_dict (:obj:`dict`): dict with parameter values
-
+        
         Returns:
             :obj:`pandas.DataFrame`: Dataframe with optimized and nominal parameters
                                      and the ratio between them
@@ -516,6 +524,15 @@ class SBML2JuliaMPProblem(object):
         return df
 
     def _results_to_frame(self, simulation_dict, variable_type='observableId'):
+        """Summary
+        
+        Args:
+            simulation_dict (TYPE): Description
+            variable_type (str, optional): Description
+        
+        Returns:
+            TYPE: Description
+        """
         t_max = self.petab_problem.measurement_df['time'].max()
         time = np.linspace(start=0, stop=t_max, num=self.t_steps)
         index2condition = {v: k for k, v in self._condition2index.items()}
@@ -540,10 +557,13 @@ class SBML2JuliaMPProblem(object):
 
     def write_results(self, path=os.path.join('.', 'results'), df_format='long'):
         """Write results to excel file
-
+        
         Args:
             path (:obj:`str`, optional): path of excel file to write results to
-            df_format (:obj:`str, optional): long or wide table format
+            df_format (:obj:`str`, optional): long or wide table format
+        
+        Raises:
+            ValueError: Description
         """
         if df_format not in ['long', 'wide']:
             warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `long`.')
@@ -601,13 +621,13 @@ class SBML2JuliaMPProblem(object):
     def plot_results(self, condition, path=os.path.join('.', 'plot.pdf'),
                      observables=[], size=(6, 5)):
         """Plot results
-
+        
         Args:
             condition (:obj:`str`): experimental condition to plot
             path (:obj:`str`, optional): path to output plot
             observables (:obj:`list`, optional): list of observables to be plotted
             size (:obj:`tuple`, optional): size of image
-
+        
         Raises:
             ValueError: if `observables` is not a list
         """
@@ -669,6 +689,10 @@ class SBML2JuliaMPProblem(object):
 
     def _set_julia_code(self):
         """Transform petab.problem.Problem to Julia JuMP model.
+        
+        Raises:
+            NotImplementedError: Description
+            ValueError: Description
         """
         # ---------------------------------------------------------------------- #
         """
@@ -1224,7 +1248,7 @@ class SBML2JuliaMPProblem(object):
         
         Args:
             var_type (:obj:`str`): 'observable' or 'noise'
-
+        
         Returns:
             :obj:`tuple`: (override_code.decode(), set_of_params)
         """
@@ -1288,10 +1312,11 @@ class SBML2JuliaMPProblem(object):
 
     def _write_prior_code(self):
         """Write code for objectivePriors
-
+        
         Raises:
+            Exception: Description
             NotImplementedError: if objectivePriorType in parameter table is not `normal`, `laplace`, `logNormal` or `logLaplace`
-
+        
         Returns:
             :obj:`str`: prior code
         """
