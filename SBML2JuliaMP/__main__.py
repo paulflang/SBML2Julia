@@ -50,7 +50,7 @@ class OptimizeController(cement.Controller):
                             help='optimization solver options')),
             (['-c', '--custom_code_dict'], dict(default='{}', type=str,
                             help='dict with replaced code as keys and replacement code as values')),
-            (['-d', '--out_dir'], dict(default='./SBML2JuliaMP_results', type=str,
+            (['-d', '--out_dir'], dict(default='./results', type=str,
                             help='output directory for julia_code, results and plot')),
             (['-p', '--plot_obs'], dict(default='[]', type=str,
                             help='list of observables to be plotted'))
@@ -116,8 +116,8 @@ class OptimizeController(cement.Controller):
             print('Error occured: {}'.format(error), file=sys.stderr)
 
         try:
-            print('\n--- Writing results to excel ---')
-            problem.write_results(path=os.path.join(args.out_dir, 'results.xlsx'))
+            print('\n--- Writing results ---')
+            problem.write_results(path=os.path.join(args.out_dir))
         except Exception as error:
             print('Error occured: {}'.format(error), file=sys.stderr)
 
