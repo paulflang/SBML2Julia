@@ -68,7 +68,7 @@ The results can be found in the output directory given to the ``-d`` argument.
 Gut microbial community
 -----------------------
 
-The `SBML2JuliaMP GitHub repository <https://github.com/paulflang/SBML2JuliaMP/tree/main/examples/Shin_PLOS2019>`_ contains a generalised Lotka-Volterra model of 12 gut bacteria. The model conceived by `Shin et al. <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ contains 2 species, 2 observables, 156 parameters and 210 experimental conditions in it PEtab formulation.
+The `SBML2JuliaMP GitHub repository <https://github.com/paulflang/SBML2JuliaMP/tree/main/examples/Shin_PLOS2019>`_ contains a generalised Lotka-Volterra model of 12 gut bacteria. The model conceived by `Shin et al. <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828>`_ contains 2 species, 2 observables, 156 parameters and 210 experimental conditions in its PEtab formulation.
 
 Using the Python API
 ^^^^^^^^^^^^^^^^^^^^
