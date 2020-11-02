@@ -2,7 +2,7 @@
 README.rst
 
 # version
-include SBML2JuliaMP/VERSION
+include sbml2julia/VERSION
 
 # license
 include LICENSE

@@ -7,7 +7,7 @@ n_steps = 121 # Setting number of ODE discretisation steps
 
 # Data
 println("Reading measurement data...")
-data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/SBML2JuliaMP/examples/Vinod_FEBS2015/measurementData_Vinod_FEBS2015.tsv"
+data_path = "/media/sf_DPhil_Project/Project07_Parameter Fitting/df_software/sbml2julia/examples/Vinod_FEBS2015/measurementData_Vinod_FEBS2015.tsv"
 df = CSV.read(data_path)
 insert!(df, 1, (1:length(df[:,1])), :id)
 

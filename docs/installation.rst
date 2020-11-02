@@ -1,26 +1,26 @@
 Installation
 ============
 
-`SBML2JuliaMP` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest `SBML2JuliaMP docker image <https://hub.docker.com/repository/docker/paulflang/sbml2juliamp>`_ from dockerhub and build a container.::
+`SBML2Julia` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest `SBML2Julia docker image <https://hub.docker.com/repository/docker/paulflang/sbml2julia>`_ from dockerhub and build a container.::
 
-	docker pull paulflang/sbml2juliamp:latest
-	docker run -it paulflang/sbml2juliamp:latest
+	docker pull paulflang/sbml2julia:latest
+	docker run -it paulflang/sbml2julia:latest
 
-To install the latest `SBML2JuliaMP` version in the docker container, run::
+To install the latest `SBML2Julia` version in the docker container, run::
 
-	git clone https://github.com/paulflang/SBML2JuliaMP.git
-	python3 -m pip install -e SBML2JuliaMP
+	git clone https://github.com/paulflang/sbml2julia.git
+	python3 -m pip install -e sbml2julia
 
 To check if the installation was succesful, run::
 
-	SBML2JuliaMP -h
+	sbml2julia -h
 
 
-Alternatively, the `SBML2JuliaMP` dependencies can be installed on Ubuntu machines as indicated in the `Dockerfile <https://github.com/paulflang/SBML2JuliaMP/blob/master/Dockerfile>`_ in the `SBML2JuliaMP` GitHub repository. Once these dependencie are installed, `SBML2JuliaMP` can be installed as above::
+Alternatively, the `SBML2Julia` dependencies can be installed on Ubuntu machines as indicated in the `Dockerfile <https://github.com/paulflang/sbml2julia/blob/master/Dockerfile>`_ in the `SBML2Julia` GitHub repository. Once these dependencie are installed, `SBML2Julia` can be installed as above::
 
-	git clone https://github.com/paulflang/SBML2JuliaMP.git
-	python3 -m pip install -e SBML2JuliaMP
-	SBML2JuliaMP -h
+	git clone https://github.com/paulflang/sbml2julia.git
+	python3 -m pip install -e sbml2julia
+	sbml2julia -h
 
 Optional installation of further linear solvers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

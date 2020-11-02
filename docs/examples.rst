@@ -4,16 +4,16 @@ Examples
 G2/M cell cycle transition
 --------------------------
 
-The `SBML2JuliaMP GitHub repository <https://github.com/paulflang/SBML2JuliaMP/tree/main/examples/Vinod_FEBS2015>`_ contains a version of the `Vinod et Novak model <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ of the G2/M cell cycle transition. The model contains 13 species, 13 simulated observables, 24 parameters and 4 experimental conditions.
+The `SBML2Julia GitHub repository <https://github.com/paulflang/sbml2julia/tree/main/examples/Vinod_FEBS2015>`_ contains a version of the `Vinod et Novak model <https://www.sciencedirect.com/science/article/pii/S0014579315000873>`_ of the G2/M cell cycle transition. The model contains 13 species, 13 simulated observables, 24 parameters and 4 experimental conditions.
 
 Using the Python API
 ^^^^^^^^^^^^^^^^^^^^
 
-The `SBML2JuliaMP` problem can be created using the Python API (and assuming that the current working directory is the `SBML2JuliaMP` root directory) via::
+The `SBML2Julia` problem can be created using the Python API (and assuming that the current working directory is the `SBML2Julia` root directory) via::
 
-	>>> import SBML2JuliaMP
+	>>> import sbml2julia
 
-	>>> problem = SBML2JuliaMP.SBML2JuliaMPProblem('examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml')
+	>>> problem = sbml2julia.sbml2juliaProblem('examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml')
 
 and solved by::
 
@@ -61,35 +61,35 @@ Using the command line interface
 
 Similarly, the same example problem can be solved from the command line interface::
 
-     user@bash:/SBML2JuliaMP$ SBML2JuliaMP optimize 'examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml' -d 'examples/Vinod_FEBS2015/results/'
+     user@bash:/sbml2julia$ sbml2julia optimize 'examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml' -d 'examples/Vinod_FEBS2015/results/'
 
 The results can be found in the output directory given to the ``-d`` argument.
 
 Gut microbial community
 -----------------------
 
-The `SBML2JuliaMP GitHub repository <https://github.com/paulflang/SBML2JuliaMP/tree/main/examples/Shin_PLOS2019>`_ contains a generalised Lotka-Volterra model of 12 gut bacteria. The model conceived by `Shin et al. <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828>`_ contains 2 species, 2 observables, 156 parameters and 210 experimental conditions in its PEtab formulation.
+The `SBML2Julia GitHub repository <https://github.com/paulflang/sbml2julia/tree/main/examples/Shin_PLOS2019>`_ contains a generalised Lotka-Volterra model of 12 gut bacteria. The model conceived by `Shin et al. <https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006828>`_ contains 2 species, 2 observables, 156 parameters and 210 experimental conditions in its PEtab formulation.
 
 Using the Python API
 ^^^^^^^^^^^^^^^^^^^^
 
-The `SBML2JuliaMP` problem can be created using the Python API (and assuming that the current working directory is the `SBML2JuliaMP` root directory) via::
+The `SBML2Julia` problem can be created using the Python API (and assuming that the current working directory is the `sbml2julia` root directory) via::
 
-	>>> import SBML2JuliaMP
+	>>> import sbml2julia
 
-	>>> problem = SBML2JuliaMP.SBML2JuliaMPProblem('examples/Shin_PLOS2019/Shin_PLOS2019.yaml'})
+	>>> problem = sbml2julia.sbml2juliaProblem('examples/Shin_PLOS2019/Shin_PLOS2019.yaml'})
 
 and solved by::
 
 	>>> problem.optimize()
 
-Again, the results are available under ``problem.results``. `Plots <https://github.com/paulflang/SBML2JuliaMP/tree/main/examples/Shin_PLOS2019/plots>`_ of the observables can be generated with the ``problem.plot_results()`` method and results can be written to TSV files with ``problem.write_results()``.
+Again, the results are available under ``problem.results``. `Plots <https://github.com/paulflang/sbml2julia/tree/main/examples/Shin_PLOS2019/plots>`_ of the observables can be generated with the ``problem.plot_results()`` method and results can be written to TSV files with ``problem.write_results()``.
 
 Using the command line interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Similarly, the same example problem can be solved from the command line interface::
 
-     user@bash:/SBML2JuliaMP$ SBML2JuliaMP optimize 'examples/Shin_PLOS2019/Shin_PLOS2019.yaml' -d './examples/Shin_PLOS2019/results/'
+     user@bash:/sbml2julia$ sbml2julia optimize 'examples/Shin_PLOS2019/Shin_PLOS2019.yaml' -d './examples/Shin_PLOS2019/results/'
 
 The results can be found in the output directory given to the ``-d`` argument.

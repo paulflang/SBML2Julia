@@ -25,8 +25,8 @@ RUN apt-get update -y \
     # && pip3 install -U logging \
     && pip3 install -U petab \
     && pip3 install -e /root/project/petab_test_suite \
-    && git clone -branch https://github.com/paulflang/SBML2JuliaMP.git \
-    && pip3 install -e /root/project/SBML2JuliaMP
+    && git clone -branch https://github.com/paulflang/sbml2julia.git \
+    && pip3 install -e /root/project/sbml2julia
     # && pip3 install -U pickle \
     # && pip3 install -U pkg_resources \
     # && pip3 install -U shutil \

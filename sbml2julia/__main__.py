@@ -1,12 +1,12 @@
-""" SBML2JuliaMP command line interface
+""" sbml2julia command line interface
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-26
 :Copyright: 2020, Paul F Lang
 :License: MIT
 """
 
-from .core import SBML2JuliaMPProblem
-import SBML2JuliaMP
+from .core import sbml2juliaProblem
+import sbml2julia
 import cement
 import os
 import re
@@ -18,10 +18,10 @@ class BaseController(cement.Controller):
 
     class Meta:
         label = 'base'
-        description = "SBML2JuliaMP"
-        help = "SBML2JuliaMP"
+        description = "sbml2julia"
+        help = "sbml2julia"
         arguments = [
-            (['-v', '--version'], dict(action='version', version=SBML2JuliaMP.__version__)),
+            (['-v', '--version'], dict(action='version', version=sbml2julia.__version__)),
         ]
 
     # @cement.ex(hide=False)
@@ -77,7 +77,7 @@ class OptimizeController(cement.Controller):
             else:
                 custom_code_dict = {re.split(':', item)[0]:
                                     re.split(':', item)[1].lstrip() for item in items}
-            problem = SBML2JuliaMPProblem(args.petab_yaml, t_steps=t_steps,
+            problem = sbml2juliaProblem(args.petab_yaml, t_steps=t_steps,
                 n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml,
                 optimizer_options=optimizer_options,
                 custom_code_dict=custom_code_dict)
@@ -125,7 +125,7 @@ class OptimizeController(cement.Controller):
 class App(cement.App):
     """ Command line application """
     class Meta:
-        label = 'SBML2JuliaMP'
+        label = 'sbml2julia'
         base_controller = 'base'
         handlers = [
             BaseController,

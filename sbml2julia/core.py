@@ -20,7 +20,7 @@ from julia.api import Julia
 importlib.reload(libsbml)
 
 
-class SBML2JuliaMPProblem(object):
+class sbml2juliaProblem(object):
 
     """Class to create and solve an optimization and retreive the results
     """
@@ -423,7 +423,7 @@ class SBML2JuliaMPProblem(object):
             self._files_written = True
 
     def optimize(self):
-        """Optimize SBML2JuliaMPProblem
+        """Optimize sbml2juliaProblem
         
         Returns:
             :obj:`dict`: Results in a dict with keys 'species',
@@ -679,7 +679,7 @@ class SBML2JuliaMPProblem(object):
         plt.ylim(0, 1.05 * max(values.max().max(), exp_data.max().max()))
         plt.xlabel(x_label, fontsize=18)
         plt.ylabel(y_label, fontsize=18)
-        plt.title('SBML2JuliaMP time course')
+        plt.title('sbml2julia time course')
 
         plt.savefig(path)
         plt.close()

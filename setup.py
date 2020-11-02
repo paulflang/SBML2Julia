@@ -4,10 +4,10 @@ import setuptools
 
 # extract version
 with open(os.path.join(os.path.dirname(__file__),
-          "SBML2JuliaMP", "_version.py")) as f:
+          "sbml2julia", "_version.py")) as f:
     version = f.read().split('\n')[0].split('=')[-1].strip(' ').strip('"')
 
-name = 'SBML2JuliaMP'
+name = 'sbml2julia'
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -46,7 +46,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'SBML2JuliaMP = SBML2JuliaMP.__main__:main',
+            'sbml2julia = sbml2julia.__main__:main',
         ],
     },
 )

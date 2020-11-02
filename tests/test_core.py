@@ -1,4 +1,4 @@
-""" Test of SBML2JuliaMP.core
+""" Test of sbml2julia.core
 :Author: Paul F Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-16
 :Copyright: 2020, Paul F Lang
@@ -19,7 +19,7 @@ import tempfile
 import unittest
 from julia.api import Julia
 from pandas.testing import assert_frame_equal
-from SBML2JuliaMP import core
+from sbml2julia import core
 importlib.reload(core)
 
 
@@ -29,20 +29,20 @@ JL_FILE_GOLD = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(JL_FILE_GOLD, 'r') as f:
     JL_CODE_GOLD = f.read()
 JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/'
-                      'df_software/SBML2JuliaMP/tests/fixtures', FIXTURES, JL_CODE_GOLD)
+                      'df_software/sbml2julia/tests/fixtures', FIXTURES, JL_CODE_GOLD)
 with open(os.path.join('.', 'substituted_code.jl'), 'w') as f:
     f.write(JL_CODE_GOLD)
 with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
     RESULTS_GOLD = pickle.load(f)
 
 
-class Mock(core.SBML2JuliaMPProblem):
+class Mock(core.sbml2juliaProblem):
     def __init__(self):
         self._initialization = True
         self._jl = Julia(compiled_modules=False)
 
 
-class SBML2JuliaMPProblemTestCase(unittest.TestCase):
+class sbml2juliaProblemTestCase(unittest.TestCase):
 
     def setUp(self):
         self.dirname = tempfile.mkdtemp()
@@ -51,7 +51,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         shutil.rmtree(self.dirname)
 
     def test_constructor(self):
-        _ = core.SBML2JuliaMPProblem(PETAB_YAML)
+        _ = core.sbml2juliaProblem(PETAB_YAML)
 
     def test_petab_yaml_dict(self):
         problem = Mock()
@@ -94,7 +94,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
             problem.infer_ic_from_sbml = 1
 
         # Test resetting
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_infer_ic_from_sbml_setter.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         # problem.infer_ic_from_sbml = True # Todo: add species to SBML for this test case
@@ -108,7 +108,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
             problem.optimizer_options = 1
 
         # Test resetting
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.optimizer_options = {'linear_solver': 'MA27'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
@@ -126,7 +126,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
             problem.custom_code_dict = {'abc': 1}
 
         # Test resetting
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.optimizer_options = {'# Write global parameters': '# Write global parameters1'}
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
@@ -145,7 +145,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         problem = Mock()
         problem.import_julia_code(JL_FILE_GOLD)
         problem._julia_code = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/'
-                                     'df_software/SBML2JuliaMP/tests/fixtures',
+                                     'df_software/sbml2julia/tests/fixtures',
                                      FIXTURES, problem._julia_code)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -233,7 +233,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
                 exclude=[object])) & df1.select_dtypes(include=[object]).equals(
                     df2.select_dtypes(include=[object])))
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML, n_starts=3)
+        problem = core.sbml2juliaProblem(PETAB_YAML, n_starts=3)
         results = problem.optimize()
 
         self.assertTrue(problem._best_iter in ['1', '2', '3'])
@@ -251,7 +251,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
 
     def test_prior_code(self):
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'a0' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[0] = '2; 0.1'
         problem._set_julia_code()
@@ -259,7 +259,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         self.assertTrue(results_shifted['par_est'].loc['a0', 'estimatedValue']
                         > RESULTS_GOLD['par_est'].loc['a0', 'estimatedValue'])
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'b0' else 1) for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[1] = '0.05; 1'
         problem._set_julia_code()
@@ -267,7 +267,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         self.assertTrue(results_shifted['par_est'].loc['b0', 'estimatedValue']
                         > RESULTS_GOLD['par_est'].loc['b0', 'estimatedValue'])
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'k1_free' else 1)
                                 for k in problem._global_pars.keys()}
         problem.petab_problem.parameter_df['objectivePriorParameters'].iloc[2] = '1; 0.1'
@@ -276,7 +276,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         self.assertTrue(results_shifted['par_est'].loc['k1_free', 'estimatedValue']
                         > RESULTS_GOLD['par_est'].loc['k1_free', 'estimatedValue'])
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem._global_pars = {k: (0 if k != 'k2' else 1) for k in problem._global_pars.keys()}
         problem._petab_problem.parameter_df['objectivePriorParameters'].iloc[3] = '-0.4; 0.01'
         problem._set_julia_code()
@@ -373,7 +373,7 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.dirname, 'plot_2.pdf')))
 
     def test_set_julia_code(self):
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_set_julia_code.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
 
@@ -407,16 +407,16 @@ class SBML2JuliaMPProblemTestCase(unittest.TestCase):
         self.assertTrue(code in JL_CODE_GOLD)
 
     def test_resetting(self):
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         problem.write_jl_file(path=os.path.join('.', 'test_resetting.jl'))
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.t_steps = 3
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)
         problem.n_starts = 2
         self.assertNotEqual(problem.julia_code, JL_CODE_GOLD)
 
-        problem = core.SBML2JuliaMPProblem(PETAB_YAML)
+        problem = core.sbml2juliaProblem(PETAB_YAML)
         self.assertEqual(problem.julia_code, JL_CODE_GOLD)

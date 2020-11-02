@@ -19,13 +19,13 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'SBML2JuliaMP'
+project = 'sbml2julia'
 copyright = '2020, Paul F. Lang'
 author = 'Paul F. Lang'
 
 # The short X.Y version
-import SBML2JuliaMP
-version = SBML2JuliaMP.__version__
+import sbml2julia
+version = sbml2julia.__version__
 # The full version, including alpha/beta/rc tags
 release = version
 
@@ -109,7 +109,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SBML2JuliaMPdoc'
+htmlhelp_basename = 'sbml2juliadoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -136,7 +136,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'SBML2JuliaMP.tex', 'SBML2JuliaMP Documentation',
+    (master_doc, 'sbml2julia.tex', 'sbml2julia documentation',
      'Paul F. Lang', 'manual'),
 ]
 
@@ -146,7 +146,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'sbml2juliamp', 'SBML2JuliaMP Documentation',
+    (master_doc, 'sbml2julia', 'sbml2julia documentation',
      [author], 1)
 ]
 
@@ -157,8 +157,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'SBML2JuliaMP', 'SBML2JuliaMP Documentation',
-     author, 'SBML2JuliaMP', 'One line description of project.',
+    (master_doc, 'sbml2julia', 'sbml2julia documentation',
+     author, 'sbml2julia', 'One line description of project.',
      'Miscellaneous'),
 ]
 

@@ -1,4 +1,4 @@
-""" Tests of SBML2JuliaMP command line interface (SBML2JuliaMP.__main__)
+""" Tests of sbml2julia command line interface (sbml2julia.__main__)
 :Author: Paul Lang <paul.lang@wolfson.ox.ac.uk>
 :Date: 2020-04-26
 :Copyright: 2020, Paul F Lang
@@ -10,11 +10,11 @@ import mock
 import os
 import pkg_resources
 import re
-import SBML2JuliaMP
+import sbml2julia
 import shutil
 import tempfile
 import unittest
-from SBML2JuliaMP import __main__
+from sbml2julia import __main__
 
 FIXTURES = pkg_resources.resource_filename('tests', 'fixtures')
 YAML_PATH = os.path.join(FIXTURES, '0015_objectivePrior', '_0015_objectivePrior.yaml')
@@ -22,7 +22,7 @@ jl_file_gold = os.path.join(FIXTURES, 'jl_file_gold.jl')
 with open(jl_file_gold, 'r') as f:
     JL_CODE_GOLD = f.read()
 JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/'
-                      'df_software/SBML2JuliaMP/tests/fixtures', FIXTURES, JL_CODE_GOLD)
+                      'df_software/sbml2julia/tests/fixtures', FIXTURES, JL_CODE_GOLD)
 
 
 class CliVersionTestCase(unittest.TestCase):
@@ -31,14 +31,14 @@ class CliVersionTestCase(unittest.TestCase):
             with capturer.CaptureOutput(merged=False, relay=False) as captured:
                 with self.assertRaises(SystemExit):
                     app.run()
-                self.assertEqual(captured.stdout.get_text(), SBML2JuliaMP.__version__)
+                self.assertEqual(captured.stdout.get_text(), sbml2julia.__version__)
                 self.assertEqual(captured.stderr.get_text(), '')
 
         with __main__.App(argv=['--version']) as app:
             with capturer.CaptureOutput(merged=False, relay=False) as captured:
                 with self.assertRaises(SystemExit):
                     app.run()
-                self.assertEqual(captured.stdout.get_text(), SBML2JuliaMP.__version__)
+                self.assertEqual(captured.stdout.get_text(), sbml2julia.__version__)
                 self.assertEqual(captured.stderr.get_text(), '')
 
 
@@ -52,10 +52,10 @@ class CliTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir_2)
 
     def test_cli(self):
-        with mock.patch('sys.argv', ['SBML2JuliaMP', '--help']):
+        with mock.patch('sys.argv', ['sbml2julia', '--help']):
             with self.assertRaises(SystemExit) as context:
                 __main__.main()
-                self.assertRegex(context.Exception, 'usage: SBML2JuliaMP')
+                self.assertRegex(context.Exception, 'usage: sbml2julia')
 
     def test_help(self):
         with self.assertRaises(SystemExit):
