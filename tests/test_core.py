@@ -324,6 +324,9 @@ class SBML2JuliaProblemTestCase(unittest.TestCase):
 
         assert_frame_equal(df, problem._petab_problem.measurement_df)
 
+        with self.assertRaises(ValueError):
+            df = problem._results_to_frame(simulation_dict, variable_type=1)
+
     def test_write_results(self):
         problem = Mock()
         problem._results = RESULTS_GOLD

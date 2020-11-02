@@ -200,6 +200,8 @@ class SBML2JuliaProblem(object):
         
         Raises:
             ValueError: if custom_code_dict is not a dict
+            ValueError: if dict values are not strings
+            ValueError: if dict keys are not string
         """
         if not isinstance(value, dict):
             raise ValueError('`custom_code_dict` must be a dictionary')
@@ -250,9 +252,6 @@ class SBML2JuliaProblem(object):
         
         Args:
             petab_yaml (:obj:`str`): path to petab yaml file
-        
-        No Longer Raises:
-            SystemExit: if petab yaml file cannot be loaded.
         """
         petab_problem = petab.problem.Problem()
         petab_problem = petab_problem.from_yaml(petab_yaml)
@@ -274,7 +273,12 @@ class SBML2JuliaProblem(object):
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
         
         Raises:
-            NotImplementedError: if priors for NoiseParameters or ObservableParameters are provided
+            NotImplementedError: if `time` column in measurement table contains `Inf`
+            NotImplementedError: if simulation conditions are associated with > 1 preequilibration
+            NotImplementedError: if conditions are used for both, preequilibration and simulation
+            NotImplementedError: if priors for noise parameters are provided
+            NotImplementedError: if priors for observable parameters are provided
+
         """
         if np.inf in list(petab_problem.measurement_df['time']):
             raise NotImplementedError('Fitting steady state problems is not implemented.')  # Todo: consider implementing it.
@@ -288,7 +292,7 @@ class SBML2JuliaProblem(object):
                                                    'simulationConditionId']].drop_duplicates()
             for sCId, data in p2c.groupby('simulationConditionId'):
                 if len(data.index) > 1:
-                    raise NotImplementedError(f'{sCId} must be assiciated with <=1 '
+                    raise NotImplementedError(f'{sCId} must be assiciated with <= 1 '
                                               'preequilibrationConditionIds. Please modify PEtab'
                                               'problem accordingly.')
             condition_conflicts = set(p2c['preequilibrationConditionId'])\
@@ -330,9 +334,6 @@ class SBML2JuliaProblem(object):
         
         Returns:
             :obj:`petab.problem.Problem`: PEtab problem
-        
-        Deleted Parameters:
-            petab_yaml (:obj:`str`): path to petab yaml file
         """
         idx = 1e6*np.ones(len(petab_problem.condition_df.index))
         for i, cond in enumerate(petab_problem.measurement_df['simulationConditionId']
@@ -352,13 +353,13 @@ class SBML2JuliaProblem(object):
         Args:
             petab_yaml (:obj:`string`): path to petab yaml file
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
+
+        Raises:
+            SystemExit: if `yaml.YAMLError` occured
         
         Returns:
             :obj:`tuple`: (yaml_dict, condition2index, j_to_parameters, n_conditions,
                            condition_specific_pars, global_pars)
-        
-        Raises:
-            SystemExit: Description
         """
         with open(petab_yaml, 'r') as f:
             try:
@@ -401,9 +402,6 @@ class SBML2JuliaProblem(object):
         Args:
             custom_code_dict (:obj:`dict`): dict with replaced code as keys
                                             and replacement code as values
-        
-        No Longer Returned:
-            :obj:`str`: auto-generated Julia code containing inserted custom code
         """
         positions = custom_code_dict.keys()
         code = self.julia_code
@@ -527,12 +525,18 @@ class SBML2JuliaProblem(object):
         """Summary
         
         Args:
-            simulation_dict (TYPE): Description
-            variable_type (str, optional): Description
+            simulation_dict (:obj:`dict`): dictionary of species or observable
+                                           time-courses
+            variable_type (:ob:`str`, optional): `speciesId` or `observableId`
+
+        Raises:
+            ValueError: if `variable_type` is not `speciesId` or `observableId`
         
         Returns:
-            TYPE: Description
+            :obj:`pandas.DataFrame`: Dataframe of time-courses.
         """
+        if variable_type not in ('speciesId', 'observableId'):
+            raise ValueError('variable_type must be `speciesId` or `observableId`.')
         t_max = self.petab_problem.measurement_df['time'].max()
         time = np.linspace(start=0, stop=t_max, num=self.t_steps)
         index2condition = {v: k for k, v in self._condition2index.items()}
@@ -563,7 +567,7 @@ class SBML2JuliaProblem(object):
             df_format (:obj:`str`, optional): long or wide table format
         
         Raises:
-            ValueError: Description
+            ValueError: if `path` is not a directory or Excel file
         """
         if df_format not in ['long', 'wide']:
             warnings.warn('`df_format` must be `long` or `wide` but is {}. Defaulting to `long`.')
@@ -691,8 +695,8 @@ class SBML2JuliaProblem(object):
         """Transform petab.problem.Problem to Julia JuMP model.
         
         Raises:
-            NotImplementedError: Description
-            ValueError: Description
+            NotImplementedError: if SBML model contains assignment rules
+            ValueError: if column `estimate` in parameter table contains values other than `0` or `1`.
         """
         # ---------------------------------------------------------------------- #
         """
@@ -1314,7 +1318,7 @@ class SBML2JuliaProblem(object):
         """Write code for objectivePriors
         
         Raises:
-            Exception: Description
+            Exception: if either `objectivePriorType` or `objectivePriorParameters` but not both are specicied
             NotImplementedError: if objectivePriorType in parameter table is not `normal`, `laplace`, `logNormal` or `logLaplace`
         
         Returns:
