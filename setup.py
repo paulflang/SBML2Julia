@@ -1,5 +1,10 @@
 import setuptools
 
+# extract version
+with open(os.path.join(os.path.dirname(__file__),
+          "pypesto", "version.py")) as f:
+    version = f.read().split('\n')[0].split('=')[-1].strip(' ').strip('"')
+
 name = 'SBML2JuliaMP'
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -7,7 +12,7 @@ with open("README.md", "r") as fh:
 # install package
 setuptools.setup(
     name=name,
-    version='0.0.1',
+    version=version,
     description='Optimization tool based on ODE discretisation.',
     long_description=long_description,
     url="https://github.com/paulflang/" + name,
