@@ -1,5 +1,5 @@
-.. image:: https://circleci.com/gh/paulflang/sbml2julia.svg?style=shield
-   :target: https://app.circleci.com/pipelines/github/paulflang/sbml2julia
+.. image:: https://circleci.com/gh/paulflang/SBML2Julia.svg?style=shield
+   :target: https://app.circleci.com/pipelines/github/paulflang/SBML2Julia
    :alt: Build status
 .. image:: https://readthedocs.org/projects/sbml2julia/badge/?version=latest
    :target: https://sbml2julia.readthedocs.io/en/latest/?badge=latest
