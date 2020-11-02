@@ -80,21 +80,22 @@ class CliTestCase(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'fval_chi2.tsv')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'species.tsv')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'observables.tsv')))
+            
 
         with __main__.App(argv=['optimize', YAML_PATH, '-t', '101', '-n', '2',
-                                '-i', 'True', '-o', '{linear_solver: MA27}',
+                                '-i', 'True', '-o', '{}',
                                 '-c', '{# Write global parameters: # Write global parameters1}',
                                 '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
             app.run()
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'julia_code.jl')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'plots', 'plot_c1.pdf')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'parameters.tsv')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'fval_chi2.tsv')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'species.tsv')))
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'observables.tsv')))
-            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2,  'julia_code.jl')))
 
         with __main__.App(argv=['optimize', 'a', '-t', '3', '-n', '2', '-i', 'True',
-                                '-o', '{linear_solver: MA27}',
+                                '-o', '{}',
                                 '-c', '{# Write global parameters: # Write global parameters1}',
                                 '-d', self.tempdir_1, '-p', '[obs_Cb, obs_pCb]']) as app:
             with self.assertRaises(SystemExit):
