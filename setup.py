@@ -1,4 +1,6 @@
+import os
 import setuptools
+
 
 # extract version
 with open(os.path.join(os.path.dirname(__file__),
