@@ -8,7 +8,7 @@ with open(os.path.join(os.path.dirname(__file__),
     version = f.read().split('\n')[0].split('=')[-1].strip(' ').strip('"')
 
 name = 'sbml2julia'
-with open("README.md", "r") as fh:
+with open("README.md", encoding='utf-8') as fh:
     long_description = fh.read()
 
 # install package
