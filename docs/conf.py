@@ -24,9 +24,10 @@ copyright = '2020, Paul F. Lang'
 author = 'Paul F. Lang'
 
 # The short X.Y version
-version = ''
+import SBML2JuliaMP
+version = SBML2JuliaMP.__version__
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
