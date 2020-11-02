@@ -98,4 +98,3 @@ workflows:
       - test_main:
           requires:
             - build
-            - test_core
