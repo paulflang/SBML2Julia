@@ -117,6 +117,7 @@ class OptimizeController(cement.Controller):
 
         try:
             print('\n--- Writing results to excel ---')
+            print('test_2')
             problem.write_results(path=os.path.join(args.out_dir, 'results.xlsx'))
         except Exception as error:
             print('Error occured: {}'.format(error), file=sys.stderr)

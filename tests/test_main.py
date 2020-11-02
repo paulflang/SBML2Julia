@@ -82,6 +82,7 @@ class CliTestCase(unittest.TestCase):
                                 '-i', 'True', '-o', '{linear_solver: MA27}',
                                 '-c', '{# Write global parameters: # Write global parameters1}',
                                 '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
+            print('test_1')
             app.run()
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
 
