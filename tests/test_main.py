@@ -76,14 +76,21 @@ class CliTestCase(unittest.TestCase):
                 jl_code = f.read()
             self.assertEqual(jl_code, JL_CODE_GOLD)
             self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'plots', 'plot_c1.pdf')))
-            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'results.xlsx')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'parameters.tsv')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'fmin_chi2.tsv')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'observables.tsv')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_1, 'species.tsv')))
 
         with __main__.App(argv=['optimize', YAML_PATH, '-t', '101', '-n', '2',
                                 '-i', 'True', '-o', '{linear_solver: MA27}',
                                 '-c', '{# Write global parameters: # Write global parameters1}',
                                 '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
             app.run()
-            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'results.xlsx')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'plots', 'plot_c1.pdf')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'parameters.tsv')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'fmin_chi2.tsv')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'observables.tsv')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'species.tsv')))
 
         with __main__.App(argv=['optimize', 'a', '-t', '3', '-n', '2', '-i', 'True',
                                 '-o', '{linear_solver: MA27}',
