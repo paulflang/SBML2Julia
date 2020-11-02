@@ -84,7 +84,7 @@ class CliTestCase(unittest.TestCase):
                                 '-d', self.tempdir_2, '-p', '[obs_a, obs_b]']) as app:
             print('test_1')
             app.run()
-            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, , 'plots', 'plot_c1.pdf')))
+            self.assertTrue(os.path.exists(os.path.join(self.tempdir_2, 'plots', 'plot_c1.pdf')))
 
         with __main__.App(argv=['optimize', 'a', '-t', '3', '-n', '2', '-i', 'True',
                                 '-o', '{linear_solver: MA27}',
