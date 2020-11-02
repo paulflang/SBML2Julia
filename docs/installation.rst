@@ -21,3 +21,8 @@ Alternatively, the `SBML2JuliaMP` dependencies can be installed on Ubuntu machin
 	git clone https://github.com/paulflang/SBML2JuliaMP.git
 	python3 -m pip install -e SBML2JuliaMP
 	SBML2JuliaMP -h
+
+Optional installation of further linear solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To solve more involved problems, we recommend the linear solvers provided in HSL, for which academics can `request a free license <http://www.hsl.rl.ac.uk/>`_.

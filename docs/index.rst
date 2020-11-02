@@ -34,7 +34,7 @@ Contents
 
    installation.rst
    tutorial.rst
-   example.rst
+   examples.rst
    known_limitations.rst
    API_reference.rst
    contributing.rst

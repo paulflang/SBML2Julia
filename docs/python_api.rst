@@ -22,8 +22,8 @@ SBML2JuliaMP also contains the following optimization hyperparameters:
 
 * **t_steps**: number of time-discretization steps. Default ``None``.
 * **n_starts**: number of multistarts. Default ``1``.
-* **infer_ic_from_sbml**: infer missing initial conditions from SBML. Default ``False``.
-* **optimizer_options**: optimization solver options. Default ``{}``.
+* **infer_ic_from_sbml**: infer initial conditions which are not specified in the PEtab condition table from SBML. Default ``False``.
+* **optimizer_options**: `optimization solver options <https://jump.dev/JuMP.jl/dev/solvers/#JuMP.set_optimizer_attributes>`_. Default ``{}``.
 * **custom_code_dict**: dict with replaced code as keys and replacement code as values. Default ``{}``.
 
 The problem is then specified as::
@@ -58,7 +58,7 @@ The results can be accessed via::
 
     >>> results = problem.results
 
-and written to TSV and Excel files via::
+and written to TSV and Excel files with::
 
     >>> problem.write_results(path='./tsv_results/')
     >>> problem.write_results(path='results.xlsx')
@@ -67,10 +67,10 @@ Time courses for the optimal solution of condition ``cond`` and corresponding ex
 
     >>> problem.plot_results(cond, path='path_to_plot.pdf', observables=[], size=(6, 5))
 
-where the optional ``observable`` argument accepts a list of observables that shall be plotted. The optional ``size`` argument specifies the size of the figure.
+where the optional ``observable`` argument accepts a list of observables that shall be plotted (if emppty, all observables specified in PEtab are plotted). The optional ``size`` argument specifies the size of the figure.
 
 If you want to update the nominal parameter values in your PEtab problem parameter table with the fitted values, run::
 
     >>> problem.write_optimized_Parameter_table()
 
-This will create a `post_fit_parameters.tsv` file in your PEtab problem directory. This can be useful to perform sensitivity analysis in other PEtab compatible optimization toolboxes such as `PyPesto <https://pypesto.readthedocs.io/en/latest/>`_.
+This will create a `post_fit_parameters.tsv` file in your PEtab problem directory. This can be useful to perform sensitivity analysis in other PEtab compatible optimization toolboxes such as `pyPesto <https://pypesto.readthedocs.io/en/latest/>`_.
