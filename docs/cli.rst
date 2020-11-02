@@ -20,3 +20,10 @@ The problem is then specified and solved via::
     user@bash:/$ sbml2julia optimize 'my_petab_promlem.yaml' -t 100 -n 1 -i 'False' -o {} -c {} -d './results' -p '[]'
 
 The results can be found in the output directory given to the ``-d`` argument.
+
+Choosing an HSL linear solver
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Optionally, the ``optimizer_options`` attribute can be used to specify the linear solver used within `Ipopt`. For example::
+
+    user@bash:/$ sbml2julia optimize 'my_petab_promlem.yaml' -t 100 -n 1 -i 'False' -o '{linear_solver: ma57}' -c {} -d './results' -p '[]'

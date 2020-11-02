@@ -42,6 +42,13 @@ If you want to change the optimization problem in a way that is not yet supporte
 
     >>> problem.insert_custom_code({'<replaced lines>': '<replacement lines>'})
 
+Choosing an HSL linear solver
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Optionally, the ``optimizer_options`` attribute can be used to specify the linear solver used within `Ipopt`. For example::
+
+    >>> problem.optimizer_options={'linear_solver': 'ma57'}
+
 Running the optimization
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
