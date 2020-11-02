@@ -20,7 +20,7 @@ from julia.api import Julia
 importlib.reload(libsbml)
 
 
-class sbml2juliaProblem(object):
+class SBML2JuliaProblem(object):
 
     """Class to create and solve an optimization and retreive the results
     """
@@ -423,7 +423,7 @@ class sbml2juliaProblem(object):
             self._files_written = True
 
     def optimize(self):
-        """Optimize sbml2juliaProblem
+        """Optimize SBML2JuliaProblem
         
         Returns:
             :obj:`dict`: Results in a dict with keys 'species',

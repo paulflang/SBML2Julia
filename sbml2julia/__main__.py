@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from .core import sbml2juliaProblem
+from .core import SBML2JuliaProblem
 import sbml2julia
 import cement
 import os
@@ -77,7 +77,7 @@ class OptimizeController(cement.Controller):
             else:
                 custom_code_dict = {re.split(':', item)[0]:
                                     re.split(':', item)[1].lstrip() for item in items}
-            problem = sbml2juliaProblem(args.petab_yaml, t_steps=t_steps,
+            problem = SBML2JuliaProblem(args.petab_yaml, t_steps=t_steps,
                 n_starts=args.n_starts, infer_ic_from_sbml=args.infer_ic_from_sbml,
                 optimizer_options=optimizer_options,
                 custom_code_dict=custom_code_dict)

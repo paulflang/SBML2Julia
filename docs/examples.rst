@@ -13,7 +13,7 @@ The `SBML2Julia` problem can be created using the Python API (and assuming that 
 
 	>>> import sbml2julia
 
-	>>> problem = sbml2julia.sbml2juliaProblem('examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml')
+	>>> problem = sbml2julia.SBML2JuliaProblem('examples/Vinod_FEBS2015/Vinod_FEBS2015.yaml')
 
 and solved by::
 
@@ -77,7 +77,7 @@ The `SBML2Julia` problem can be created using the Python API (and assuming that 
 
 	>>> import sbml2julia
 
-	>>> problem = sbml2julia.sbml2juliaProblem('examples/Shin_PLOS2019/Shin_PLOS2019.yaml'})
+	>>> problem = sbml2julia.SBML2JuliaProblem('examples/Shin_PLOS2019/Shin_PLOS2019.yaml'})
 
 and solved by::
 

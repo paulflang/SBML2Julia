@@ -74,7 +74,7 @@ def _execute_case(case):
     t_steps = 11
     if case == '0006' or '0009' or '0010':
         t_steps = 3001
-    problem = core.sbml2juliaProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
+    problem = core.SBML2JuliaProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
     problem.write_jl_file()
     problem.optimize()
     problem.plot_results('c0')

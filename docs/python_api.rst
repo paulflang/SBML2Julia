@@ -28,7 +28,7 @@ Specifying an optimization problem
 
 The problem is then specified as::
 
-    >>> problem = sbml2julia.sbml2juliaProblem('my_petab_promlem.yaml', t_steps=100, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}, custom_code_dict={})
+    >>> problem = sbml2julia.SBML2JuliaProblem('my_petab_promlem.yaml', t_steps=100, n_starts=1, infer_ic_from_sbml=False, optimizer_options={}, custom_code_dict={})
 
 Once the problem is specified, `sbml2julia` has transformed the problem to a julia JuMP model. The code for this model can be accessed via::
 

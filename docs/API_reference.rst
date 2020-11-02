@@ -1,5 +1,5 @@
 API Reference
 =============
 
-.. autoclass:: sbml2julia.core.sbml2juliaProblem
+.. autoclass:: sbml2julia.core.SBML2JuliaProblem
    :members:
