@@ -178,7 +178,7 @@ class SBML2JuliaProblemTestCase(unittest.TestCase):
         petab_problem_wrong.measurement_df['preequilibrationConditionId'] = 1*['p1']+43*['p2']
         with self.assertRaises(NotImplementedError) as c:
             problem._check_for_not_implemented_features(petab_problem_wrong)
-        self.assertTrue('with <=1 preequilibrationConditionIds' in str(c.exception))
+        self.assertTrue('with <= 1 preequilibrationConditionIds' in str(c.exception))
 
     def test_sort_condition_df_problem(self):
         problem = Mock()

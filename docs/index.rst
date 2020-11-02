@@ -13,7 +13,7 @@ Welcome to `SBML2Julia`'s documentation!
 
 `SBML2Julia` is a tool to for optimizing parameters of ordinary differential equation (ODE) models. `SBML2Julia` translates a model from SBML/`PEtab <https://petab.readthedocs.io/en/stable/>`_ format into Julia for Mathematical Programming (`JuMP <https://jump.dev/JuMP.jl/stable/>`_), performes the optimization task and returns the results.
 
-| Source code: https://github.com/paulflang/sbml2julia
+| Source code: https://github.com/paulflang/SBML2Julia
 
 Optimization method
 -------------------
