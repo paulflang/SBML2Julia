@@ -4,7 +4,7 @@ import setuptools
 
 # extract version
 with open(os.path.join(os.path.dirname(__file__),
-          "pypesto", "version.py")) as f:
+          "SBML2JuliaMP", "_version.py")) as f:
     version = f.read().split('\n')[0].split('=')[-1].strip(' ').strip('"')
 
 name = 'SBML2JuliaMP'
