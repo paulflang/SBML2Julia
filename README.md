@@ -15,24 +15,22 @@
 `SBML2Julia` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest [SBML2Julia docker image](https://hub.docker.com/repository/docker/paulflang/sbml2julia) from Docker Hub and build a container.
   ```
   user@bash:/$ docker pull paulflang/sbml2julia:latest
-  user@bash:/$ docker run -it paulflang/sbml2julia:latest
+  user@bash:/$ docker run -it --mount type=bind,source=<my_host_dir>,target=/media paulflang/sbml2julia:latest
   ```
-To install the latest `SBML2Julia` version in the Docker container, run:
+To install the latest `SBML2Julia` release in the Docker container, run:
+  ```
+  user@bash:/$ python3 -m pip install sbml2julia
+  ```
+Alternatively, to install the latest `SBML2Julia` version from GitHub, run:
   ```
   user@bash:/$ git clone https://github.com/paulflang/sbml2julia.git
-  user@bash:/$ python3 -m pip install -e sbml2julia
+  user@bash:/$ python3 -m pip install sbml2julia
   ```
 To check if the installation was succesful, run:
   ```
   user@bash:/$ sbml2julia -h
   ```
-
-Alternatively, the `SBML2Julia` dependencies can be installed as indicated in the [Dockerfile](https://github.com/paulflang/sbml2julia/blob/master/Dockerfile) in the `SBML2Julia` GitHub repository. Once these dependencie are installed, `SBML2Julia` can be installed as above:
-  ```
-  user@bash:/$ git clone https://github.com/paulflang/sbml2julia.git
-  user@bash:/$ python3 -m pip install -e sbml2julia
-  user@bash:/$ sbml2julia -h
-  ```
+If you do not want to use Docker, the `SBML2Julia` dependencies can be installed as indicated in the [Dockerfile](https://github.com/paulflang/sbml2julia/blob/master/Dockerfile). Once these dependencie are installed, `SBML2Julia` can be installed as above.
 
 ## Interfaces
 
@@ -42,7 +40,7 @@ Optimization tasks can be performed from a Python API or a command line interfac
 Please see the [documentation](https://sbml2julia.readthedocs.io/en/latest/index.html) for a description of how to use `SBML2Julia`. 
 
 ## License
-The package is released under the [MIT license](LICENSE).
+The package is released under the [MIT license](https://github.com/paulflang/SBML2Julia/blob/develop/LICENSE).
 
 ## Development team
 This package was developed by [Paul F. Lang](https://www.linkedin.com/in/paul-lang-7b54a81a3/) at the University of Oxford, UK and [Sungho Shin](https://www.sunghoshin.com/) at the University of Wisconsin-Madison, USA..

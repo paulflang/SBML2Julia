@@ -4,23 +4,22 @@ Installation
 `SBML2Julia` depends on several Python and Julia packages. If you have Docker installed on your machine, the easiest way of installing these dependencies is to pull the latest `SBML2Julia docker image <https://hub.docker.com/repository/docker/paulflang/sbml2julia>`_ from dockerhub and build a container.::
 
 	user@bash:/$ docker pull paulflang/sbml2julia:latest
-	user@bash:/$ docker run -it paulflang/sbml2julia:latest
+	user@bash:/$ docker run -it --mount type=bind,source=<my_host_dir>,target=/media paulflang/sbml2julia:latest
 
-To install the latest `SBML2Julia` version in the docker container, run::
+To install the latest `SBML2Julia` release in the docker container, run::
 
-	user@bash:/$ git clone https://github.com/paulflang/sbml2julia.git
-	user@bash:/$ python3 -m pip install -e sbml2julia
+	user@bash:/$ python3 -m pip install sbml2julia
+
+Alternatively, to install the latest `SBML2Julia` version from GitHub, run::
+
+    user@bash:/$ git clone https://github.com/paulflang/sbml2julia.git
+	user@bash:/$ python3 -m pip install sbml2julia
 
 To check if the installation was succesful, run::
 
 	user@bash:/$ sbml2julia -h
 
-
-Alternatively, the `SBML2Julia` dependencies can be installed on Ubuntu machines as indicated in the `Dockerfile <https://github.com/paulflang/sbml2julia/blob/master/Dockerfile>`_ in the `SBML2Julia` GitHub repository. Once these dependencie are installed, `SBML2Julia` can be installed as above::
-
-	user@bash:/$ git clone https://github.com/paulflang/sbml2julia.git
-	user@bash:/$ python3 -m pip install -e sbml2julia
-	user@bash:/$ sbml2julia -h
+If you do not want to use Docker, the `SBML2Julia` dependencies can be installed on Ubuntu machines as indicated in the `Dockerfile <https://github.com/paulflang/sbml2julia/blob/master/Dockerfile>`_. Once these dependencie are installed, `SBML2Julia` can be installed as above.
 
 Optional installation of efficient HSL linear solvers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

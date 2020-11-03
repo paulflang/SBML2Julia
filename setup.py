@@ -17,6 +17,7 @@ setuptools.setup(
     version=version,
     description='Optimization tool based on ODE discretisation.',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     url="https://github.com/paulflang/" + name,
     download_url='https://github.com/paulflang/' + name,
     author="paulflang",
