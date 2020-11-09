@@ -75,17 +75,12 @@ def _execute_case(case):
     if case == '0006' or '0009' or '0010':
         t_steps = 3001
     problem = core.SBML2JuliaProblem(yaml_file, t_steps=t_steps, infer_ic_from_sbml=True)
-    problem.write_jl_file()
     problem.optimize()
-    problem.plot_results('c0')
 
     # extract results
     results = problem.results
     simulation_df = problem.petab_problem.simulation_df.rename(
         columns={petab.MEASUREMENT: petab.SIMULATION})
-    print('simulation_df')
-    print([simulation_df])
-    print(gt_simulation_dfs)
     chi2 = results['chi2']
     llh = - results['fval']
 
@@ -99,7 +94,7 @@ def _execute_case(case):
     logger.log(logging.INFO if chi2s_match else logging.ERROR,
                f"CHI2: simulated: {chi2}, expected: {gt_chi2},"
                f" match = {chi2s_match}")
-    logger.log(logging.INFO if simulations_match else logging.ERROR,
+    logger.log(logging.INFO if llhs_match else logging.ERROR,
                f"LLH: simulated: {llh}, expected: {gt_llh}, "
                f"match = {llhs_match}")
     logger.log(logging.INFO if simulations_match else logging.ERROR,
