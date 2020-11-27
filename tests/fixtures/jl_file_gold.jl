@@ -123,8 +123,8 @@ i_start = 1
 
     # Model species
     println("Defining species...")
-    species_dict["A"] = @variable(m, 0.0 <= A[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
-    species_dict["B"] = @variable(m, 0.0 <= B[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743)
+    species_dict["A"] = @variable(m, 0.0 <= A[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743, start=0.0+(20.038222743-(0.0))*rand(Float64))
+    species_dict["B"] = @variable(m, 0.0 <= B[j in 1:2, k in 1:(length(t_sim)+1)] <= 20.038222743, start=0.0+(20.038222743-(0.0))*rand(Float64))
 
     # Model initial assignments
     println("Defining initial assignments...")

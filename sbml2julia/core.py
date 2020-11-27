@@ -996,9 +996,9 @@ class SBML2JuliaProblem(object):
             if species[specie]:
                 lb = self.petab_problem.species_df.loc[specie, 'lowerBound']  # Todo: write somwehere a method that check that the set of sbml model species == self.petab_problem.species_df.index
                 ub = self.petab_problem.species_df.loc[specie, 'upperBound']
-                generated_code.extend(bytes('    species_dict["{}"] = @variable(m, {} <= {}[j in 1:{}, k in 1:(length(t_sim)+1)] <= {})\n'.format(specie, lb, specie, n_j, ub), 'utf8'))
+                generated_code.extend(bytes('    species_dict["{}"] = @variable(m, {} <= {}[j in 1:{}, k in 1:(length(t_sim)+1)] <= {}, start={}+({}-({}))*rand(Float64))\n'.format(specie, lb, specie, n_j, ub, lb, ub, lb), 'utf8'))
             else:
-                generated_code.extend(bytes('    species_dict["{}"] = @variable(m, {}[j in 1:{}, k in 1:(length(t_sim)+1)])\n'.format(specie, specie, n_j), 'utf8'))
+                generated_code.extend(bytes('    species_dict["{}"] = @variable(m, {}[j in 1:{}, k in 1:(length(t_sim)+1)], start=1e-10)\n'.format(specie, specie, n_j, warm_start), 'utf8'))
         generated_code.extend(bytes('\n', 'utf8'))
 
         # Write initial assignments
