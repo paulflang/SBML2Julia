@@ -273,6 +273,8 @@ class SBML2JuliaProblem(object):
             petab_problem (:obj:`petab.problem.Problem`): PEtab problem
         
         Raises:
+            ValueError: if `parameterId` is in {'l', 'm', 'j', 'k'}
+            ValueError: if `observableId` is in {'l', 'm', 'j', 'k'}
             NotImplementedError: if `time` column in measurement table contains `Inf`
             NotImplementedError: if simulation conditions are associated with > 1 preequilibration
             NotImplementedError: if conditions are used for both, preequilibration and simulation
@@ -280,6 +282,16 @@ class SBML2JuliaProblem(object):
             NotImplementedError: if priors for observable parameters are provided
 
         """
+        for iterator in ('l', 'm', 'k', 'j'):
+            if iterator in list(petab_problem.parameter_df.index):
+                raise ValueError(f'`{iterator}` must not be a parameterId, as this causes '
+                                 'confusion with SBML2Julia\'s internal '
+                                 'iterators `l`, `m`, `j` and `k`.')
+            if iterator in list(petab_problem.observable_df.index):
+                raise ValueError(f'`{iterator}` must not be an observableId, as this causes '
+                                 'confusion with SBML2Julia\'s internal '
+                                 'iterators `l`, `m`, `j` and `k`.')
+
         if np.inf in list(petab_problem.measurement_df['time']):
             raise NotImplementedError('Fitting steady state problems is not implemented.')  # Todo: consider implementing it.
 
@@ -696,6 +708,7 @@ class SBML2JuliaProblem(object):
         
         Raises:
             NotImplementedError: if SBML model contains assignment rules
+            ValueError: if `speciesId` is in {'l', 'm', 'j', 'k'}
             ValueError: if column `estimate` in parameter table contains values other than `0` or `1`.
         """
         # ---------------------------------------------------------------------- #
@@ -765,6 +778,12 @@ class SBML2JuliaProblem(object):
             if specie.getBoundaryCondition() is True or (specie.getId() in species):
                 continue
             species[specie.getId()] = []
+
+        for iterator in ('l', 'm', 'k', 'j'):
+            if iterator in species.keys():
+                raise ValueError(f'`{iterator}` must not be a speciesId, as this causes '
+                                 'confusion with SBML2Julia\'s internal '
+                                 'iterators `l`, `m`, `j` and `k`.')
 
         for i in range(mod.getNumReactions()):
             reaction = mod.getReaction(i)

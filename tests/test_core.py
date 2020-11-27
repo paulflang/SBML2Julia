@@ -30,8 +30,6 @@ with open(JL_FILE_GOLD, 'r') as f:
     JL_CODE_GOLD = f.read()
 JL_CODE_GOLD = re.sub('/media/sf_DPhil_Project/Project07_Parameter Fitting/'
                       'df_software/sbml2julia/tests/fixtures', FIXTURES, JL_CODE_GOLD)
-with open(os.path.join('.', 'substituted_code.jl'), 'w') as f:
-    f.write(JL_CODE_GOLD)
 with open(os.path.join(FIXTURES, 'results_gold.pickle'), 'rb') as f:
     RESULTS_GOLD = pickle.load(f)
 
@@ -166,6 +164,20 @@ class SBML2JuliaProblemTestCase(unittest.TestCase):
         petab_problem = petab.problem.Problem()
         petab_problem = petab_problem.from_yaml(PETAB_YAML)
         problem._check_for_not_implemented_features(petab_problem)
+
+        petab_problem_wrong = copy.deepcopy(petab_problem)
+        petab_problem_wrong.parameter_df = petab_problem_wrong.parameter_df.rename(index={'a0': 'k'})
+        with self.assertRaises(ValueError) as c:
+            problem._check_for_not_implemented_features(petab_problem_wrong)
+        print(c.exception)
+        self.assertTrue('must not be a parameterId' in str(c.exception))
+
+        petab_problem_wrong = copy.deepcopy(petab_problem)
+        petab_problem_wrong.observable_df = petab_problem_wrong.observable_df.rename(index={'obs_a': 'k'})
+        with self.assertRaises(ValueError) as c:
+            problem._check_for_not_implemented_features(petab_problem_wrong)
+        print(c.exception)
+        self.assertTrue('must not be an observableId' in str(c.exception))
 
         petab_problem_wrong = copy.deepcopy(petab_problem)
         petab_problem_wrong.measurement_df['time'] = np.inf
