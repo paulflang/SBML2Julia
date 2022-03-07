@@ -670,9 +670,9 @@ class SBML2JuliaProblem(object):
         plt.figure(figsize=size)
         axes = plt.axes([0.1, 0.1, 0.8, 0.8])
 
-        sim_lines = axes.plot(t_sim, values, linewidth=3)
+        sim_lines = axes.plot(t_sim, np.array(values), linewidth=3)
         axes.set_prop_cycle(None)  # reset the color cycle
-        exp_points = axes.plot(t, exp_data, 'x')
+        exp_points = axes.plot(t, np.array(exp_data), 'x')
         sim_legend = axes.legend(sim_lines, observables, frameon=True,
                                  title='Simulation', loc='upper right')
         # axes.set_prop_cycle(None)
